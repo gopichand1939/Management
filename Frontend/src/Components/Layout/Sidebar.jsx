@@ -1,16 +1,171 @@
-import { LayoutDashboard, LogOut, Shield, Users } from "lucide-react";
+import {
+  Building2,
+  ChevronDown,
+  LayoutDashboard,
+  LogOut,
+  Shield,
+  UserCog,
+  UserRoundCog,
+} from "lucide-react";
+import { useState } from "react";
 import { useDispatch } from "react-redux";
-import { NavLink, useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 
 import { logoutUser } from "../../Redux/User/UserSlice";
+import { useTranslation } from "../../Services/I18n/I18nService";
+import {
+  getMenuLabelKey,
+  getMenuMeta,
+  getSidebarMenuTree,
+} from "../../Utils/MenuPermissions";
+
+const menuIcons = {
+  dashboard: LayoutDashboard,
+  institutions: Building2,
+  pg_admin: UserRoundCog,
+  super_admin: UserCog,
+  user_management: UserCog,
+};
+
+const MENU_ICON_SIZE = 18;
 
 const Sidebar = () => {
   const dispatch = useDispatch();
+  const location = useLocation();
   const navigate = useNavigate();
+  const { t } = useTranslation();
+  const { authUser } = useSelector((state) => state.user);
+  const menuTree = getSidebarMenuTree(authUser);
+  const [expandedMenus, setExpandedMenus] = useState({});
 
   const handleLogout = () => {
     dispatch(logoutUser());
     navigate("/login");
+  };
+
+  const isRouteActive = (routePath) => {
+    return (
+      routePath &&
+      (location.pathname === routePath ||
+        location.pathname.startsWith(`${routePath}/`))
+    );
+  };
+
+  const hasActiveDescendant = (menu) => {
+    return menu.children?.some((childMenu) => {
+      return isRouteActive(childMenu.route_path) || hasActiveDescendant(childMenu);
+    });
+  };
+
+  const isMenuExpanded = (menu) => {
+    if (Object.prototype.hasOwnProperty.call(expandedMenus, menu.menu_id)) {
+      return expandedMenus[menu.menu_id];
+    }
+
+    return hasActiveDescendant(menu);
+  };
+
+  const toggleMenu = (menu) => {
+    setExpandedMenus((currentState) => ({
+      ...currentState,
+      [menu.menu_id]: !isMenuExpanded(menu),
+    }));
+  };
+
+  const renderMenuItem = (menu, isChild = false) => {
+    const { route_path, icon_key } = getMenuMeta(menu);
+    const translatedLabel = t(getMenuLabelKey(menu), menu.menu_name);
+    const Icon = menuIcons[icon_key] || Shield;
+    const hasChildren = Boolean(menu.children?.length);
+    const expanded = hasChildren ? isMenuExpanded(menu) : false;
+    const childActive = hasChildren ? hasActiveDescendant(menu) : false;
+    const parentActive = hasChildren ? expanded && !childActive : false;
+
+    if (hasChildren) {
+      return (
+        <div key={menu.menu_id} className="flex flex-col gap-2">
+          <button
+            className={`
+              flex
+              items-center
+              gap-3
+              rounded-xl
+              px-4
+              py-3
+              text-sm
+              font-semibold
+              transition-all
+              duration-200
+              ${
+                parentActive
+                  ? "border border-slate-700/60 bg-slate-800 text-white"
+                  : "text-slate-400 hover:bg-slate-800/50 hover:text-white"
+              }
+            `}
+            type="button"
+            onClick={() => toggleMenu(menu)}
+          >
+            <span className="flex h-[18px] w-[18px] shrink-0 items-center justify-center">
+              <Icon
+                size={MENU_ICON_SIZE}
+                className={parentActive ? "text-orange-500" : "text-slate-400"}
+              />
+            </span>
+            <span className="flex-1 text-left">{translatedLabel}</span>
+            <ChevronDown
+              size={16}
+              className={`transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
+            />
+          </button>
+
+          {expanded && (
+            <div className="ml-4 flex flex-col gap-2 border-l border-slate-800 pl-3">
+              {menu.children.map((childMenu) => renderMenuItem(childMenu, true))}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    return (
+      <NavLink
+        key={menu.menu_id}
+        to={route_path}
+        className={({ isActive }) => `
+          flex
+          items-center
+          gap-3
+          rounded-xl
+          px-4
+          py-3
+          text-sm
+          font-semibold
+          transition-all
+          duration-200
+          ${
+            isChild ? "ml-1 py-2.5 text-[13px]" : ""
+          }
+          ${
+            isActive
+              ? "border border-slate-700/60 bg-slate-800 text-white"
+              : "text-slate-400 hover:bg-slate-800/50 hover:text-white"
+          }
+        `}
+      >
+        {({ isActive }) => (
+          <>
+            <span className="flex h-[18px] w-[18px] shrink-0 items-center justify-center">
+              <Icon
+                size={MENU_ICON_SIZE}
+                className={isActive ? "text-orange-500" : "text-slate-400"}
+              />
+            </span>
+            <span>{translatedLabel}</span>
+          </>
+        )}
+      </NavLink>
+    );
   };
 
   return (
@@ -51,67 +206,7 @@ const Sidebar = () => {
       </div>
 
       <nav className="flex flex-1 flex-col gap-2">
-        <NavLink
-          to="/dashboard"
-          className={({ isActive }) => `
-            flex
-            items-center
-            gap-3
-            rounded-xl
-            px-4
-            py-3
-            text-sm
-            font-semibold
-            transition-all
-            duration-200
-            ${
-              isActive
-                ? "border border-slate-700/60 bg-slate-800 text-white"
-                : "text-slate-400 hover:bg-slate-800/50 hover:text-white"
-            }
-          `}
-        >
-          {({ isActive }) => (
-            <>
-              <LayoutDashboard
-                size={18}
-                className={isActive ? "text-orange-500" : "text-slate-400"}
-              />
-              <span>Dashboard</span>
-            </>
-          )}
-        </NavLink>
-
-        <NavLink
-          to="/users"
-          className={({ isActive }) => `
-            flex
-            items-center
-            gap-3
-            rounded-xl
-            px-4
-            py-3
-            text-sm
-            font-semibold
-            transition-all
-            duration-200
-            ${
-              isActive
-                ? "border border-slate-700/60 bg-slate-800 text-white"
-                : "text-slate-400 hover:bg-slate-800/50 hover:text-white"
-            }
-          `}
-        >
-          {({ isActive }) => (
-            <>
-              <Users
-                size={18}
-                className={isActive ? "text-orange-500" : "text-slate-400"}
-              />
-              <span>Users</span>
-            </>
-          )}
-        </NavLink>
+        {menuTree.map((menu) => renderMenuItem(menu))}
       </nav>
 
       <button

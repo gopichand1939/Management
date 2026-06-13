@@ -1,12 +1,13 @@
 import { createSlice } from "@reduxjs/toolkit";
 
-import { TOKEN_KEY } from "../../Utils/Constants";
+import { AUTH_USER_KEY, TOKEN_KEY } from "../../Utils/Constants";
 
 const savedToken = localStorage.getItem(TOKEN_KEY);
+const savedAuthUser = localStorage.getItem(AUTH_USER_KEY);
 
 const initialState = {
   token: savedToken || "",
-  authUser: null,
+  authUser: savedAuthUser ? JSON.parse(savedAuthUser) : null,
   users: [],
   loading: false,
   error: "",
@@ -27,9 +28,20 @@ const userSlice = createSlice({
       state.token = action.payload.token;
 
       localStorage.setItem(TOKEN_KEY, action.payload.token);
+      localStorage.setItem(AUTH_USER_KEY, JSON.stringify(action.payload.user));
     },
     setUserProfile: (state, action) => {
-      state.authUser = action.payload;
+      const nextUserProfile = {
+        ...(state.authUser || {}),
+        ...(action.payload || {}),
+      };
+
+      if (!nextUserProfile.menus?.length && state.authUser?.menus?.length) {
+        nextUserProfile.menus = state.authUser.menus;
+      }
+
+      state.authUser = nextUserProfile;
+      localStorage.setItem(AUTH_USER_KEY, JSON.stringify(nextUserProfile));
     },
     setUserList: (state, action) => {
       state.users = action.payload;
@@ -39,6 +51,7 @@ const userSlice = createSlice({
       state.authUser = null;
 
       localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(AUTH_USER_KEY);
     },
     addUser: (state, action) => {
       state.users.unshift(action.payload);

@@ -29,7 +29,7 @@ const useEditUser = () => {
     event.preventDefault();
 
     dispatch(editUser(formData));
-    navigate("/users");
+    navigate("/super-admins");
   };
 
   return {

@@ -1,8 +1,8 @@
-import { Users, Shield } from "lucide-react";
+import { Shield, UserCog } from "lucide-react";
 import Header from "../../Components/Layout/Header";
 import Navbar from "../../Components/Layout/Navbar";
 import Sidebar from "../../Components/Layout/Sidebar";
-import AuthUser from "../../Components/User/AuthUser";
+import AuthSuperAdmin from "../../Components/SuperAdmin/AuthSuperAdmin";
 import useFetchUserData from "../../Hooks/useFetchUserData";
 
 const Dashboard = () => {
@@ -20,18 +20,18 @@ const Dashboard = () => {
     >
       <Sidebar />
 
-      <div className="flex flex-col min-h-screen overflow-x-hidden">
+      <div className="flex h-screen min-h-0 flex-col overflow-y-auto overflow-x-hidden">
         <Navbar />
 
         {/* MainContent */}
         <main className="flex flex-1 flex-col bg-slate-50 min-h-0">
           {/* OutletWrapper */}
-          <div className="flex-1 w-full pt-12 lg:pt-16 pb-16 px-6 md:px-8">
+          <div className="flex-1 w-full pt-7 lg:pt-8 pb-8 px-6 md:px-8">
             {/* PageContainer */}
             <div className="max-w-6xl mx-auto w-full flex flex-col gap-6 md:gap-8">
           <Header
             title="Dashboard"
-            subtitle="Secure overview of users and admin activity."
+            subtitle="Secure overview of super admins and admin activity."
           />
 
           <section
@@ -42,7 +42,7 @@ const Dashboard = () => {
               xl:grid-cols-3
             `}
           >
-            {/* Total Users */}
+            {/* Total Super Admins */}
             <div
               className={`
                 bg-white
@@ -58,6 +58,7 @@ const Dashboard = () => {
                 hover:-translate-y-0.5
                 transition-all
                 duration-200
+                font-satoshi
               `}
             >
               <div
@@ -72,7 +73,7 @@ const Dashboard = () => {
                   text-red-500
                 `}
               >
-                <Users size={20} />
+                <UserCog size={20} />
               </div>
               <div className="flex-1 text-left">
                 <span
@@ -84,7 +85,7 @@ const Dashboard = () => {
                     tracking-wider
                   `}
                 >
-                  Total Users
+                  Total Super Admins
                 </span>
                 <strong
                   className={`
@@ -127,6 +128,7 @@ const Dashboard = () => {
                 hover:-translate-y-0.5
                 transition-all
                 duration-200
+                font-satoshi
               `}
             >
               <div
@@ -181,7 +183,7 @@ const Dashboard = () => {
             </div>
 
             {/* Auth User Profile Card */}
-            <AuthUser />
+            <AuthSuperAdmin />
           </section>
             </div>
           </div>

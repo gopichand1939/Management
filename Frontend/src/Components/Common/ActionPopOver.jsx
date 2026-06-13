@@ -28,29 +28,35 @@ const ActionPopOver = ({ onView, onEdit, onDelete }) => {
         gap-1.5
       `}
     >
-      <button
-        className={iconButtonClassName}
-        title="View user"
-        onClick={onView}
-      >
-        <Eye size={14} />
-      </button>
+      {onView && (
+        <button
+          className={iconButtonClassName}
+          title="View user"
+          onClick={onView}
+        >
+          <Eye size={14} />
+        </button>
+      )}
 
-      <button
-        className={iconButtonClassName}
-        title="Edit user"
-        onClick={onEdit}
-      >
-        <Edit size={14} />
-      </button>
+      {onEdit && (
+        <button
+          className={iconButtonClassName}
+          title="Edit user"
+          onClick={onEdit}
+        >
+          <Edit size={14} />
+        </button>
+      )}
 
-      <button
-        className={iconButtonClassName}
-        title="Delete user"
-        onClick={onDelete}
-      >
-        <Trash2 size={14} />
-      </button>
+      {onDelete && (
+        <button
+          className={iconButtonClassName}
+          title="Delete user"
+          onClick={onDelete}
+        >
+          <Trash2 size={14} />
+        </button>
+      )}
     </div>
   );
 };

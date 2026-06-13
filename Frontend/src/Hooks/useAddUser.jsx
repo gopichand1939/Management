@@ -33,7 +33,7 @@ const useAddUser = () => {
       ...formData,
     }));
 
-    navigate("/users");
+    navigate("/super-admins");
   };
 
   return {

@@ -8,6 +8,7 @@ import Error from "../Common/Error";
 import InputField from "../Common/InputField";
 import useLogin from "../../Hooks/useLogin";
 import { USER_LOGIN } from "../../Utils/Constants";
+import { getDefaultRoute } from "../../Utils/MenuPermissions";
 import {
   setAuthUser,
   setUserError,
@@ -48,7 +49,7 @@ const Login = () => {
       }
 
       dispatch(setAuthUser(data));
-      navigate("/dashboard");
+      navigate(getDefaultRoute(data.user), { replace: true });
     } catch (errorData) {
       dispatch(setUserError(errorData.message));
     } finally {

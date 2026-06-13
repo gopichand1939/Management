@@ -1,0 +1,42 @@
+{
+  "app": {
+    "brand": "AdminPro"
+  },
+  "common": {
+    "actions": "Actions",
+    "address": "Address",
+    "code": "Code",
+    "ctrlK": "Ctrl K",
+    "email": "Email",
+    "institution": "Institution",
+    "logout": "Logout",
+    "noRecordsFound": "No records found",
+    "phone": "Phone",
+    "searchAnything": "Search anything...",
+    "showingResults": "Showing 1 to {{count}} of {{count}} users",
+    "status": "Status"
+  },
+  "menu": {
+    "dashboard": "Dashboard",
+    "institutionAvailability": "PG Availability",
+    "institutionManagement": "InstitutionManagement",
+    "institutionMaster": "PG Master",
+    "pgAdmin": "PG Admin",
+    "superAdmin": "Super Admin",
+    "userManagement": "UserManagement"
+  },
+  "institution": {
+    "addInstitution": "Add Institution",
+    "detailsDescription": "View institution master information",
+    "detailsTitle": "Institution Details",
+    "fetchFailed": "Institution fetch failed",
+    "listFailed": "Institution list failed",
+    "managementDescription": "Manage institution master records",
+    "managementTitle": "PG Management",
+    "searchPlaceholder": "Search institution..."
+  },
+  "navbar": {
+    "defaultEmail": "admin@company.com",
+    "defaultUser": "Admin User"
+  }
+}
