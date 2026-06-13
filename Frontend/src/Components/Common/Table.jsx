@@ -1,0 +1,271 @@
+import { ChevronLeft, ChevronRight } from "lucide-react";
+
+const Table = ({ columns, data, renderActions }) => {
+  if (data.length === 0) {
+    return (
+      <div
+        className={`
+          overflow-hidden
+          rounded-xl
+          border
+          border-slate-100
+          bg-white
+          shadow-sm
+        `}
+      >
+        <div
+          className={`
+            grid
+            place-items-center
+            p-6
+            text-center
+            text-sm
+            text-slate-400
+          `}
+        >
+          No records found
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={`
+        overflow-hidden
+        rounded-xl
+        border
+        border-slate-100
+        bg-white
+        shadow-sm
+      `}
+    >
+      <div className="max-h-[520px] overflow-auto">
+        <table
+          className={`
+            w-full
+            min-w-[720px]
+            border-collapse
+          `}
+        >
+          <thead>
+            <tr>
+              {columns.map((column) => (
+                <th
+                  key={column.key}
+                  className={`
+                    sticky
+                    top-0
+                    z-10
+                    px-5
+                    py-3
+                    text-left
+                    text-[10px]
+                    font-bold
+                    uppercase
+                    tracking-wider
+                    text-slate-400
+                    border-b
+                    border-slate-100
+                    bg-slate-50/95
+                    backdrop-blur
+                  `}
+                >
+                  {column.label}
+                </th>
+              ))}
+
+              {renderActions && (
+                <th
+                  className={`
+                    sticky
+                    top-0
+                    z-10
+                    px-5
+                    py-3
+                    text-left
+                    text-[10px]
+                    font-bold
+                    uppercase
+                    tracking-wider
+                    text-slate-400
+                    border-b
+                    border-slate-100
+                    bg-slate-50/95
+                    backdrop-blur
+                  `}
+                >
+                  Actions
+                </th>
+              )}
+            </tr>
+          </thead>
+
+          <tbody>
+            {data.map((item) => (
+              <tr
+                key={item.id}
+                className={`
+                  border-b
+                  border-slate-100/80
+                  hover:bg-slate-50/50
+                  transition-colors
+                  duration-150
+                `}
+              >
+                {columns.map((column) => (
+                  <td
+                    key={column.key}
+                    className={`
+                      px-5
+                      py-3
+                      text-sm
+                      text-slate-600
+                    `}
+                  >
+                    {item[column.key]}
+                  </td>
+                ))}
+
+                {renderActions && (
+                  <td
+                    className={`
+                      px-5
+                      py-3
+                      text-sm
+                      text-slate-600
+                    `}
+                  >
+                    {renderActions(item)}
+                  </td>
+                )}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Modern Operational Pagination Footer */}
+      <div
+        className={`
+          flex
+          items-center
+          justify-between
+          px-5
+          py-3
+          border-t
+          border-slate-100
+          bg-white
+        `}
+      >
+        <span
+          className={`
+            text-xs
+            text-slate-500
+          `}
+        >
+          Showing 1 to {data.length} of {data.length} users
+        </span>
+        <div className="flex items-center gap-1">
+          <button
+            className={`
+              p-1
+              rounded-md
+              border
+              border-slate-200
+              text-slate-400
+              hover:bg-slate-50
+              transition-all
+            `}
+          >
+            <ChevronLeft size={14} />
+          </button>
+          <button
+            className={`
+              w-7
+              h-7
+              rounded-md
+              text-xs
+              font-bold
+              text-white
+              bg-orange-500
+              flex
+              items-center
+              justify-center
+              shadow-sm
+            `}
+          >
+            1
+          </button>
+          <button
+            className={`
+              w-7
+              h-7
+              rounded-md
+              text-xs
+              font-bold
+              text-slate-600
+              hover:bg-slate-50
+              flex
+              items-center
+              justify-center
+              transition-all
+            `}
+          >
+            2
+          </button>
+          <button
+            className={`
+              w-7
+              h-7
+              rounded-md
+              text-xs
+              font-bold
+              text-slate-600
+              hover:bg-slate-50
+              flex
+              items-center
+              justify-center
+              transition-all
+            `}
+          >
+            3
+          </button>
+          <span className="text-xs text-slate-400 px-1">...</span>
+          <button
+            className={`
+              w-7
+              h-7
+              rounded-md
+              text-xs
+              font-bold
+              text-slate-600
+              hover:bg-slate-50
+              flex
+              items-center
+              justify-center
+              transition-all
+            `}
+          >
+            26
+          </button>
+          <button
+            className={`
+              p-1
+              rounded-md
+              border
+              border-slate-200
+              text-slate-400
+              hover:bg-slate-50
+              transition-all
+            `}
+          >
+            <ChevronRight size={14} />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Table;

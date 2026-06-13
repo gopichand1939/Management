@@ -1,0 +1,35 @@
+# Dependencies
+node_modules/
+Backend/node_modules/
+Frontend/node_modules/
+
+# Environment files
+.env
+*.env
+Backend/.env
+Frontend/.env
+
+# Build output
+dist/
+build/
+Frontend/dist/
+Backend/dist/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Runtime and cache
+.cache/
+.vite/
+Frontend/node_modules/.vite/
+Frontend/node_modules/.vite-temp/
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
