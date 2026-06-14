@@ -15,6 +15,10 @@ const I18nContext = createContext({
 });
 
 const getNestedValue = (object, key) => {
+  if (!key || typeof key !== "string") {
+    return undefined;
+  }
+
   return key.split(".").reduce((currentValue, currentKey) => {
     if (currentValue && typeof currentValue === "object") {
       return currentValue[currentKey];

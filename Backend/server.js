@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const rateLimit = require("express-rate-limit");
 const fs = require("fs");
 const path = require("path");
 require("dotenv").config({ quiet: true });
@@ -9,6 +10,7 @@ const authRoutes = require("./Auth/AuthRoutes");
 const superAdminRoutes = require("./SuperAdmin/SuperAdminRoutes");
 const institutionRoutes = require("./Institution/InstitutionRoutes");
 const pgAdminRoutes = require("./PGAdmin/PGAdminRoutes");
+const tenantRoutes = require("./Tenant/TenantRoutes");
 
 const app = express();
 const logDirectory = path.join(__dirname, "logs");
@@ -72,11 +74,25 @@ process.on("exit", (code) => {
 
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
+app.use("/api/tenant", rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 400,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: {
+        success: false,
+        message: "Too many tenant requests, please try again later",
+    },
+}));
 
 app.use("/api/auth", authRoutes);
 app.use("/api/super-admin", superAdminRoutes);
 app.use("/api/institution", institutionRoutes);
 app.use("/api/pg-admin", pgAdminRoutes);
+app.use("/api/tenant", tenantRoutes);
 
 app.post("/", (req, res) => {
     res.send("Backend is running");

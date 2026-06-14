@@ -41,6 +41,27 @@ const PGAdmin = lazy(() => {
 const ViewPGAdmin = lazy(() => {
   return import("../Components/PGAdmin/ViewPGAdmin");
 });
+const TenantOnboarding = lazy(() => {
+  return import("../Components/Tenant/TenantOnboarding");
+});
+const ActiveTenants = lazy(() => {
+  return import("../Components/Tenant/ActiveTenants");
+});
+const VacantBeds = lazy(() => {
+  return import("../Components/Tenant/VacantBeds");
+});
+const TenantPayments = lazy(() => {
+  return import("../Components/Tenant/TenantPayments");
+});
+const VacatedHistory = lazy(() => {
+  return import("../Components/Tenant/VacatedHistory");
+});
+const TenantHistory = lazy(() => {
+  return import("../Components/Tenant/TenantHistory/TenantHistory");
+});
+const TenantProfile = lazy(() => {
+  return import("../Components/Tenant/TenantProfile");
+});
 
 const withSuspense = (component) => {
   return (
@@ -111,6 +132,37 @@ export const pgAdminRoutes = [
   },
 ];
 
+export const tenantRoutes = [
+  {
+    path: "/tenant/onboarding",
+    element: withSuspense(<TenantOnboarding />),
+  },
+  {
+    path: "/tenant/active",
+    element: withSuspense(<ActiveTenants />),
+  },
+  {
+    path: "/tenant/vacant-beds",
+    element: withSuspense(<VacantBeds />),
+  },
+  {
+    path: "/tenant/payments",
+    element: withSuspense(<TenantPayments />),
+  },
+  {
+    path: "/tenant/vacated",
+    element: withSuspense(<VacatedHistory />),
+  },
+  {
+    path: "/tenant/history",
+    element: withSuspense(<TenantHistory />),
+  },
+  {
+    path: "/tenant/profile/:id",
+    element: withSuspense(<TenantProfile />),
+  },
+];
+
 export const applicationRoutes = [
   {
     path: "/dashboard",
@@ -120,4 +172,5 @@ export const applicationRoutes = [
   ...institutionRoutes,
   ...pgAdminRoutes,
   ...superAdminRoutes,
+  ...tenantRoutes,
 ];

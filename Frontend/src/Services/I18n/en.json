@@ -17,12 +17,19 @@
     "status": "Status"
   },
   "menu": {
+    "activeTenants": "Active Tenants",
     "dashboard": "Dashboard",
     "institutionAvailability": "PG Availability",
     "institutionManagement": "InstitutionManagement",
     "institutionMaster": "PG Master",
     "pgAdmin": "PG Admin",
     "superAdmin": "Super Admin",
+    "tenantManagement": "TenantManagement",
+    "tenantOnboarding": "Tenant Onboarding",
+    "vacantBeds": "Vacant Beds",
+    "vacatedHistory": "Vacated History",
+    "tenantHistory": "Tenant History",
+    "payments": "Payments",
     "userManagement": "UserManagement"
   },
   "institution": {

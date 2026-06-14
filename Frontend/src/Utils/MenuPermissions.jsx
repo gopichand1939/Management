@@ -14,6 +14,13 @@ const MENU_CONFIG_BY_ID = {
   5: { route_path: null, icon_key: "user_management" },
   6: { route_path: null, icon_key: "institutions" },
   7: { route_path: null, icon_key: "institutions" },
+  8: { route_path: null, icon_key: "tenant_management" },
+  9: { route_path: "/tenant/onboarding", icon_key: "tenant_onboarding" },
+  10: { route_path: "/tenant/active", icon_key: "tenant_management" },
+  11: { route_path: "/tenant/vacant-beds", icon_key: "tenant_vacant_beds" },
+  12: { route_path: "/tenant/payments", icon_key: "tenant_payments" },
+  13: { route_path: "/tenant/vacated", icon_key: "tenant_vacated" },
+  14: { route_path: "/tenant/history", icon_key: "tenant_history" },
 };
 
 const MENU_CONFIG_BY_NAME = {
@@ -25,6 +32,14 @@ const MENU_CONFIG_BY_NAME = {
   "institution master": { route_path: "/institutions", icon_key: "institutions" },
   "institution availability": { route_path: null, icon_key: "institutions" },
   "pg admin": { route_path: "/pg-admins", icon_key: "pg_admin" },
+  tenantmanagement: { route_path: null, icon_key: "tenant_management" },
+  "tenant management": { route_path: null, icon_key: "tenant_management" },
+  "tenant onboarding": { route_path: "/tenant/onboarding", icon_key: "tenant_onboarding" },
+  "active tenants": { route_path: "/tenant/active", icon_key: "tenant_management" },
+  "vacant beds": { route_path: "/tenant/vacant-beds", icon_key: "tenant_vacant_beds" },
+  payments: { route_path: "/tenant/payments", icon_key: "tenant_payments" },
+  "vacated history": { route_path: "/tenant/vacated", icon_key: "tenant_vacated" },
+  "tenant history": { route_path: "/tenant/history", icon_key: "tenant_history" },
   usermanagement: { route_path: null, icon_key: "user_management" },
   "user management": { route_path: null, icon_key: "user_management" },
 };
@@ -41,6 +56,14 @@ const MENU_LABEL_KEYS_BY_NAME = {
   "institution availability": "menu.institutionAvailability",
   "pg admin": "menu.pgAdmin",
   "super admin": "menu.superAdmin",
+  tenantmanagement: "menu.tenantManagement",
+  "tenant management": "menu.tenantManagement",
+  "tenant onboarding": "menu.tenantOnboarding",
+  "active tenants": "menu.activeTenants",
+  "vacant beds": "menu.vacantBeds",
+  payments: "menu.payments",
+  "vacated history": "menu.vacatedHistory",
+  "tenant history": "menu.tenantHistory",
   usermanagement: "menu.userManagement",
   "user management": "menu.userManagement",
 };

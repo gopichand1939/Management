@@ -17,9 +17,110 @@ const institutionSelectQuery = `
             SELECT COUNT(*)
             FROM beds
             WHERE beds.institution_id = institutions.id
-        ), 0)::INTEGER AS total_beds
+        ), 0)::INTEGER AS total_beds,
+        COALESCE((
+            SELECT COUNT(*)
+            FROM beds
+            WHERE beds.institution_id = institutions.id
+              AND LOWER(COALESCE(beds.status, 'vacant')) = 'occupied'
+        ), 0)::INTEGER AS occupied_beds,
+        COALESCE((
+            SELECT COUNT(*)
+            FROM beds
+            WHERE beds.institution_id = institutions.id
+              AND LOWER(COALESCE(beds.status, 'vacant')) = 'vacant'
+        ), 0)::INTEGER AS vacant_beds
     FROM institutions
 `;
+
+const reconcileInstitutionBedOccupancy = async (institutionId = null) => {
+    const values = [];
+    const bedScope = ["status <> 'maintenance'"];
+    const tenantScope = [
+        "deleted_at IS NULL",
+        "bed_id IS NOT NULL",
+        "status <> 'vacated'",
+    ];
+
+    if (institutionId) {
+        values.push(institutionId);
+        bedScope.push(`institution_id = $${values.length}`);
+        tenantScope.push(`institution_id = $${values.length}`);
+    }
+
+    await pool.query(`
+        UPDATE beds
+        SET status = 'vacant'
+        WHERE ${bedScope.join(" AND ")}
+    `, values);
+
+    await pool.query(`
+        UPDATE beds
+        SET status = tenant_bed_status.next_status
+        FROM (
+            SELECT
+                tenants.bed_id,
+                CASE
+                    WHEN tenants.status IN ('draft') THEN 'reserved'
+                    WHEN tenants.status IN (
+                        'pending_verification',
+                        'active',
+                        'notice_period'
+                    )
+                        THEN 'occupied'
+                    ELSE 'vacant'
+                END AS next_status
+            FROM tenants
+            WHERE ${tenantScope.join(" AND ")}
+        ) AS tenant_bed_status
+        WHERE beds.id = tenant_bed_status.bed_id
+          AND beds.status <> 'maintenance'
+    `, values);
+
+    await pool.query(`
+        UPDATE rooms
+        SET
+            occupied_beds = room_stats.occupied_beds,
+            vacant_beds = room_stats.vacant_beds
+        FROM (
+            SELECT
+                rooms.id AS room_id,
+                COUNT(beds.id) FILTER (WHERE beds.status = 'occupied') AS occupied_beds,
+                COUNT(beds.id) FILTER (WHERE beds.status = 'vacant') AS vacant_beds
+            FROM rooms
+            LEFT JOIN beds
+                ON beds.room_id = rooms.id
+            ${institutionId ? "WHERE rooms.institution_id = $1" : ""}
+            GROUP BY rooms.id
+        ) AS room_stats
+        WHERE rooms.id = room_stats.room_id
+    `, institutionId ? [institutionId] : []);
+
+    await pool.query(`
+        UPDATE floors
+        SET
+            total_rooms = floor_stats.total_rooms,
+            total_beds = floor_stats.total_beds,
+            occupied_beds = floor_stats.occupied_beds,
+            vacant_beds = floor_stats.vacant_beds
+        FROM (
+            SELECT
+                floors.id AS floor_id,
+                COUNT(DISTINCT rooms.id) AS total_rooms,
+                COUNT(DISTINCT beds.id) AS total_beds,
+                COUNT(DISTINCT beds.id) FILTER (WHERE beds.status = 'occupied') AS occupied_beds,
+                COUNT(DISTINCT beds.id) FILTER (WHERE beds.status = 'vacant') AS vacant_beds
+            FROM floors
+            LEFT JOIN rooms
+                ON rooms.floor_id = floors.id
+            LEFT JOIN beds
+                ON beds.room_id = rooms.id
+            ${institutionId ? "WHERE floors.institution_id = $1" : ""}
+            GROUP BY floors.id
+        ) AS floor_stats
+        WHERE floors.id = floor_stats.floor_id
+    `, institutionId ? [institutionId] : []);
+};
 
 const mapInstitutionValues = (data) => {
     return [
@@ -229,6 +330,8 @@ const createInstitutionOnboarding = async (data) => {
 };
 
 const getInstitutionList = async () => {
+    await reconcileInstitutionBedOccupancy();
+
     const query = `${institutionSelectQuery} ORDER BY institutions.id DESC`;
 
     const result = await pool.query(query);
@@ -237,6 +340,8 @@ const getInstitutionList = async () => {
 };
 
 const findInstitutionById = async (id) => {
+    await reconcileInstitutionBedOccupancy(id);
+
     const query = `${institutionSelectQuery} WHERE institutions.id = $1`;
 
     const values = [id];
@@ -247,6 +352,8 @@ const findInstitutionById = async (id) => {
 };
 
 const getInstitutionHierarchyById = async (id) => {
+    await reconcileInstitutionBedOccupancy(id);
+
     const institution = await findInstitutionById(id);
 
     if (!institution) {

@@ -6,29 +6,56 @@ const statusConfigs = {
     foldColor: "bg-emerald-300/40 border-emerald-400/30",
     label: "Vacant",
     shadow: "shadow-emerald-500/10",
+    frame: "border-amber-800/90",
   },
   occupied: {
-    blanket: "from-rose-400 to-red-500 text-rose-950 shadow-[inset_0_2px_4px_rgba(255,255,255,0.4)]",
-    foldColor: "bg-rose-300/40 border-rose-400/30",
+    blanket: "from-rose-500 to-red-600 text-rose-950 shadow-[inset_0_2px_4px_rgba(255,255,255,0.35)]",
+    foldColor: "bg-rose-400/45 border-rose-500/40",
     label: "Occupied",
-    shadow: "shadow-red-500/10",
+    shadow: "shadow-red-500/20",
+    frame: "border-rose-700",
   },
   reserved: {
     blanket: "from-amber-400 to-orange-500 text-amber-950 shadow-[inset_0_2px_4px_rgba(255,255,255,0.4)]",
     foldColor: "bg-amber-300/40 border-amber-400/30",
     label: "Reserved",
     shadow: "shadow-amber-500/10",
+    frame: "border-amber-700",
   },
   blocked: {
     blanket: "from-slate-300 to-slate-400 text-slate-900 shadow-[inset_0_2px_4px_rgba(255,255,255,0.4)]",
     foldColor: "bg-slate-200/50 border-slate-350/30",
     label: "Blocked",
     shadow: "shadow-slate-500/5",
+    frame: "border-slate-500",
   },
 };
 
+const normalizeBedStatus = (status) => {
+  const normalizedStatus = String(status || "").toLowerCase();
+
+  if (normalizedStatus === "occupied" || normalizedStatus === "active" || normalizedStatus === "verified") {
+    return "occupied";
+  }
+
+  if (
+    normalizedStatus === "reserved" ||
+    normalizedStatus === "pending" ||
+    normalizedStatus === "pending_verification" ||
+    normalizedStatus === "notice_period"
+  ) {
+    return "reserved";
+  }
+
+  if (normalizedStatus === "blocked" || normalizedStatus === "maintenance" || normalizedStatus === "inactive") {
+    return "blocked";
+  }
+
+  return "vacant";
+};
+
 const BedSeat = ({ bed, isSelected, onClick }) => {
-  const status = bed.status || "vacant";
+  const status = normalizeBedStatus(bed.status);
   const cfg = statusConfigs[status] || statusConfigs.vacant;
 
   // Extract a single letter or short label for the bed (e.g. "Bed A" -> "A")
@@ -36,16 +63,20 @@ const BedSeat = ({ bed, isSelected, onClick }) => {
     ? bed.bed_number.replace("Bed ", "").trim().substring(0, 3)
     : "B";
 
+  const isVacant = status === "vacant";
+
   return (
     <motion.button
       type="button"
       onClick={onClick}
-      whileHover={{ y: -4, scale: 1.05 }}
-      whileTap={{ scale: 0.98 }}
-      className={`h-[78px] w-[56px] rounded-xl border-[3.5px] border-amber-800 bg-[#fefdfb] flex flex-col p-0.5 cursor-pointer relative transition-shadow duration-300 text-left ${cfg.shadow} ${
+    whileHover={isVacant ? { y: -4, scale: 1.05 } : {}}
+    whileTap={isVacant ? { scale: 0.98 } : {}}
+    className={`h-[78px] w-[56px] rounded-xl border-[3.5px] bg-[#fefdfb] flex flex-col p-0.5 relative transition-shadow duration-300 text-left ${cfg.shadow} ${cfg.frame} ${
+        isVacant ? "cursor-pointer" : "cursor-not-allowed opacity-80"
+      } ${
         isSelected
           ? "ring-[3px] ring-orange-500 ring-offset-2 shadow-lg shadow-orange-500/20 z-10 border-amber-900"
-          : "shadow-md hover:shadow-lg border-amber-800/90"
+          : "shadow-md"
       }`}
       title={`${bed.bed_number} - Status: ${status}`}
     >

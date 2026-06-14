@@ -21,7 +21,9 @@ const StepHeader = ({ steps, activeStep, onStepClick }) => {
       </div>
 
       {/* Steps Selector list */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3.5">
+      <div className={`grid grid-cols-2 sm:grid-cols-3 gap-3.5 ${
+        steps.length <= 5 ? "md:grid-cols-5" : "md:grid-cols-5 lg:grid-cols-9"
+      }`}>
         {steps.map((step, index) => {
           const isCompleted = index < activeStep;
           const isActive = index === activeStep;

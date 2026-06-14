@@ -116,13 +116,27 @@ const Institution = () => {
     }
   };
 
-  // Compute overall totals for PG stats
+  // Filter & Search institutions list
+  const filteredInstitutions = useMemo(() => {
+    return institutions.filter((pg) => {
+      const nameMatch = pg.institution_name?.toLowerCase().includes(searchText.toLowerCase()) ||
+                        pg.institution_code?.toLowerCase().includes(searchText.toLowerCase()) ||
+                        pg.city?.toLowerCase().includes(searchText.toLowerCase());
+
+      const statusMatch = statusFilter === "all" || pg.status === statusFilter;
+      const typeMatch = typeFilter === "all" || pg.institution_type === typeFilter;
+
+      return nameMatch && statusMatch && typeMatch;
+    });
+  }, [institutions, searchText, statusFilter, typeFilter]);
+
+  // Compute visible totals for PG stats
   const overallStats = useMemo(() => {
-    let totalPGs = institutions.length;
+    let totalPGs = filteredInstitutions.length;
     let totalBeds = 0;
     let occupiedBeds = 0;
 
-    institutions.forEach((pg) => {
+    filteredInstitutions.forEach((pg) => {
       const pgBeds = pg.total_beds ?? (pg.floors || []).reduce((s, f) => 
         s + (f.rooms || []).reduce((sr, r) => sr + (r.beds || []).length, 0), 0
       );
@@ -142,21 +156,7 @@ const Institution = () => {
       occupiedBeds,
       occupancyRate,
     };
-  }, [institutions]);
-
-  // Filter & Search institutions list
-  const filteredInstitutions = useMemo(() => {
-    return institutions.filter((pg) => {
-      const nameMatch = pg.institution_name?.toLowerCase().includes(searchText.toLowerCase()) ||
-                        pg.institution_code?.toLowerCase().includes(searchText.toLowerCase()) ||
-                        pg.city?.toLowerCase().includes(searchText.toLowerCase());
-
-      const statusMatch = statusFilter === "all" || pg.status === statusFilter;
-      const typeMatch = typeFilter === "all" || pg.institution_type === typeFilter;
-
-      return nameMatch && statusMatch && typeMatch;
-    });
-  }, [institutions, searchText, statusFilter, typeFilter]);
+  }, [filteredInstitutions]);
 
   // Calculate detailed counts for an institution card/row
   const getPgMetrics = (pg) => {

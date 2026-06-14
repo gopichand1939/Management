@@ -1,11 +1,16 @@
 import {
+  BedDouble,
   Building2,
   ChevronDown,
   LayoutDashboard,
   LogOut,
+  ReceiptText,
   Shield,
+  UserPlus,
   UserCog,
+  Users,
   UserRoundCog,
+  History,
 } from "lucide-react";
 import { useState } from "react";
 import { useDispatch } from "react-redux";
@@ -26,6 +31,12 @@ const menuIcons = {
   pg_admin: UserRoundCog,
   super_admin: UserCog,
   user_management: UserCog,
+  tenant_management: Users,
+  tenant_onboarding: UserPlus,
+  tenant_vacant_beds: BedDouble,
+  tenant_payments: ReceiptText,
+  tenant_vacated: Users,
+  tenant_history: History,
 };
 
 const MENU_ICON_SIZE = 18;
