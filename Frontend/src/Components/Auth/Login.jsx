@@ -15,6 +15,8 @@ import {
   setUserLoading,
 } from "../../Redux/User/UserSlice";
 
+import loginBg from "../../Assets/login-image-blr-stay.png";
+
 const Login = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -61,10 +63,10 @@ const Login = () => {
 
   return (
     <div className="min-h-screen w-full flex flex-col lg:flex-row bg-white overflow-hidden select-none">
-      {/* Left side visual panel - 60% width on desktop, collapses top on mobile */}
-      <div className="w-full lg:w-[60%] h-[35vh] lg:h-screen relative overflow-hidden bg-[#0B1F3A] shrink-0">
+      {/* Left side visual panel - 65% width on desktop, collapses top on mobile */}
+      <div className="w-full lg:w-[65%] h-[35vh] lg:h-screen relative overflow-hidden bg-[#0B1F3A] shrink-0">
         <motion.img
-          src="https://i.postimg.cc/C5976ksg/image.png"
+          src={loginBg}
           alt="BLR Stay Premium Residence"
           className="absolute inset-0 w-full h-full object-cover"
           initial={{ scale: 1.05 }}
@@ -73,8 +75,8 @@ const Login = () => {
         />
       </div>
 
-      {/* Right side form panel - 40% width on desktop, centered contents */}
-      <div className="w-full lg:w-[40%] min-h-[65vh] lg:min-h-screen flex flex-col justify-between p-8 sm:p-12 md:p-16 xl:p-24 bg-white shrink-0">
+      {/* Right side form panel - 35% width on desktop, centered contents */}
+      <div className="w-full lg:w-[35%] min-h-[65vh] lg:min-h-screen flex flex-col justify-between p-8 sm:p-12 md:p-12 xl:p-16 bg-white shrink-0">
         {/* Spacer to push form down slightly on desktop */}
         <div className="hidden lg:block h-6" />
 
