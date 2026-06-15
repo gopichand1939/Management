@@ -764,7 +764,7 @@ const Dashboard = () => {
                         </div>
                       </div>
 
-                      {/* Pending Attention Alerts */}
+                      {/* Pending Attention Alercts */}
                       {/* <div className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm">
                         <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider mb-4 flex items-center gap-2">
                           <AlertTriangle size={16} className="text-amber-500" />
