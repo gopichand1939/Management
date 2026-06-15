@@ -11,6 +11,7 @@ const superAdminRoutes = require("./SuperAdmin/SuperAdminRoutes");
 const institutionRoutes = require("./Institution/InstitutionRoutes");
 const pgAdminRoutes = require("./PGAdmin/PGAdminRoutes");
 const tenantRoutes = require("./Tenant/TenantRoutes");
+const dashboardRoutes = require("./Dashboard/DashboardRoutes");
 
 const app = express();
 const logDirectory = path.join(__dirname, "logs");
@@ -93,6 +94,7 @@ app.use("/api/super-admin", superAdminRoutes);
 app.use("/api/institution", institutionRoutes);
 app.use("/api/pg-admin", pgAdminRoutes);
 app.use("/api/tenant", tenantRoutes);
+app.use("/api/dashboard", dashboardRoutes);
 
 app.post("/", (req, res) => {
     res.send("Backend is running");

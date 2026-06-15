@@ -74,3 +74,5 @@ export const TENANT_STATS =BASE_URL + "/tenant/stats";
 
 export const TOKEN_KEY = "admin_token";
 export const AUTH_USER_KEY = "admin_auth_user";
+export const DASHBOARD_OVERVIEW = BASE_URL + "/dashboard/overview";
+

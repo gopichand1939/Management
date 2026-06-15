@@ -5,76 +5,87 @@ const StepHeader = ({ steps, activeStep, onStepClick }) => {
   const progressPercent = (activeStep / (steps.length - 1)) * 100;
 
   return (
-    <div className="w-full flex flex-col gap-6 text-left">
-      {/* Stepper Header Section */}
-      <div className="relative flex flex-col gap-3">
-        {/* Progress bar background line */}
-        <div className="relative h-2 w-full rounded-full bg-slate-100 overflow-hidden shadow-inner">
-          {/* Animated active progress fill */}
+    <div className="w-full relative overflow-x-auto scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent pb-3 pt-2">
+      {/* Container for step indicators and lines */}
+      <div className="relative flex items-start justify-between min-w-[880px] px-4">
+        
+        {/* Step Connecting Line (Background) */}
+        <div className="absolute top-[18px] left-[5%] right-[5%] h-[3px] bg-slate-100 rounded-full z-0 shadow-inner" />
+        
+        {/* Step Connecting Line (Active Progress) */}
+        <div className="absolute top-[18px] left-[5%] right-[5%] h-[3px] z-0">
           <motion.div
             initial={{ width: 0 }}
             animate={{ width: `${progressPercent}%` }}
             transition={{ type: "spring", damping: 20, stiffness: 80 }}
-            className="absolute left-0 top-0 h-full bg-gradient-to-r from-orange-500 via-orange-400 to-red-500 rounded-full"
+            className="h-full bg-gradient-to-r from-orange-500 to-red-500 rounded-full"
           />
         </div>
-      </div>
 
-      {/* Steps Selector list */}
-      <div className={`grid grid-cols-2 sm:grid-cols-3 gap-3.5 ${
-        steps.length <= 5 ? "md:grid-cols-5" : "md:grid-cols-5 lg:grid-cols-9"
-      }`}>
+        {/* Steps Loop */}
         {steps.map((step, index) => {
           const isCompleted = index < activeStep;
           const isActive = index === activeStep;
 
           return (
-            <motion.button
-              key={step}
-              type="button"
-              onClick={() => onStepClick(index)}
-              whileHover={{ y: -2 }}
-              whileTap={{ scale: 0.98 }}
-              className={`flex items-center gap-3.5 rounded-[24px] border p-4 text-left transition-all duration-300 relative overflow-hidden group select-none ${
-                isActive
-                  ? "border-orange-500/40 bg-orange-50/20 shadow-md shadow-orange-500/5 ring-1 ring-orange-500/40"
-                  : isCompleted
-                  ? "border-emerald-100/80 bg-emerald-50/20 hover:bg-emerald-50/40"
-                  : "border-slate-100 bg-white hover:border-slate-200 hover:shadow-sm"
-              }`}
+            <div 
+              key={step} 
+              className="flex flex-col items-center relative z-10 group"
+              style={{ width: `${100 / steps.length}%` }}
             >
-              {/* Stepper Number circles with active glowing styles */}
-              <div
-                className={`grid h-9 w-9 shrink-0 place-items-center rounded-2xl text-xs font-black transition-all duration-300 relative ${
-                  isActive
-                    ? "bg-gradient-to-br from-orange-500 to-red-500 text-white shadow-lg shadow-orange-500/30 scale-105 ring-4 ring-orange-500/15"
-                    : isCompleted
-                    ? "bg-emerald-500 text-white shadow-md shadow-emerald-500/25"
-                    : "bg-slate-50 text-slate-400 border border-slate-150 group-hover:bg-slate-100 group-hover:text-slate-600"
-                }`}
+              {/* Clickable button wrapping the indicator circle */}
+              <button
+                type="button"
+                onClick={() => onStepClick(index)}
+                className="focus:outline-none flex flex-col items-center bg-transparent border-0 cursor-pointer p-0"
               >
-                {isCompleted ? <Check size={14} className="stroke-[3]" /> : index + 1}
-              </div>
-
-              <div className="flex flex-col min-w-0">
-                <span className={`text-[9px] font-black uppercase tracking-wider ${
-                  isActive ? "text-orange-500" : isCompleted ? "text-emerald-600" : "text-slate-400"
-                }`}>
-                  Step {index + 1}
-                </span>
-                <span
-                  className={`text-xs font-black truncate leading-tight mt-0.5 ${
+                {/* Step Circle Indicator */}
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className={`grid h-9 w-9 place-items-center rounded-full text-xs font-bold transition-all duration-300 relative border-2 ${
                     isActive
-                      ? "text-orange-950"
+                      ? "bg-gradient-to-r from-orange-500 to-red-500 border-orange-500 text-white shadow-[0_0_15px_rgba(249,115,22,0.45)] ring-4 ring-orange-500/15 font-black scale-110"
                       : isCompleted
-                      ? "text-emerald-950"
-                      : "text-slate-600 group-hover:text-slate-800"
+                      ? "bg-emerald-500 border-emerald-500 text-white shadow-md shadow-emerald-500/10"
+                      : "bg-white border-slate-200 text-slate-400 group-hover:border-slate-350 group-hover:text-slate-600 shadow-sm"
                   }`}
                 >
-                  {step}
-                </span>
-              </div>
-            </motion.button>
+                  {isCompleted ? (
+                    <Check size={14} className="stroke-[3]" />
+                  ) : (
+                    <span>{index + 1}</span>
+                  )}
+                </motion.div>
+
+                {/* Text labels container */}
+                <div className="flex flex-col items-center mt-2.5 px-1">
+                  <span 
+                    className={`text-[9px] font-black uppercase tracking-wider transition-colors duration-200 ${
+                      isActive 
+                        ? "text-orange-500" 
+                        : isCompleted 
+                        ? "text-emerald-600" 
+                        : "text-slate-400"
+                    }`}
+                  >
+                    Step {index + 1}
+                  </span>
+                  
+                  <span
+                    className={`text-[11px] font-extrabold leading-tight mt-0.5 text-center whitespace-normal max-w-[90px] transition-colors duration-200 ${
+                      isActive
+                        ? "text-slate-900 font-black scale-[1.02]"
+                        : isCompleted
+                        ? "text-slate-700 hover:text-slate-900"
+                        : "text-slate-500 group-hover:text-slate-800"
+                    }`}
+                  >
+                    {step}
+                  </span>
+                </div>
+              </button>
+            </div>
           );
         })}
       </div>
@@ -83,3 +94,4 @@ const StepHeader = ({ steps, activeStep, onStepClick }) => {
 };
 
 export default StepHeader;
+

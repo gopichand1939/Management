@@ -1,12 +1,12 @@
 export const tenantOnboardingSteps = [
-  "Choose PG",
+  "Choose Building",
   "Floor Selection",
   "Room Selection",
   "Bed Selection",
-  "Basic Details",
+  "Booking Details",
   "Guardian Details",
   "Documents Upload",
-  "Payment Upload",
+  "Payment Setup",
   "Review & Confirm",
 ];
 
