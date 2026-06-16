@@ -950,7 +950,23 @@ const ActiveTenants = () => {
                     <div className="rounded-[32px] border border-slate-150 bg-white p-6 shadow-sm">
                       <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
                         <div className="flex items-center gap-4">
-                          <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-3xl border border-orange-100 bg-orange-50 text-orange-500 shadow-inner">
+                          <div
+                            onClick={() => {
+                              const photoUrl = getProfilePhotoUrl(selectedTenantProfile.profile_photo);
+                              if (photoUrl) {
+                                const photoMeta = selectedTenantProfile.profile_photo;
+                                setPreviewAsset({
+                                  title: `${selectedTenantProfile.full_name}'s Profile Photo`,
+                                  url: photoUrl,
+                                  kind: getPreviewKind(
+                                    typeof photoMeta === "string" ? photoMeta : (photoMeta?.file_url || photoMeta?.url || ""),
+                                    typeof photoMeta === "object" ? photoMeta?.mime_type : ""
+                                  ),
+                                });
+                              }
+                            }}
+                            className={`flex h-20 w-20 items-center justify-center overflow-hidden rounded-3xl border border-orange-100 bg-orange-50 text-orange-500 shadow-inner ${getProfilePhotoUrl(selectedTenantProfile.profile_photo) ? "cursor-pointer hover:opacity-80 transition-opacity" : ""}`}
+                          >
                             {getProfilePhotoUrl(selectedTenantProfile.profile_photo) ? (
                               <img
                                 src={getProfilePhotoUrl(selectedTenantProfile.profile_photo)}
