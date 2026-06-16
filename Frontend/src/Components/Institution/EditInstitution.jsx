@@ -96,11 +96,13 @@ const normalizePayload = (formData, id) => {
     status: formData.status,
     logo: formData.logo.trim(),
     floors: formData.floors.map((floor) => ({
+      id: floor.id || null,
       floor_name: String(floor.floor_name || "").trim(),
       floor_number: floor.floor_number === "" ? null : Number(floor.floor_number),
       gender_type: floor.gender_type || "mixed",
       status: floor.status || "active",
       rooms: floor.rooms.map((room) => ({
+        id: room.id || null,
         room_number: String(room.room_number || "").trim(),
         room_type: room.room_type || "double",
         capacity: room.capacity === "" ? null : Number(room.capacity),
@@ -108,6 +110,7 @@ const normalizePayload = (formData, id) => {
         attached_bathroom: Boolean(room.attached_bathroom),
         status: room.status || "active",
         beds: room.beds.map((bed) => ({
+          id: bed.id || null,
           bed_number: String(bed.bed_number || "").trim(),
           bed_type: bed.bed_type || "single",
           rent_override: bed.rent_override === "" ? null : Number(bed.rent_override),

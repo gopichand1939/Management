@@ -1,11 +1,7 @@
-export const MENU_ACTIONS = {
-  CREATE: "create",
-  EDIT: "edit",
-  VIEW: "view",
-  DELETE: "delete",
-  LIST: "list",
-};
+const pool = require("./Config/Database");
+const { getMenusByRole } = require("./Menu/MenuModel");
 
+// Mock MenuPermissions.jsx helpers
 const MENU_CONFIG_BY_ID = {
   1: { route_path: "/dashboard", icon_key: "dashboard" },
   2: { route_path: "/super-admins", icon_key: "super_admin" },
@@ -53,30 +49,11 @@ const normalizeMenuName = (menuName) => {
   return String(menuName || "").trim().toLowerCase();
 };
 
-const MENU_LABEL_KEYS_BY_NAME = {
-  dashboard: "menu.dashboard",
-  institutionmanagement: "menu.institutionManagement",
-  "institution management": "menu.institutionManagement",
-  "institution master": "menu.institutionMaster",
-  "institution availability": "menu.institutionAvailability",
-  "pg admin": "menu.pgAdmin",
-  "super admin": "menu.superAdmin",
-  tenantmanagement: "menu.tenantManagement",
-  "tenant management": "menu.tenantManagement",
-  "tenant onboarding": "menu.tenantOnboarding",
-  "active tenants": "menu.activeTenants",
-  "vacant beds": "menu.vacantBeds",
-  payments: "menu.payments",
-  "vacated history": "menu.vacatedHistory",
-  "tenant history": "menu.tenantHistory",
-  usermanagement: "menu.userManagement",
-  "user management": "menu.userManagement",
-  expensemanagement: "menu.expenseManagement",
-  "expense management": "menu.expenseManagement",
-  "daily expenses": "menu.dailyExpenses",
+const normalizeActionName = (actionName) => {
+  return String(actionName || "").trim().toLowerCase();
 };
 
-export const getMenuMeta = (menu) => {
+const getMenuMeta = (menu) => {
   return (
     MENU_CONFIG_BY_ID[menu?.menu_id] ||
     MENU_CONFIG_BY_NAME[normalizeMenuName(menu?.menu_name)] ||
@@ -84,11 +61,7 @@ export const getMenuMeta = (menu) => {
   );
 };
 
-export const getMenuLabelKey = (menu) => {
-  return MENU_LABEL_KEYS_BY_NAME[normalizeMenuName(menu?.menu_name)] || null;
-};
-
-export const getUserMenus = (user) => {
+const getUserMenus = (user) => {
   return [...(user?.menus || [])]
     .map((menu) => ({
       ...menu,
@@ -99,66 +72,34 @@ export const getUserMenus = (user) => {
     });
 };
 
-export const getDefaultRoute = (user) => {
-  console.log("getDefaultRoute input user:", user);
+const getDefaultRoute = (user) => {
   const menus = getUserMenus(user);
-  console.log("getDefaultRoute getUserMenus result:", menus);
   const hasDashboard = menus.some((menu) => menu.route_path === "/dashboard");
-  console.log("getDefaultRoute hasDashboard:", hasDashboard);
   if (hasDashboard) {
-    console.log("getDefaultRoute returning /dashboard");
     return "/dashboard";
   }
-
   const firstMenu = menus.find((menu) => menu.route_path);
-  console.log("getDefaultRoute returning firstMenu path:", firstMenu?.route_path);
-
   return firstMenu?.route_path || "/dashboard";
 };
 
-export const getSidebarMenuTree = (user) => {
-  const menus = getUserMenus(user);
-  const menuMap = new Map();
-
-  for (const menu of menus) {
-    menuMap.set(menu.menu_id, {
-      ...menu,
-      children: [],
-    });
+const getRequiredActionForPath = (pathname) => {
+  if (pathname === "/dashboard") {
+    return "view";
   }
-
-  const rootMenus = [];
-
-  for (const menu of menuMap.values()) {
-    if (menu.parent_menu_id && menuMap.has(menu.parent_menu_id)) {
-      menuMap.get(menu.parent_menu_id).children.push(menu);
-      continue;
-    }
-
-    rootMenus.push(menu);
+  if (pathname.endsWith("/add")) {
+    return "create";
   }
-
-  const sortMenus = (items) => {
-    return items
-      .sort((firstMenu, secondMenu) => {
-        return (firstMenu.priority || 0) - (secondMenu.priority || 0);
-      })
-      .map((menu) => ({
-        ...menu,
-        children: sortMenus(menu.children || []),
-      }));
-  };
-
-  return sortMenus(rootMenus);
+  if (pathname.includes("/edit/")) {
+    return "edit";
+  }
+  if (pathname.includes("/view/")) {
+    return "view";
+  }
+  return "list";
 };
 
-const normalizeActionName = (actionName) => {
-  return String(actionName || "").trim().toLowerCase();
-};
-
-export const getMenuByRoute = (user, pathname) => {
+const getMenuByRoute = (user, pathname) => {
   const menus = getUserMenus(user).filter((menu) => menu.route_path);
-
   return menus
     .sort((firstMenu, secondMenu) => {
       return secondMenu.route_path.length - firstMenu.route_path.length;
@@ -171,50 +112,44 @@ export const getMenuByRoute = (user, pathname) => {
     });
 };
 
-export const hasMenuAccess = (user, routePath) => {
-  return getUserMenus(user).some((menu) => menu.route_path === routePath);
-};
-
-export const hasMenuAction = (user, routePath, actionName) => {
+const hasMenuAction = (user, routePath, actionName) => {
   const menu = getUserMenus(user).find((menuItem) => {
     return menuItem.route_path === routePath;
   });
-
   if (!menu) {
     return false;
   }
-
   return menu.actions?.some((action) => {
     return normalizeActionName(action.action_name) === normalizeActionName(actionName);
   });
 };
 
-export const getRequiredActionForPath = (pathname) => {
-  if (pathname === "/dashboard") {
-    return MENU_ACTIONS.VIEW;
-  }
-
-  if (pathname.endsWith("/add")) {
-    return MENU_ACTIONS.CREATE;
-  }
-
-  if (pathname.includes("/edit/")) {
-    return MENU_ACTIONS.EDIT;
-  }
-
-  if (pathname.includes("/view/")) {
-    return MENU_ACTIONS.VIEW;
-  }
-
-  return MENU_ACTIONS.LIST;
-};
-
-export const isPathAllowedForUser = (user, pathname) => {
+const isPathAllowedForUser = (user, pathname) => {
   const menu = getMenuByRoute(user, pathname);
-
   if (!menu) {
     return false;
   }
-
   return hasMenuAction(user, menu.route_path, getRequiredActionForPath(pathname));
 };
+
+const runTest = async () => {
+    const menus = await getMenusByRole("super_admin");
+    const user = { role: "super_admin", menus };
+
+    console.log("=== TEST RESULTS ===");
+    const defaultRoute = getDefaultRoute(user);
+    console.log("getDefaultRoute(user) result:", defaultRoute);
+
+    const isDashboardAllowed = isPathAllowedForUser(user, "/dashboard");
+    console.log("isPathAllowedForUser(user, '/dashboard') result:", isDashboardAllowed);
+
+    const isSuperAdminAllowed = isPathAllowedForUser(user, "/super-admins");
+    console.log("isPathAllowedForUser(user, '/super-admins') result:", isSuperAdminAllowed);
+
+    pool.end();
+};
+
+runTest().catch(err => {
+    console.error(err);
+    pool.end();
+});

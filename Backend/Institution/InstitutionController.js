@@ -76,12 +76,14 @@ const normalizeInstitutionPayload = (body, createdBy) => {
         created_by: createdBy,
         floors: Array.isArray(body.floors)
             ? body.floors.map((floor) => ({
+                id: normalizeInteger(floor.id),
                 floor_name: normalizeText(floor.floor_name),
                 floor_number: normalizeInteger(floor.floor_number),
                 gender_type: normalizeText(floor.gender_type),
                 status: normalizeText(floor.status) || "active",
                 rooms: Array.isArray(floor.rooms)
                     ? floor.rooms.map((room) => ({
+                        id: normalizeInteger(room.id),
                         room_number: normalizeText(room.room_number),
                         room_type: normalizeText(room.room_type),
                         capacity: normalizeInteger(room.capacity),
@@ -90,6 +92,7 @@ const normalizeInstitutionPayload = (body, createdBy) => {
                         status: normalizeText(room.status) || "active",
                         beds: Array.isArray(room.beds)
                             ? room.beds.map((bed) => ({
+                                id: normalizeInteger(bed.id),
                                 bed_number: normalizeText(bed.bed_number),
                                 bed_type: normalizeText(bed.bed_type),
                                 rent_override: normalizeNumber(bed.rent_override),

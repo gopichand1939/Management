@@ -190,6 +190,8 @@ const Sidebar = () => {
         top-0
         hidden
         h-screen
+        max-h-screen
+        overflow-hidden
         w-[270px]
         border-r
         border-slate-800
@@ -220,7 +222,7 @@ const Sidebar = () => {
         </span>
       </div>
 
-      <nav className="flex flex-1 flex-col gap-2">
+      <nav className="flex flex-1 flex-col gap-2 overflow-y-auto min-h-0 no-scrollbar">
         {menuTree.map((menu) => renderMenuItem(menu))}
       </nav>
 

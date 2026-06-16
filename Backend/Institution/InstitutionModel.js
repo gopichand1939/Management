@@ -475,20 +475,234 @@ const updateInstitutionOnboarding = async (data) => {
 
         const institution = institutionResult.rows[0];
 
-        await client.query(`
-            DELETE FROM floors
-            WHERE institution_id = $1
-        `, [data.id]);
+        // Reconcile Floors
+        const floorsInPayload = data.floors || [];
+        const floorIdsInPayload = floorsInPayload.map((f) => f.id).filter(Boolean);
 
-        const createdFloors = await insertInstitutionHierarchy(
-            client,
-            data.id,
-            data.floors
-        );
+        // Delete floors that are not in the payload
+        if (floorIdsInPayload.length > 0) {
+            const placeholders = floorIdsInPayload.map((_, idx) => `$${idx + 2}`).join(", ");
+            await client.query(`
+                DELETE FROM floors
+                WHERE institution_id = $1 AND id NOT IN (${placeholders})
+            `, [data.id, ...floorIdsInPayload]);
+        } else {
+            await client.query(`
+                DELETE FROM floors
+                WHERE institution_id = $1
+            `, [data.id]);
+        }
+
+        const reconciledFloors = [];
+
+        for (const floor of floorsInPayload) {
+            let dbFloor;
+            if (floor.id) {
+                // Update existing floor
+                const floorRes = await client.query(`
+                    UPDATE floors
+                    SET
+                        floor_name = $1,
+                        floor_number = $2,
+                        gender_type = $3,
+                        status = $4
+                    WHERE id = $5 AND institution_id = $6
+                    RETURNING *
+                `, [
+                    floor.floor_name,
+                    floor.floor_number,
+                    floor.gender_type || null,
+                    floor.status || "active",
+                    floor.id,
+                    data.id
+                ]);
+                dbFloor = floorRes.rows[0];
+            } else {
+                // Insert new floor
+                const floorRes = await client.query(`
+                    INSERT INTO floors (
+                        institution_id,
+                        floor_name,
+                        floor_number,
+                        gender_type,
+                        status
+                    )
+                    VALUES ($1, $2, $3, $4, $5)
+                    RETURNING *
+                `, [
+                    data.id,
+                    floor.floor_name,
+                    floor.floor_number,
+                    floor.gender_type || null,
+                    floor.status || "active",
+                ]);
+                dbFloor = floorRes.rows[0];
+            }
+
+            const floorId = dbFloor.id;
+
+            // Reconcile Rooms within this floor
+            const roomsInPayload = floor.rooms || [];
+            const roomIdsInPayload = roomsInPayload.map((r) => r.id).filter(Boolean);
+
+            // Delete rooms that are not in the payload for this floor
+            if (roomIdsInPayload.length > 0) {
+                const placeholders = roomIdsInPayload.map((_, idx) => `$${idx + 2}`).join(", ");
+                await client.query(`
+                    DELETE FROM rooms
+                    WHERE floor_id = $1 AND id NOT IN (${placeholders})
+                `, [floorId, ...roomIdsInPayload]);
+            } else {
+                await client.query(`
+                    DELETE FROM rooms
+                    WHERE floor_id = $1
+                `, [floorId]);
+            }
+
+            const reconciledRooms = [];
+
+            for (const room of roomsInPayload) {
+                let dbRoom;
+                if (room.id) {
+                    // Update existing room
+                    const roomRes = await client.query(`
+                        UPDATE rooms
+                        SET
+                            room_number = $1,
+                            room_type = $2,
+                            capacity = $3,
+                            rent_amount = $4,
+                            attached_bathroom = $5,
+                            status = $6
+                        WHERE id = $7 AND floor_id = $8
+                        RETURNING *
+                    `, [
+                        room.room_number,
+                        room.room_type || null,
+                        room.capacity || null,
+                        room.rent_amount || null,
+                        room.attached_bathroom || false,
+                        room.status || "active",
+                        room.id,
+                        floorId
+                    ]);
+                    dbRoom = roomRes.rows[0];
+                } else {
+                    // Insert new room
+                    const roomRes = await client.query(`
+                        INSERT INTO rooms (
+                            institution_id,
+                            floor_id,
+                            room_number,
+                            room_type,
+                            capacity,
+                            rent_amount,
+                            attached_bathroom,
+                            status
+                        )
+                        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                        RETURNING *
+                    `, [
+                        data.id,
+                        floorId,
+                        room.room_number,
+                        room.room_type || null,
+                        room.capacity || null,
+                        room.rent_amount || null,
+                        room.attached_bathroom || false,
+                        room.status || "active",
+                    ]);
+                    dbRoom = roomRes.rows[0];
+                }
+
+                const roomId = dbRoom.id;
+
+                // Reconcile Beds within this room
+                const bedsInPayload = room.beds || [];
+                const bedIdsInPayload = bedsInPayload.map((b) => b.id).filter(Boolean);
+
+                // Delete beds not in payload for this room
+                if (bedIdsInPayload.length > 0) {
+                    const placeholders = bedIdsInPayload.map((_, idx) => `$${idx + 2}`).join(", ");
+                    await client.query(`
+                        DELETE FROM beds
+                        WHERE room_id = $1 AND id NOT IN (${placeholders})
+                    `, [roomId, ...bedIdsInPayload]);
+                } else {
+                    await client.query(`
+                        DELETE FROM beds
+                        WHERE room_id = $1
+                    `, [roomId]);
+                }
+
+                const reconciledBeds = [];
+
+                for (const bed of bedsInPayload) {
+                    let dbBed;
+                    if (bed.id) {
+                        // Update existing bed
+                        const bedRes = await client.query(`
+                            UPDATE beds
+                            SET
+                                bed_number = $1,
+                                bed_type = $2,
+                                rent_override = $3,
+                                status = $4
+                            WHERE id = $5 AND room_id = $6
+                            RETURNING *
+                        `, [
+                            bed.bed_number,
+                            bed.bed_type || null,
+                            bed.rent_override || null,
+                            bed.status || "vacant",
+                            bed.id,
+                            roomId
+                        ]);
+                        dbBed = bedRes.rows[0];
+                    } else {
+                        // Insert new bed
+                        const bedRes = await client.query(`
+                            INSERT INTO beds (
+                                institution_id,
+                                floor_id,
+                                room_id,
+                                bed_number,
+                                bed_type,
+                                rent_override,
+                                status
+                            )
+                            VALUES ($1, $2, $3, $4, $5, $6, $7)
+                            RETURNING *
+                        `, [
+                            data.id,
+                            floorId,
+                            roomId,
+                            bed.bed_number,
+                            bed.bed_type || null,
+                            bed.rent_override || null,
+                            bed.status || "vacant",
+                        ]);
+                        dbBed = bedRes.rows[0];
+                    }
+
+                    reconciledBeds.push(dbBed);
+                }
+
+                reconciledRooms.push({
+                    ...dbRoom,
+                    beds: reconciledBeds
+                });
+            }
+
+            reconciledFloors.push({
+                ...dbFloor,
+                rooms: reconciledRooms
+            });
+        }
 
         await client.query("COMMIT");
 
-        return buildInstitutionHierarchy(institution, createdFloors);
+        return buildInstitutionHierarchy(institution, reconciledFloors);
     } catch (error) {
         await client.query("ROLLBACK");
         throw error;

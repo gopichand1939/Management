@@ -74,33 +74,33 @@ const RoomCard = ({
       gap: "gap-2",
     },
     2: {
-      frame: "h-[105px] w-[72px] rounded-xl border-2 p-1",
+      frame: "h-[105px] w-[64px] rounded-xl border-2 p-1",
       pillow: "h-3 mt-0.5 rounded",
       mattress: "mt-1 p-0.5 gap-0.5",
       bedLabel: "text-[9px]",
       statusLabel: "text-[6px] px-1 py-0.2",
       showTable: true,
       tableSize: "w-5 h-5 text-[9px]",
-      gap: "gap-2.5",
+      gap: "gap-2",
     },
     3: {
-      frame: "h-[90px] w-[50px] rounded-lg border-2 p-0.5",
+      frame: "h-[90px] w-[44px] rounded-lg border-2 p-0.5",
       pillow: "h-2 mt-0.5 rounded-sm",
       mattress: "mt-0.5 p-0.5 gap-0.5",
       bedLabel: "text-[7.5px]",
       statusLabel: "text-[5px] px-0.5 py-0.2",
       showTable: true,
-      tableSize: "w-4 h-4 text-[6px]",
-      gap: "gap-1.5",
+      tableSize: "w-3 h-3 text-[6px]",
+      gap: "gap-1",
     },
     4: {
-      frame: "h-[80px] w-[40px] rounded-md border p-0.5",
+      frame: "h-[80px] w-[36px] rounded-md border p-0.5",
       pillow: "h-1.5 mt-0.5 rounded-sm",
       mattress: "mt-0.5 p-0.5 gap-0.5",
       bedLabel: "text-[7px]",
       statusLabel: "text-[4.5px] px-0.2 py-0.1",
-      showTable: true,
-      tableSize: "w-3 h-3 text-[5px]",
+      showTable: false,
+      tableSize: "hidden",
       gap: "gap-1",
     },
     default: {
@@ -269,7 +269,7 @@ const RoomCard = ({
 
           {/* Floorplan frame with warm oak slats */}
           <div
-            className="rounded-3xl border border-slate-200 p-4 relative flex items-center justify-around h-[160px] shadow-inner overflow-hidden"
+            className="rounded-3xl border border-slate-200 px-2 py-4 relative flex items-center justify-center gap-2 sm:gap-4 h-[160px] shadow-inner overflow-hidden"
             style={{
               background: "repeating-linear-gradient(90deg, #FAF7F2, #FAF7F2 30px, #EFECE6 31px)",
             }}
