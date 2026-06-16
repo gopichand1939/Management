@@ -30,7 +30,9 @@
     "vacatedHistory": "Vacated History",
     "tenantHistory": "Tenant History",
     "payments": "Payments",
-    "userManagement": "UserManagement"
+    "userManagement": "UserManagement",
+    "expenseManagement": "Expense Management",
+    "dailyExpenses": "Daily Expenses"
   },
   "institution": {
     "addInstitution": "Add Institution",

@@ -11,6 +11,8 @@ import {
   Users,
   UserRoundCog,
   History,
+  Wallet,
+  Coins,
 } from "lucide-react";
 import { useState } from "react";
 import { useDispatch } from "react-redux";
@@ -37,6 +39,8 @@ const menuIcons = {
   tenant_payments: ReceiptText,
   tenant_vacated: Users,
   tenant_history: History,
+  expense_management: Wallet,
+  daily_expenses: Coins,
 };
 
 const MENU_ICON_SIZE = 18;
@@ -212,7 +216,7 @@ const Sidebar = () => {
         </span>
 
         <span className="text-xl font-bold tracking-tight text-white">
-          AdminPro
+          BLR Stay
         </span>
       </div>
 

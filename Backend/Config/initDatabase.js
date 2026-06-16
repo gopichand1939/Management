@@ -737,7 +737,9 @@ const statements = [
             (11, 8, 1, 'Vacant Beds', 3, 1, 1),
             (12, 8, 1, 'Payments', 4, 1, 1),
             (13, 8, 1, 'Vacated History', 5, 1, 1),
-            (14, 8, 1, 'Tenant History', 6, 1, 1)
+            (14, 8, 1, 'Tenant History', 6, 1, 1),
+            (100, NULL, 1, 'ExpenseManagement', 5, 1, 1),
+            (101, 100, 1, 'Daily Expenses', 1, 1, 1)
         ON CONFLICT (menu_id) DO UPDATE SET
             parent_menu_id = EXCLUDED.parent_menu_id,
             module_id = EXCLUDED.module_id,
@@ -792,7 +794,12 @@ const statements = [
             (13, 3, 1, 1, 1),
             (13, 5, 2, 1, 1),
             (14, 3, 1, 1, 1),
-            (14, 5, 2, 1, 1)
+            (14, 5, 2, 1, 1),
+            (101, 1, 1, 1, 1),
+            (101, 2, 2, 1, 1),
+            (101, 3, 3, 1, 1),
+            (101, 4, 4, 1, 1),
+            (101, 5, 5, 1, 1)
         ON CONFLICT (menu_id, action_id) DO UPDATE SET
             priority = EXCLUDED.priority,
             status = EXCLUDED.status,
@@ -877,7 +884,17 @@ const statements = [
             (2, 12, 3, 2, 1, 1),
             (2, 12, 5, 2, 1, 1),
             (2, 13, 3, 2, 1, 1),
-            (2, 13, 5, 2, 1, 1)
+            (2, 13, 5, 2, 1, 1),
+            (1, 101, 1, 2, 1, 1),
+            (1, 101, 2, 2, 1, 1),
+            (1, 101, 3, 2, 1, 1),
+            (1, 101, 4, 2, 1, 1),
+            (1, 101, 5, 2, 1, 1),
+            (2, 101, 1, 2, 1, 1),
+            (2, 101, 2, 2, 1, 1),
+            (2, 101, 3, 2, 1, 1),
+            (2, 101, 4, 2, 1, 1),
+            (2, 101, 5, 2, 1, 1)
         ON CONFLICT (profile_id, menu_id, action_id) DO UPDATE SET
             is_configuration_only = EXCLUDED.is_configuration_only,
             status = EXCLUDED.status,

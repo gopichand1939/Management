@@ -62,6 +62,9 @@ const TenantHistory = lazy(() => {
 const TenantProfile = lazy(() => {
   return import("../Components/Tenant/TenantProfile");
 });
+const DailyExpenses = lazy(() => {
+  return import("../Components/Expense/DailyExpenses");
+});
 
 const withSuspense = (component) => {
   return (
@@ -163,6 +166,13 @@ export const tenantRoutes = [
   },
 ];
 
+export const expenseRoutes = [
+  {
+    path: "/expenses/daily",
+    element: withSuspense(<DailyExpenses />),
+  },
+];
+
 export const applicationRoutes = [
   {
     path: "/dashboard",
@@ -173,4 +183,5 @@ export const applicationRoutes = [
   ...pgAdminRoutes,
   ...superAdminRoutes,
   ...tenantRoutes,
+  ...expenseRoutes,
 ];

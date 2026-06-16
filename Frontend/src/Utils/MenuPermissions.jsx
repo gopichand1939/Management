@@ -21,6 +21,8 @@ const MENU_CONFIG_BY_ID = {
   12: { route_path: "/tenant/payments", icon_key: "tenant_payments" },
   13: { route_path: "/tenant/vacated", icon_key: "tenant_vacated" },
   14: { route_path: "/tenant/history", icon_key: "tenant_history" },
+  100: { route_path: null, icon_key: "expense_management" },
+  101: { route_path: "/expenses/daily", icon_key: "daily_expenses" },
 };
 
 const MENU_CONFIG_BY_NAME = {
@@ -42,6 +44,9 @@ const MENU_CONFIG_BY_NAME = {
   "tenant history": { route_path: "/tenant/history", icon_key: "tenant_history" },
   usermanagement: { route_path: null, icon_key: "user_management" },
   "user management": { route_path: null, icon_key: "user_management" },
+  expensemanagement: { route_path: null, icon_key: "expense_management" },
+  "expense management": { route_path: null, icon_key: "expense_management" },
+  "daily expenses": { route_path: "/expenses/daily", icon_key: "daily_expenses" },
 };
 
 const normalizeMenuName = (menuName) => {
@@ -66,6 +71,9 @@ const MENU_LABEL_KEYS_BY_NAME = {
   "tenant history": "menu.tenantHistory",
   usermanagement: "menu.userManagement",
   "user management": "menu.userManagement",
+  expensemanagement: "menu.expenseManagement",
+  "expense management": "menu.expenseManagement",
+  "daily expenses": "menu.dailyExpenses",
 };
 
 export const getMenuMeta = (menu) => {

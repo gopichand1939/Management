@@ -95,7 +95,7 @@ const buildUploadedFileObject = (file) => {
     return {
         file_name: file.filename,
         original_name: file.originalname,
-        file_url: `/uploads/tenant/${file.filename}`,
+        file_url: file.cloudinaryUrl || `/uploads/tenant/${file.filename}`,
         mime_type: file.mimetype,
         uploaded_at: new Date().toISOString(),
         size: file.size,

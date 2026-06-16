@@ -1,6 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const multer = require("multer");
+const { uploadToCloudinary } = require("../Config/Cloudinary");
 
 const { getFileExtension } = require("./TenantHelpers");
 
@@ -76,16 +77,36 @@ const tenantUploadFields = upload.fields([
 ]);
 
 const handleTenantUpload = (req, res, next) => {
-    tenantUploadFields(req, res, (error) => {
-        if (!error) {
-            return next();
+    tenantUploadFields(req, res, async (error) => {
+        if (error) {
+            return res.status(400).json({
+                success: false,
+                message: error.message || "File upload failed",
+                error_code: error.code || "UPLOAD_FAILED",
+            });
         }
 
-        return res.status(400).json({
-            success: false,
-            message: error.message || "File upload failed",
-            error_code: error.code || "UPLOAD_FAILED",
-        });
+        if (req.files) {
+            try {
+                const fileFields = Object.keys(req.files);
+                for (const field of fileFields) {
+                    const filesList = req.files[field];
+                    for (const file of filesList) {
+                        const secureUrl = await uploadToCloudinary(file.path, `tenant/${field}`);
+                        file.cloudinaryUrl = secureUrl;
+                    }
+                }
+            } catch (uploadError) {
+                console.error("Cloudinary upload error in middleware:", uploadError);
+                return res.status(500).json({
+                    success: false,
+                    message: "Cloud upload failed: " + uploadError.message,
+                    error_code: "CLOUD_UPLOAD_FAILED",
+                });
+            }
+        }
+
+        return next();
     });
 };
 
