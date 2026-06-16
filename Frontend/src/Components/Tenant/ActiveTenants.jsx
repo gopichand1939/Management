@@ -27,6 +27,7 @@ import {
   ArrowLeftRight,
   Upload,
   ShieldCheck,
+  Edit2,
 } from "lucide-react";
 
 import Error from "../Common/Error";
@@ -843,6 +844,17 @@ const ActiveTenants = () => {
                             >
                               <ArrowLeftRight size={13} className="text-slate-400" />
                               <span>Transfer Bed</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setActiveActionsTenantId(null);
+                                navigate(`/tenant/edit/${ten.id}`);
+                              }}
+                              className="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50 flex items-center gap-2 text-slate-650"
+                            >
+                              <Edit2 size={13} className="text-slate-400" />
+                              <span>Edit Details</span>
                             </button>
                             {hasPendingVerification ? (
                               <button

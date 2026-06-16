@@ -42,9 +42,28 @@ const resolveInstitutionId = (req, body) => {
 const normalizeDocuments = (documents, files = {}) => {
     const parsedDocuments = Array.isArray(documents) ? documents : [];
     const uploadedDocuments = files.document_files || [];
+    
+    // Gather all uploaded files to search by name
+    const allUploadedFiles = [];
+    if (files.document_files) allUploadedFiles.push(...files.document_files);
+    if (files.aadhaar_file) allUploadedFiles.push(...files.aadhaar_file);
+    if (files.pan_file) allUploadedFiles.push(...files.pan_file);
+
+    let docFilesIndex = 0;
 
     return parsedDocuments.map((document, index) => {
-        const uploadedFile = uploadedDocuments[index];
+        let uploadedFile = null;
+        if (document.original_file_name) {
+            uploadedFile = allUploadedFiles.find(
+                (f) => f.originalname === document.original_file_name
+            );
+        }
+
+        if (!uploadedFile && document.document_type !== "aadhaar" && document.document_type !== "pan") {
+            uploadedFile = uploadedDocuments[docFilesIndex];
+            docFilesIndex += 1;
+        }
+
         const fileMeta = buildUploadedFileObject(uploadedFile);
 
         return {
@@ -98,10 +117,30 @@ const normalizeTenantPayload = (req) => {
     const uploadedProfilePhoto = buildUploadedFileObject(files.profile_photo?.[0]);
     const uploadedPaymentProof = buildUploadedFileObject(files.payment_proof?.[0]);
 
-    const documents = [
+    const rawDocuments = [
         ...normalizeDocuments(documentsFromBody, files),
         ...buildSpecialDocuments(files),
     ];
+
+    const mergedDocs = {};
+    for (const doc of rawDocuments) {
+        const type = doc.document_type || "general";
+        const name = (doc.document_name || "").toLowerCase();
+        const key = `${type}-${name}`;
+
+        if (!mergedDocs[key]) {
+            mergedDocs[key] = { ...doc };
+        } else {
+            const existing = mergedDocs[key];
+            existing.document_number = doc.document_number || existing.document_number;
+            if (doc.file_url) {
+                existing.file_name = doc.file_name || existing.file_name;
+                existing.file_url = doc.file_url;
+                existing.mime_type = doc.mime_type || existing.mime_type;
+            }
+        }
+    }
+    const documents = Object.values(mergedDocs);
 
     const aadhaarNumber = normalizeText(body.aadhaar_number) || extractAadhaarNumber(documents);
     const normalizedPaymentStatus =

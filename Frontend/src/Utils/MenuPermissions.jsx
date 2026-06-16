@@ -157,6 +157,11 @@ const normalizeActionName = (actionName) => {
 };
 
 export const getMenuByRoute = (user, pathname) => {
+  let lookupPath = pathname;
+  if (pathname.startsWith("/tenant/profile/") || pathname.startsWith("/tenant/edit/")) {
+    lookupPath = "/tenant/active";
+  }
+
   const menus = getUserMenus(user).filter((menu) => menu.route_path);
 
   return menus
@@ -165,8 +170,8 @@ export const getMenuByRoute = (user, pathname) => {
     })
     .find((menu) => {
       return (
-        pathname === menu.route_path ||
-        pathname.startsWith(`${menu.route_path}/`)
+        lookupPath === menu.route_path ||
+        lookupPath.startsWith(`${menu.route_path}/`)
       );
     });
 };
@@ -202,7 +207,7 @@ export const getRequiredActionForPath = (pathname) => {
     return MENU_ACTIONS.EDIT;
   }
 
-  if (pathname.includes("/view/")) {
+  if (pathname.includes("/view/") || pathname.includes("/profile/")) {
     return MENU_ACTIONS.VIEW;
   }
 

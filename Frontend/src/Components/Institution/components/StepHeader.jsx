@@ -5,7 +5,7 @@ const StepHeader = ({ steps, activeStep, onStepClick }) => {
   const progressPercent = (activeStep / (steps.length - 1)) * 100;
 
   return (
-    <div className="w-full relative overflow-x-auto scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent pb-3 pt-2">
+    <div className="w-full relative overflow-x-auto no-scrollbar pb-3 pt-2">
       {/* Container for step indicators and lines */}
       <div className="relative flex items-start justify-between min-w-[880px] px-4">
         

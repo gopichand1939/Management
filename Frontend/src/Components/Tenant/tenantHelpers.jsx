@@ -302,6 +302,7 @@ export const buildCreatePayload = (formData) => {
       document_url: String(document.document_url || "").trim(),
     })),
     payment: {
+      id: formData.payment.id || null,
       agreed_monthly_rent:
         formData.payment.agreed_monthly_rent === ""
           ? null
@@ -341,7 +342,7 @@ export const buildCreateFormData = (formData) => {
   multipartData.append("guardian_details", JSON.stringify(payload.guardian_details));
   multipartData.append("payment", JSON.stringify({
     ...payload.payment,
-    payment_proof_url: null,
+    payment_proof_url: formData.payment.payment_proof_url || null,
   }));
   multipartData.append("notes", payload.notes || "");
   multipartData.append("status", payload.status || "pending_verification");
@@ -354,6 +355,8 @@ export const buildCreateFormData = (formData) => {
     document_name: document.document_name,
     document_type: document.document_type,
     document_number: document.document_number,
+    document_url: document.document_url || document.file_url || "",
+    original_file_name: document.file ? document.file.name : null,
   }));
 
   multipartData.append("documents", JSON.stringify(documentMetadata));
@@ -384,5 +387,11 @@ export const buildCreateFormData = (formData) => {
     multipartData.append("document_files", document.file);
   });
 
+  return multipartData;
+};
+
+export const buildEditFormData = (formData, id) => {
+  const multipartData = buildCreateFormData(formData);
+  multipartData.append("id", String(id));
   return multipartData;
 };

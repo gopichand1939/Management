@@ -26,6 +26,7 @@ import {
   getMenuMeta,
   getSidebarMenuTree,
 } from "../../Utils/MenuPermissions";
+import blrLogoCircular from "../../Assets/blr-logo-circular.png";
 
 const menuIcons = {
   dashboard: LayoutDashboard,
@@ -203,19 +204,11 @@ const Sidebar = () => {
       `}
     >
       <div className="mb-10 flex items-center gap-3 px-2">
-        <span
-          className={`
-            grid
-            h-11
-            w-11
-            place-items-center
-            rounded-xl
-            bg-orange-500/10
-            text-orange-500
-          `}
-        >
-          <Shield size={20} className="fill-orange-500" />
-        </span>
+        <img
+          src={blrLogoCircular}
+          alt="BLR Stay"
+          className="h-14 w-14 rounded-full object-contain"
+        />
 
         <span className="text-xl font-bold tracking-tight text-white">
           BLR Stay

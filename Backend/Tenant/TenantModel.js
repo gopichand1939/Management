@@ -1509,6 +1509,80 @@ const updateTenantOnboarding = async (data) => {
             data.created_by
         );
 
+        if (data.payment && (data.payment.amount !== null || data.payment.reference_number || data.payment.payment_proof_url)) {
+            let paymentId = data.payment.id;
+            if (!paymentId) {
+                const existingPaymentResult = await client.query(`
+                    SELECT id FROM tenant_payments
+                    WHERE tenant_id = $1
+                    ORDER BY id ASC
+                    LIMIT 1
+                `, [data.id]);
+                paymentId = existingPaymentResult.rows[0]?.id;
+            }
+
+            if (paymentId) {
+                await client.query(`
+                    UPDATE tenant_payments
+                    SET
+                        amount = $1,
+                        payment_type = $2,
+                        payment_mode = $3,
+                        payment_date = $4,
+                        reference_number = $5,
+                        payment_proof_url = $6,
+                        notes = $7,
+                        status = $8,
+                        verification_status = $9,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE id = $10 AND tenant_id = $11
+                `, [
+                    data.payment.amount,
+                    data.payment.payment_type || 'admission',
+                    data.payment.payment_mode || 'cash',
+                    data.payment.payment_date || null,
+                    data.payment.reference_number || null,
+                    data.payment.payment_proof_url || null,
+                    data.payment.notes || null,
+                    data.payment.status || 'completed',
+                    data.payment.verification_status || 'verified',
+                    paymentId,
+                    data.id
+                ]);
+            } else {
+                await client.query(`
+                    INSERT INTO tenant_payments (
+                        tenant_id,
+                        institution_id,
+                        amount,
+                        payment_type,
+                        payment_mode,
+                        payment_date,
+                        reference_number,
+                        payment_proof_url,
+                        notes,
+                        status,
+                        verification_status,
+                        created_by
+                    )
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+                `, [
+                    data.id,
+                    data.institution_id,
+                    data.payment.amount || 0,
+                    data.payment.payment_type || 'admission',
+                    data.payment.payment_mode || 'cash',
+                    data.payment.payment_date || null,
+                    data.payment.reference_number || null,
+                    data.payment.payment_proof_url || null,
+                    data.payment.notes || null,
+                    data.payment.status || 'completed',
+                    data.payment.verification_status || 'verified',
+                    data.created_by
+                ]);
+            }
+        }
+
         if (nextBed) {
             await createMonthlyDue(client, {
                 id: data.id,

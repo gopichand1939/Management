@@ -62,6 +62,9 @@ const TenantHistory = lazy(() => {
 const TenantProfile = lazy(() => {
   return import("../Components/Tenant/TenantProfile");
 });
+const EditTenant = lazy(() => {
+  return import("../Components/Tenant/EditTenant");
+});
 const DailyExpenses = lazy(() => {
   return import("../Components/Expense/DailyExpenses");
 });
@@ -163,6 +166,10 @@ export const tenantRoutes = [
   {
     path: "/tenant/profile/:id",
     element: withSuspense(<TenantProfile />),
+  },
+  {
+    path: "/tenant/edit/:id",
+    element: withSuspense(<EditTenant />),
   },
 ];
 
