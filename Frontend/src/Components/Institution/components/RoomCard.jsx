@@ -24,6 +24,12 @@ const blanketColors = {
   },
 };
 
+const getShortBedLabel = (bedNumber, index) => {
+  if (!bedNumber) return String.fromCharCode(65 + index);
+  const clean = bedNumber.replace(/bed\s*[-_]?\s*/i, "").trim();
+  return clean || String.fromCharCode(65 + index);
+};
+
 const RoomCard = ({
   room,
   floorName,
@@ -67,7 +73,7 @@ const RoomCard = ({
       frame: "h-[105px] w-[72px] rounded-xl border-2 p-1",
       pillow: "h-3 mt-0.5 rounded",
       mattress: "mt-1 p-0.5 gap-0.5",
-      bedLabel: "text-[9px]",
+      bedLabel: "text-[11px]",
       statusLabel: "text-[6px] px-1 py-0.2",
       showTable: true,
       tableSize: "w-5 h-5 text-[9px]",
@@ -77,7 +83,7 @@ const RoomCard = ({
       frame: "h-[105px] w-[64px] rounded-xl border-2 p-1",
       pillow: "h-3 mt-0.5 rounded",
       mattress: "mt-1 p-0.5 gap-0.5",
-      bedLabel: "text-[9px]",
+      bedLabel: "text-[11px]",
       statusLabel: "text-[6px] px-1 py-0.2",
       showTable: true,
       tableSize: "w-5 h-5 text-[9px]",
@@ -87,27 +93,27 @@ const RoomCard = ({
       frame: "h-[90px] w-[44px] rounded-lg border-2 p-0.5",
       pillow: "h-2 mt-0.5 rounded-sm",
       mattress: "mt-0.5 p-0.5 gap-0.5",
-      bedLabel: "text-[7.5px]",
+      bedLabel: "text-[10px]",
       statusLabel: "text-[5px] px-0.5 py-0.2",
       showTable: true,
       tableSize: "w-3 h-3 text-[6px]",
       gap: "gap-1",
     },
     4: {
-      frame: "h-[80px] w-[36px] rounded-md border p-0.5",
+      frame: "h-[80px] w-[40px] rounded-md border p-0.5",
       pillow: "h-1.5 mt-0.5 rounded-sm",
       mattress: "mt-0.5 p-0.5 gap-0.5",
-      bedLabel: "text-[7px]",
+      bedLabel: "text-[9.5px]",
       statusLabel: "text-[4.5px] px-0.2 py-0.1",
       showTable: false,
       tableSize: "hidden",
       gap: "gap-1",
     },
     default: {
-      frame: "h-[75px] w-[32px] rounded-md border p-0.5",
+      frame: "h-[75px] w-[36px] rounded-md border p-0.5",
       pillow: "h-1.5 mt-0.5 rounded-sm",
       mattress: "mt-0.5 p-0.5 gap-0.5",
-      bedLabel: "text-[6px]",
+      bedLabel: "text-[9px]",
       statusLabel: "hidden",
       showTable: false,
       tableSize: "hidden",
@@ -194,8 +200,8 @@ const RoomCard = ({
           </div>
         </div>
 
-        {/* 4 Specs Columns Grid */}
-        <div className="mt-5 grid grid-cols-2 md:grid-cols-4 gap-2.5">
+        {/* 2x2 Specs Grid */}
+        <div className="mt-5 grid grid-cols-2 gap-2.5">
           {/* Capacity Box */}
           <div className="bg-slate-50/50 p-2.5 rounded-2xl border border-slate-100 flex flex-col justify-between h-[76px] text-left">
             <div className="flex items-center justify-between gap-1">
@@ -269,7 +275,7 @@ const RoomCard = ({
 
           {/* Floorplan frame with warm oak slats */}
           <div
-            className="rounded-3xl border border-slate-200 px-2 py-4 relative flex items-center justify-center gap-2 sm:gap-4 h-[160px] shadow-inner overflow-hidden"
+            className="rounded-3xl border border-slate-200 px-3 py-4 relative flex flex-wrap items-center justify-center gap-x-3.5 gap-y-2.5 min-h-[160px] h-auto shadow-inner overflow-hidden"
             style={{
               background: "repeating-linear-gradient(90deg, #FAF7F2, #FAF7F2 30px, #EFECE6 31px)",
             }}
@@ -309,8 +315,8 @@ const RoomCard = ({
 
                       {/* Mattress Sheet with status color */}
                       <div className={`w-full flex-1 rounded-b-md ${cfg.mattress} flex flex-col items-center justify-center ${bedCfg.blanket}`}>
-                        <span className={`${cfg.bedLabel} font-black uppercase tracking-tight`}>
-                          {bed.bed_number || `Bed ${String.fromCharCode(65 + bIdx)}`}
+                        <span className={`${cfg.bedLabel} font-black uppercase tracking-tight whitespace-nowrap`}>
+                          {getShortBedLabel(bed.bed_number, bIdx)}
                         </span>
                         {cfg.statusLabel !== "hidden" && (
                           <span className={`px-1 py-0.5 rounded leading-none uppercase ${cfg.statusLabel} ${bedCfg.badge}`}>

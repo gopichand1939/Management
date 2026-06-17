@@ -60,7 +60,7 @@ const BedSeat = ({ bed, isSelected, onClick }) => {
 
   // Extract a single letter or short label for the bed (e.g. "Bed A" -> "A")
   const seatLabel = bed.bed_number
-    ? bed.bed_number.replace("Bed ", "").trim().substring(0, 3)
+    ? bed.bed_number.replace(/bed\s*[-_]?\s*/i, "").trim().substring(0, 3)
     : "B";
 
   const isVacant = status === "vacant";
