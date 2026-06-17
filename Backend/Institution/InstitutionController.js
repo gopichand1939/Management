@@ -141,8 +141,8 @@ const validateOnboardingPayload = (data) => {
 
             duplicateRoomNumbers.add(room.room_number);
 
-            if (room.capacity !== null && room.capacity <= 0) {
-                return `Room capacity must be greater than zero for ${room.room_number}`;
+            if (room.capacity !== null && room.capacity < 0) {
+                return `Room capacity must be greater than or equal to zero for ${room.room_number}`;
             }
 
             const duplicateBedNumbers = new Set();

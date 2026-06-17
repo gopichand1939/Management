@@ -71,8 +71,8 @@ const BedSeat = ({ bed, isSelected, onClick }) => {
       onClick={onClick}
     whileHover={isVacant ? { y: -4, scale: 1.05 } : {}}
     whileTap={isVacant ? { scale: 0.98 } : {}}
-    className={`h-[78px] w-[56px] rounded-xl border-[3.5px] bg-[#fefdfb] flex flex-col p-0.5 relative transition-shadow duration-300 text-left ${cfg.shadow} ${cfg.frame} ${
-        isVacant ? "cursor-pointer" : "cursor-not-allowed opacity-80"
+    className={`h-[78px] w-[56px] rounded-xl border-[3.5px] bg-[#fefdfb] flex flex-col p-0.5 relative transition-shadow duration-300 text-left cursor-pointer ${cfg.shadow} ${cfg.frame} ${
+        !isVacant ? "opacity-90" : ""
       } ${
         isSelected
           ? "ring-[3px] ring-orange-500 ring-offset-2 shadow-lg shadow-orange-500/20 z-10 border-amber-900"

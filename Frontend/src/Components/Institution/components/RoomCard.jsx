@@ -1,4 +1,4 @@
-import { Bath, Edit2, Trash2, Users, Ruler, BadgeIndianRupee, Calendar, Home, CheckCircle2, ShieldAlert } from "lucide-react";
+import { Bath, Edit2, Trash2, Users, Ruler, BadgeIndianRupee, Calendar, Home, CheckCircle2, ShieldAlert, Plus } from "lucide-react";
 import { motion } from "framer-motion";
 
 const blanketColors = {
@@ -38,6 +38,7 @@ const RoomCard = ({
   onEdit,
   onDelete,
   onBedClick,
+  onAddBed,
 }) => {
   const capacity = room.capacity || 0;
   const beds = room.beds || [];
@@ -49,7 +50,11 @@ const RoomCard = ({
   let occupancyStatus = "Vacant";
   let occupancyColor = "text-emerald-600 bg-emerald-50 border-emerald-100/50";
   let occupancyBar = "bg-emerald-500";
-  if (occupiedCount === capacity) {
+  if (capacity === 0) {
+    occupancyStatus = "Empty";
+    occupancyColor = "text-slate-500 bg-slate-50 border-slate-200";
+    occupancyBar = "bg-slate-400";
+  } else if (occupiedCount === capacity) {
     occupancyStatus = "Filled";
     occupancyColor = "text-rose-600 bg-rose-50 border-rose-100/50";
     occupancyBar = "bg-rose-500";
@@ -168,35 +173,50 @@ const RoomCard = ({
               {room.status || "active"}
             </span>
 
-            {/* Actions - visible on card hover */}
-            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-250">
-              {onEdit && (
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onEdit();
-                  }}
-                  className="p-1.5 rounded-xl border border-slate-100 bg-white text-slate-400 hover:text-orange-500 hover:border-orange-200 shadow-sm transition-all"
-                  title="Edit room specifications"
-                >
-                  <Edit2 size={12} />
-                </button>
-              )}
-              {onDelete && (
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDelete();
-                  }}
-                  className="p-1.5 rounded-xl border border-slate-100 bg-white text-slate-400 hover:text-red-500 hover:border-red-200 shadow-sm transition-all"
-                  title="Remove room"
-                >
-                  <Trash2 size={12} />
-                </button>
-              )}
-            </div>
+            {/* Actions - always visible when callbacks are provided */}
+            {(onAddBed || onEdit || onDelete) && (
+              <div className="flex items-center gap-1.5 transition-all duration-200">
+                {onAddBed && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onAddBed();
+                    }}
+                    className="p-1.5 rounded-xl border border-slate-100 bg-white text-slate-400 hover:text-orange-500 hover:border-orange-200 shadow-sm transition-all"
+                    title="Add bed to this room"
+                  >
+                    <Plus size={12} />
+                  </button>
+                )}
+                {onEdit && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEdit();
+                    }}
+                    className="p-1.5 rounded-xl border border-slate-100 bg-white text-slate-400 hover:text-orange-500 hover:border-orange-200 shadow-sm transition-all"
+                    title="Edit room specifications"
+                  >
+                    <Edit2 size={12} />
+                  </button>
+                )}
+                {onDelete && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDelete();
+                    }}
+                    className="p-1.5 rounded-xl border border-slate-100 bg-white text-slate-400 hover:text-red-500 hover:border-red-200 shadow-sm transition-all"
+                    title="Remove room"
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </div>
 

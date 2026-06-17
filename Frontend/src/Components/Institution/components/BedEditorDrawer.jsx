@@ -16,7 +16,7 @@ const statusOptions = [
   { value: "blocked", label: "Blocked", color: "bg-slate-500 text-white border-slate-600 shadow-slate-550/20" },
 ];
 
-const BedEditorDrawer = ({ isOpen, bed, onSave, onClose }) => {
+const BedEditorDrawer = ({ isOpen, bed, onSave, onClose, onDelete }) => {
   const [formData, setFormData] = useState({
     bed_number: "",
     bed_type: "single",
@@ -195,21 +195,36 @@ const BedEditorDrawer = ({ isOpen, bed, onSave, onClose }) => {
             </div>
 
             {/* Actions Footer */}
-            <div className="border-t border-slate-100 pt-4 flex gap-3">
-              <button
-                type="button"
-                onClick={onClose}
-                className="flex-1 h-11 rounded-xl border border-slate-200 text-sm font-bold text-slate-500 hover:bg-slate-50 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleFormSubmit}
-                className="flex-1 h-11 rounded-xl bg-gradient-to-r from-orange-500 to-red-500 text-sm font-bold text-white shadow-md shadow-orange-500/20 hover:shadow-lg hover:shadow-orange-500/35 transition-all duration-200"
-              >
-                Save Config
-              </button>
+            <div className="border-t border-slate-100 pt-4 flex flex-col gap-2.5">
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="flex-1 h-11 rounded-xl border border-slate-200 text-sm font-bold text-slate-500 hover:bg-slate-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleFormSubmit}
+                  className="flex-1 h-11 rounded-xl bg-gradient-to-r from-orange-500 to-red-500 text-sm font-bold text-white shadow-md shadow-orange-500/20 hover:shadow-lg hover:shadow-orange-500/35 transition-all duration-200"
+                >
+                  Save Config
+                </button>
+              </div>
+              {onDelete && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (window.confirm("Are you sure you want to delete this bed?")) {
+                      onDelete();
+                    }
+                  }}
+                  className="w-full h-11 rounded-xl border border-rose-250 bg-rose-50/70 hover:bg-rose-100/80 text-sm font-bold text-rose-600 transition-colors flex items-center justify-center gap-1.5"
+                >
+                  Delete Bed
+                </button>
+              )}
             </div>
           </motion.div>
         </>

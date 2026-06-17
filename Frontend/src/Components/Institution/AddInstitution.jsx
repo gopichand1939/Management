@@ -17,6 +17,8 @@ import {
   Info,
   Warehouse,
   Users,
+  Edit2,
+  Trash2,
 } from "lucide-react";
 
 import Button from "../Common/Button";
@@ -376,6 +378,63 @@ const AddInstitution = () => {
     setSelectedBedIdx(null);
   };
 
+  const handleAddBed = (roomIdx) => {
+    setFormData((prev) => {
+      const updatedFloors = prev.floors.map((floor, fIdx) => {
+        if (fIdx !== selectedFloorIdx) return floor;
+        const updatedRooms = floor.rooms.map((room, rIdx) => {
+          if (rIdx !== roomIdx) return room;
+
+          const newBeds = [...(room.beds || [])];
+          const nextLetter = String.fromCharCode(65 + newBeds.length);
+
+          newBeds.push({
+            bed_number: `Bed ${nextLetter}`,
+            bed_type: "single",
+            rent_override: null,
+            status: "vacant",
+          });
+
+          return {
+            ...room,
+            beds: newBeds,
+            capacity: newBeds.length,
+          };
+        });
+        return { ...floor, rooms: updatedRooms };
+      });
+      return { ...prev, floors: updatedFloors };
+    });
+  };
+
+  const handleDeleteBed = () => {
+    if (selectedRoomIdx === null || selectedBedIdx === null) return;
+
+    setFormData((prev) => {
+      const updatedFloors = prev.floors.map((floor, fIdx) => {
+        if (fIdx !== selectedFloorIdx) return floor;
+        const updatedRooms = floor.rooms.map((room, rIdx) => {
+          if (rIdx !== selectedRoomIdx) return room;
+
+          const updatedBeds = room.beds.filter((_, bIdx) => bIdx !== selectedBedIdx);
+          const newCapacity = Math.max(0, updatedBeds.length);
+
+          return {
+            ...room,
+            beds: updatedBeds,
+            capacity: newCapacity,
+          };
+        });
+        return { ...floor, rooms: updatedRooms };
+      });
+      return { ...prev, floors: updatedFloors };
+    });
+
+    setIsBedDrawerOpen(false);
+    setSelectedRoomIdx(null);
+    setSelectedBedIdx(null);
+  };
+
   // Step 5 Save Submission
   const handleSubmit = async () => {
     setError("");
@@ -704,6 +763,8 @@ const AddInstitution = () => {
                               floorName={formData.floors[selectedFloorIdx]?.floor_name}
                               onEdit={() => handleEditRoomClick(idx)}
                               onDelete={() => handleDeleteRoom(idx)}
+                              onAddBed={() => handleAddBed(idx)}
+                              onBedClick={(bIdx) => handleBedClick(idx, bIdx)}
                             />
                           ))}
                         </div>
@@ -713,9 +774,22 @@ const AddInstitution = () => {
                     {/* STEP 4: Beds Setup */}
                     {activeStep === 3 && (
                       <div className="flex flex-col gap-6">
-                        <div>
-                          <h2 className="text-lg font-black text-slate-800 tracking-tight">Visual Bed Layouts</h2>
-                          <p className="text-xs text-slate-400 font-semibold mt-1">Click on bed elements (seats) to edit specifics inline.</p>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h2 className="text-lg font-black text-slate-800 tracking-tight">Visual Bed Layouts</h2>
+                            <p className="text-xs text-slate-400 font-semibold mt-1">Click on bed elements (seats) to edit specifics inline.</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingRoomIdx(null);
+                              setIsRoomModalOpen(true);
+                            }}
+                            className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-orange-200 bg-orange-50/60 px-3 text-xs font-bold text-orange-600 hover:bg-orange-100 transition-colors shadow-sm"
+                          >
+                            <Plus size={14} />
+                            <span>Add Room</span>
+                          </button>
                         </div>
 
                         {/* Floor Selector Tabs */}
@@ -748,9 +822,35 @@ const AddInstitution = () => {
 
                               <div className="flex items-center justify-between border-b border-slate-50 pb-2 mt-1">
                                 <span className="text-sm font-black text-slate-800">Room {room.room_number}</span>
-                                <span className="text-[9px] bg-slate-50 border border-slate-100 px-2 py-0.5 rounded-lg text-slate-550 font-black uppercase tracking-wider">
-                                  {room.room_type} Sharing
-                                </span>
+                                <div className="flex items-center gap-1.5">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleAddBed(rIdx)}
+                                    className="px-2 py-0.5 rounded-lg border border-orange-200 bg-orange-50/60 hover:bg-orange-100 text-[9px] font-black text-orange-600 transition-colors uppercase tracking-wider"
+                                    title="Add bed to this room"
+                                  >
+                                    + Add Bed
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleEditRoomClick(rIdx)}
+                                    className="p-1 rounded-lg border border-slate-100 bg-white text-slate-400 hover:text-orange-500 hover:border-orange-200 transition-all"
+                                    title="Edit room"
+                                  >
+                                    <Edit2 size={11} />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteRoom(rIdx)}
+                                    className="p-1 rounded-lg border border-slate-100 bg-white text-slate-400 hover:text-red-500 hover:border-red-200 transition-all"
+                                    title="Delete room"
+                                  >
+                                    <Trash2 size={11} />
+                                  </button>
+                                  <span className="text-[9px] bg-slate-50 border border-slate-100 px-2 py-0.5 rounded-lg text-slate-550 font-black uppercase tracking-wider">
+                                    {room.room_type} Sharing
+                                  </span>
+                                </div>
                               </div>
 
                               <BedLayout
@@ -977,6 +1077,7 @@ const AddInstitution = () => {
           setSelectedBedIdx(null);
         }}
         onSave={handleSaveBed}
+        onDelete={handleDeleteBed}
       />
     </div>
   );
