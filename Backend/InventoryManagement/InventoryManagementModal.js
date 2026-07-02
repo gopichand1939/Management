@@ -125,6 +125,47 @@ const findInventoryById = async (id) => {
     return result.rows[0];
 };
 
+const findInventoryInstitution = async (institutionId) => {
+    const query = `
+        SELECT
+            id AS institution_id,
+            institution_name
+        FROM institutions
+        WHERE id = $1
+          AND status = 'active'
+        LIMIT 1
+    `;
+
+    const result = await pool.query(query, [institutionId]);
+
+    return result.rows[0];
+};
+
+const findInventoryFloor = async (institutionId, floorId) => {
+    const query = `
+        SELECT
+            institutions.id AS institution_id,
+            institutions.institution_name,
+            floors.id AS floor_id,
+            floors.floor_name
+        FROM institutions
+        INNER JOIN floors
+            ON floors.institution_id = institutions.id
+        WHERE institutions.id = $1
+          AND floors.id = $2
+          AND institutions.status = 'active'
+          AND floors.status = 'active'
+        LIMIT 1
+    `;
+
+    const result = await pool.query(query, [
+        institutionId,
+        floorId,
+    ]);
+
+    return result.rows[0];
+};
+
 const findInventoryLocation = async (institutionId, floorId, roomNo) => {
     const query = `
         SELECT
@@ -137,11 +178,15 @@ const findInventoryLocation = async (institutionId, floorId, roomNo) => {
         FROM institutions
         INNER JOIN floors
             ON floors.institution_id = institutions.id
-        INNER JOIN rooms
+        LEFT JOIN rooms
             ON rooms.floor_id = floors.id
+           AND rooms.institution_id = institutions.id
+           AND LOWER(TRIM(rooms.room_number)) = LOWER(TRIM($3))
+           AND rooms.status = 'active'
         WHERE institutions.id = $1
           AND floors.id = $2
-          AND rooms.room_number = $3
+          AND institutions.status = 'active'
+          AND floors.status = 'active'
         LIMIT 1
     `;
 
@@ -221,6 +266,8 @@ module.exports = {
     createInventory,
     deleteInventoryById,
     findInventoryById,
+    findInventoryFloor,
+    findInventoryInstitution,
     findInventoryLocation,
     getInventoryList,
     updateInventory,

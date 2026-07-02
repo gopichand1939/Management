@@ -2,6 +2,8 @@ const {
     createInventory,
     deleteInventoryById,
     findInventoryById,
+    findInventoryFloor,
+    findInventoryInstitution,
     findInventoryLocation,
     getInventoryList,
     updateInventory,
@@ -138,11 +140,26 @@ const validateInventoryAccess = (req, inventory) => {
 
 const validateInventoryLocation = async (data) => {
     if (!data.floor_id) {
+        const institution = await findInventoryInstitution(data.institution_id);
+
+        if (!institution) {
+            return null;
+        }
+
         return {
-            institution_id: data.institution_id,
+            institution_id: institution.institution_id,
             floor_id: null,
             room_number: data.room_no,
         };
+    }
+
+    const floor = await findInventoryFloor(
+        data.institution_id,
+        data.floor_id
+    );
+
+    if (!floor) {
+        return null;
     }
 
     return findInventoryLocation(
