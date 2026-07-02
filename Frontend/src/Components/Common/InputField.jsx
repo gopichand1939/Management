@@ -6,6 +6,8 @@ const InputField = ({
   placeholder,
   icon: Icon,
   onChange,
+  list,
+  options = [],
 }) => {
   return (
     <div
@@ -56,6 +58,7 @@ const InputField = ({
           type={type}
           value={value}
           placeholder={placeholder}
+          list={list}
           onChange={onChange}
           className={`
             w-full
@@ -67,6 +70,14 @@ const InputField = ({
             text-sm
           `}
         />
+
+        {list && (
+          <datalist id={list}>
+            {options.map((option) => (
+              <option key={option} value={option} />
+            ))}
+          </datalist>
+        )}
       </div>
     </div>
   );

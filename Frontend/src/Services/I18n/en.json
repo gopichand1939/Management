@@ -32,7 +32,9 @@
     "payments": "Payments",
     "userManagement": "UserManagement",
     "expenseManagement": "Expense Management",
-    "dailyExpenses": "Daily Expenses"
+    "dailyExpenses": "Daily Expenses",
+    "inventoryManagement": "InventoryManagement",
+    "inventoryMaster": "Inventory Master"
   },
   "institution": {
     "addInstitution": "Add Institution",

@@ -13,6 +13,7 @@ import {
   History,
   Wallet,
   Coins,
+  Boxes,
 } from "lucide-react";
 import { useState } from "react";
 import { useDispatch } from "react-redux";
@@ -42,6 +43,7 @@ const menuIcons = {
   tenant_history: History,
   expense_management: Wallet,
   daily_expenses: Coins,
+  inventory_management: Boxes,
 };
 
 const MENU_ICON_SIZE = 18;

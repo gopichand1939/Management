@@ -76,3 +76,30 @@ export const TOKEN_KEY = "admin_token";
 export const AUTH_USER_KEY = "admin_auth_user";
 export const DASHBOARD_OVERVIEW = BASE_URL + "/dashboard/overview";
 
+
+
+
+
+
+
+export const INVENTORY_CREATE = BASE_URL + "/inventory/create";
+
+export const INVENTORY_LIST = BASE_URL + "/inventory/list";
+
+export const INVENTORY_VIEW = BASE_URL + "/inventory/view";
+
+export const INVENTORY_UPDATE = BASE_URL + "/inventory/update";
+
+export const INVENTORY_DELETE = BASE_URL + "/inventory/delete";
+
+export const GET_INSTITUTION_LIST = BASE_URL + "/inventory/institution/list";
+
+export const GET_FLOOR_LIST = BASE_URL + "/inventory/floor/list";
+
+export const GET_ROOM_LIST = BASE_URL + "/inventory/room/list";
+
+// export const GET_INSTITUTION_LIST = BASE_URL + "/inventory/institution/list";
+
+// export const GET_FLOOR_LIST = BASE_URL + "/inventory/floor/list";
+
+// export const GET_ROOM_LIST = BASE_URL + "/inventory/room/list";

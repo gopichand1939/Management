@@ -68,6 +68,18 @@ const EditTenant = lazy(() => {
 const DailyExpenses = lazy(() => {
   return import("../Components/Expense/DailyExpenses");
 });
+const Inventory = lazy(() => {
+  return import("../Components/InventoryManagement/Inventory");
+});
+const AddInventory = lazy(() => {
+  return import("../Components/InventoryManagement/AddInventory");
+});
+const EditInventory = lazy(() => {
+  return import("../Components/InventoryManagement/EditInventory");
+});
+const ViewInventory = lazy(() => {
+  return import("../Components/InventoryManagement/ViewInventory");
+});
 
 const withSuspense = (component) => {
   return (
@@ -180,6 +192,25 @@ export const expenseRoutes = [
   },
 ];
 
+export const inventoryRoutes = [
+  {
+    path: "/inventory",
+    element: withSuspense(<Inventory />),
+  },
+  {
+    path: "/inventory/add",
+    element: withSuspense(<AddInventory />),
+  },
+  {
+    path: "/inventory/edit/:id",
+    element: withSuspense(<EditInventory />),
+  },
+  {
+    path: "/inventory/view/:id",
+    element: withSuspense(<ViewInventory />),
+  },
+];
+
 export const applicationRoutes = [
   {
     path: "/dashboard",
@@ -191,4 +222,5 @@ export const applicationRoutes = [
   ...superAdminRoutes,
   ...tenantRoutes,
   ...expenseRoutes,
+  ...inventoryRoutes,
 ];

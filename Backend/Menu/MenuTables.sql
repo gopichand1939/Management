@@ -98,7 +98,9 @@ VALUES
     (3, 6, 1, 'Institution Master', 1, 1, 1),
     (7, 6, 1, 'Institution Availability', 3, 1, 1),
     (100, NULL, 1, 'ExpenseManagement', 5, 1, 1),
-    (101, 100, 1, 'Daily Expenses', 1, 1, 1)
+    (101, 100, 1, 'Daily Expenses', 1, 1, 1),
+    (102, NULL, 1, 'InventoryManagement', 6, 1, 1),
+    (103, 102, 1, 'Inventory Master', 1, 1, 1)
 ON CONFLICT (menu_id) DO UPDATE SET
     parent_menu_id = EXCLUDED.parent_menu_id,
     module_id = EXCLUDED.module_id,
@@ -134,7 +136,12 @@ VALUES
     (101, 2, 2, 1, 1),
     (101, 3, 3, 1, 1),
     (101, 4, 4, 1, 1),
-    (101, 5, 5, 1, 1)
+    (101, 5, 5, 1, 1),
+    (103, 1, 1, 1, 1),
+    (103, 2, 2, 1, 1),
+    (103, 3, 3, 1, 1),
+    (103, 4, 4, 1, 1),
+    (103, 5, 5, 1, 1)
 ON CONFLICT (menu_id, action_id) DO UPDATE SET
     priority = EXCLUDED.priority,
     status = EXCLUDED.status,
@@ -194,7 +201,17 @@ VALUES
     (2, 101, 2, 2, 1, 1),
     (2, 101, 3, 2, 1, 1),
     (2, 101, 4, 2, 1, 1),
-    (2, 101, 5, 2, 1, 1)
+    (2, 101, 5, 2, 1, 1),
+    (1, 103, 1, 2, 1, 1),
+    (1, 103, 2, 2, 1, 1),
+    (1, 103, 3, 2, 1, 1),
+    (1, 103, 4, 2, 1, 1),
+    (1, 103, 5, 2, 1, 1),
+    (2, 103, 1, 2, 1, 1),
+    (2, 103, 2, 2, 1, 1),
+    (2, 103, 3, 2, 1, 1),
+    (2, 103, 4, 2, 1, 1),
+    (2, 103, 5, 2, 1, 1)
 ON CONFLICT (profile_id, menu_id, action_id) DO UPDATE SET
     is_configuration_only = EXCLUDED.is_configuration_only,
     status = EXCLUDED.status,

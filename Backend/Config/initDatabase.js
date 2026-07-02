@@ -106,7 +106,7 @@ const statements = [
         CREATE TABLE IF NOT EXISTS rooms (
             id SERIAL PRIMARY KEY,
             institution_id INTEGER NOT NULL REFERENCES institutions(id) ON DELETE CASCADE,
-            floor_id INTEGER NOT NULL REFERENCES floors(id) ON DELETE CASCADE,
+            floor_id INTEGER REFERENCES floors(id) ON DELETE SET NULL,
             room_number VARCHAR(50) NOT NULL,
             room_type VARCHAR(50),
             capacity INTEGER,
@@ -120,7 +120,8 @@ const statements = [
         CREATE TABLE IF NOT EXISTS beds (
             id SERIAL PRIMARY KEY,
             institution_id INTEGER NOT NULL REFERENCES institutions(id) ON DELETE CASCADE,
-            floor_id INTEGER NOT NULL REFERENCES floors(id) ON DELETE CASCADE,
+            floor_id INTEGER REFERENCES floors(id) ON DELETE SET NULL,
+            floor_label VARCHAR(100),
             room_id INTEGER NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
             bed_number VARCHAR(50) NOT NULL,
             bed_type VARCHAR(50),
@@ -521,6 +522,133 @@ const statements = [
         )
     `,
     `
+        CREATE TABLE IF NOT EXISTS inventory_management (
+            id SERIAL PRIMARY KEY,
+            inventory_id VARCHAR(50) UNIQUE,
+            institution_id INTEGER NOT NULL REFERENCES institutions(id) ON DELETE CASCADE,
+            item_name VARCHAR(150) NOT NULL,
+            category VARCHAR(100) NOT NULL,
+            floor_id INTEGER NOT NULL REFERENCES floors(id) ON DELETE CASCADE,
+            room_no VARCHAR(50) NOT NULL,
+            quantity INTEGER NOT NULL DEFAULT 0,
+            purchase_date DATE NOT NULL,
+            purchase_price NUMERIC(12, 2) NOT NULL DEFAULT 0,
+            supplier_name VARCHAR(150) NOT NULL,
+            condition VARCHAR(50) NOT NULL,
+            item_photo JSONB,
+            status VARCHAR(50) NOT NULL DEFAULT 'active',
+            remarks TEXT,
+            created_by INTEGER,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            is_deleted BOOLEAN NOT NULL DEFAULT FALSE
+        )
+    `,
+    `
+        ALTER TABLE inventory_management
+        ADD COLUMN IF NOT EXISTS inventory_id VARCHAR(50)
+    `,
+    `
+        ALTER TABLE inventory_management
+        ADD COLUMN IF NOT EXISTS institution_id INTEGER
+    `,
+    `
+        ALTER TABLE inventory_management
+        ADD COLUMN IF NOT EXISTS item_name VARCHAR(150)
+    `,
+    `
+        ALTER TABLE inventory_management
+        ADD COLUMN IF NOT EXISTS category VARCHAR(100)
+    `,
+    `
+        ALTER TABLE inventory_management
+        ADD COLUMN IF NOT EXISTS floor_id INTEGER
+    `,
+    `
+        ALTER TABLE inventory_management
+        ADD COLUMN IF NOT EXISTS floor_label VARCHAR(100)
+    `,
+    `
+        ALTER TABLE inventory_management
+        ALTER COLUMN floor_id DROP NOT NULL
+    `,
+    `
+        ALTER TABLE inventory_management
+        DROP CONSTRAINT IF EXISTS inventory_management_floor_id_fkey
+    `,
+    `
+        ALTER TABLE inventory_management
+        DROP CONSTRAINT IF EXISTS fk_inventory_management_floor
+    `,
+    `
+        ALTER TABLE inventory_management
+        ADD CONSTRAINT fk_inventory_management_floor
+        FOREIGN KEY (floor_id)
+        REFERENCES floors(id)
+        ON DELETE SET NULL
+    `,
+    `
+        ALTER TABLE inventory_management
+        ADD COLUMN IF NOT EXISTS room_no VARCHAR(50)
+    `,
+    `
+        ALTER TABLE inventory_management
+        ADD COLUMN IF NOT EXISTS quantity INTEGER NOT NULL DEFAULT 0
+    `,
+    `
+        ALTER TABLE inventory_management
+        ADD COLUMN IF NOT EXISTS purchase_date DATE
+    `,
+    `
+        ALTER TABLE inventory_management
+        ADD COLUMN IF NOT EXISTS purchase_price NUMERIC(12, 2) NOT NULL DEFAULT 0
+    `,
+    `
+        ALTER TABLE inventory_management
+        ADD COLUMN IF NOT EXISTS supplier_name VARCHAR(150)
+    `,
+    `
+        ALTER TABLE inventory_management
+        ADD COLUMN IF NOT EXISTS condition VARCHAR(50)
+    `,
+    `
+        ALTER TABLE inventory_management
+        ADD COLUMN IF NOT EXISTS item_photo JSONB
+    `,
+    `
+        ALTER TABLE inventory_management
+        ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'active'
+    `,
+    `
+        ALTER TABLE inventory_management
+        ADD COLUMN IF NOT EXISTS remarks TEXT
+    `,
+    `
+        ALTER TABLE inventory_management
+        ADD COLUMN IF NOT EXISTS created_by INTEGER
+    `,
+    `
+        ALTER TABLE inventory_management
+        ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    `,
+    `
+        ALTER TABLE inventory_management
+        ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    `,
+    `
+        ALTER TABLE inventory_management
+        ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN NOT NULL DEFAULT FALSE
+    `,
+    `
+        UPDATE inventory_management
+        SET inventory_id = 'INV-' || LPAD(id::TEXT, 5, '0')
+        WHERE inventory_id IS NULL
+    `,
+    `
+        CREATE UNIQUE INDEX IF NOT EXISTS inventory_management_inventory_id_key
+        ON inventory_management(inventory_id)
+    `,
+    `
         ALTER TABLE tenant_monthly_dues
         ADD COLUMN IF NOT EXISTS cycle_start_date DATE
     `,
@@ -739,7 +867,9 @@ const statements = [
             (13, 8, 1, 'Vacated History', 5, 1, 1),
             (14, 8, 1, 'Tenant History', 6, 1, 1),
             (100, NULL, 1, 'ExpenseManagement', 5, 1, 1),
-            (101, 100, 1, 'Daily Expenses', 1, 1, 1)
+            (101, 100, 1, 'Daily Expenses', 1, 1, 1),
+            (102, NULL, 1, 'InventoryManagement', 6, 1, 1),
+            (103, 102, 1, 'Inventory Master', 1, 1, 1)
         ON CONFLICT (menu_id) DO UPDATE SET
             parent_menu_id = EXCLUDED.parent_menu_id,
             module_id = EXCLUDED.module_id,
@@ -799,7 +929,12 @@ const statements = [
             (101, 2, 2, 1, 1),
             (101, 3, 3, 1, 1),
             (101, 4, 4, 1, 1),
-            (101, 5, 5, 1, 1)
+            (101, 5, 5, 1, 1),
+            (103, 1, 1, 1, 1),
+            (103, 2, 2, 1, 1),
+            (103, 3, 3, 1, 1),
+            (103, 4, 4, 1, 1),
+            (103, 5, 5, 1, 1)
         ON CONFLICT (menu_id, action_id) DO UPDATE SET
             priority = EXCLUDED.priority,
             status = EXCLUDED.status,
@@ -894,7 +1029,17 @@ const statements = [
             (2, 101, 2, 2, 1, 1),
             (2, 101, 3, 2, 1, 1),
             (2, 101, 4, 2, 1, 1),
-            (2, 101, 5, 2, 1, 1)
+            (2, 101, 5, 2, 1, 1),
+            (1, 103, 1, 2, 1, 1),
+            (1, 103, 2, 2, 1, 1),
+            (1, 103, 3, 2, 1, 1),
+            (1, 103, 4, 2, 1, 1),
+            (1, 103, 5, 2, 1, 1),
+            (2, 103, 1, 2, 1, 1),
+            (2, 103, 2, 2, 1, 1),
+            (2, 103, 3, 2, 1, 1),
+            (2, 103, 4, 2, 1, 1),
+            (2, 103, 5, 2, 1, 1)
         ON CONFLICT (profile_id, menu_id, action_id) DO UPDATE SET
             is_configuration_only = EXCLUDED.is_configuration_only,
             status = EXCLUDED.status,
