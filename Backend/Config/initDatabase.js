@@ -185,6 +185,141 @@ const statements = [
         ON beds(room_id, bed_number)
     `,
     `
+        CREATE TABLE IF NOT EXISTS meal_type_master (
+            id SERIAL PRIMARY KEY,
+            institution_id INTEGER NOT NULL REFERENCES institutions(id) ON DELETE CASCADE,
+            meal_type_name VARCHAR(100) NOT NULL,
+            meal_type_code VARCHAR(50) NOT NULL,
+            display_order INTEGER NOT NULL,
+            start_time TIME,
+            end_time TIME,
+            description TEXT,
+            is_active BOOLEAN NOT NULL DEFAULT true,
+            is_deleted BOOLEAN NOT NULL DEFAULT false,
+            created_by INTEGER,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_by INTEGER,
+            updated_at TIMESTAMP
+        )
+    `,
+    `
+        CREATE UNIQUE INDEX IF NOT EXISTS meal_type_master_name_unique
+        ON meal_type_master(institution_id, LOWER(meal_type_name))
+        WHERE is_deleted = false
+    `,
+    `
+        CREATE UNIQUE INDEX IF NOT EXISTS meal_type_master_code_unique
+        ON meal_type_master(institution_id, meal_type_code)
+        WHERE is_deleted = false
+    `,
+    `
+        CREATE TABLE IF NOT EXISTS weekly_food_menu_config (
+            id SERIAL PRIMARY KEY,
+            institution_id INTEGER NOT NULL REFERENCES institutions(id) ON DELETE CASCADE,
+            day_name VARCHAR(20) NOT NULL,
+            day_order INTEGER NOT NULL,
+            meal_type_id INTEGER NOT NULL REFERENCES meal_type_master(id) ON DELETE CASCADE,
+            food_items TEXT,
+            is_active BOOLEAN NOT NULL DEFAULT true,
+            is_deleted BOOLEAN NOT NULL DEFAULT false,
+            created_by INTEGER,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_by INTEGER,
+            updated_at TIMESTAMP
+        )
+    `,
+    `
+        DO $$
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1
+                FROM pg_constraint
+                WHERE conname = 'weekly_food_menu_day_order_check'
+            ) THEN
+                ALTER TABLE weekly_food_menu_config
+                ADD CONSTRAINT weekly_food_menu_day_order_check
+                CHECK (day_order BETWEEN 1 AND 7);
+            END IF;
+        END $$;
+    `,
+    `
+        DO $$
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1
+                FROM pg_constraint
+                WHERE conname = 'weekly_food_menu_day_name_check'
+            ) THEN
+                ALTER TABLE weekly_food_menu_config
+                ADD CONSTRAINT weekly_food_menu_day_name_check
+                CHECK (
+                    day_name IN (
+                        'Monday',
+                        'Tuesday',
+                        'Wednesday',
+                        'Thursday',
+                        'Friday',
+                        'Saturday',
+                        'Sunday'
+                    )
+                );
+            END IF;
+        END $$;
+    `,
+    `
+        CREATE UNIQUE INDEX IF NOT EXISTS weekly_food_menu_unique_active_idx
+        ON weekly_food_menu_config(institution_id, day_order, meal_type_id)
+        WHERE is_deleted = false
+    `,
+    `
+        CREATE INDEX IF NOT EXISTS weekly_food_menu_institution_idx
+        ON weekly_food_menu_config(institution_id, day_order, meal_type_id)
+    `,
+    `
+        INSERT INTO meal_type_master (
+            institution_id,
+            meal_type_name,
+            meal_type_code,
+            display_order,
+            start_time,
+            end_time,
+            description,
+            is_active,
+            is_deleted
+        )
+        SELECT
+            institutions.id,
+            seed_data.meal_type_name,
+            seed_data.meal_type_code,
+            seed_data.display_order,
+            seed_data.start_time,
+            seed_data.end_time,
+            seed_data.description,
+            true,
+            false
+        FROM institutions
+        CROSS JOIN (
+            VALUES
+                ('Breakfast', 'BREAKFAST', 1, '07:00'::time, '09:30'::time, 'Recommended default breakfast slot'),
+                ('Lunch', 'LUNCH', 2, '12:00'::time, '15:00'::time, 'Recommended default lunch slot'),
+                ('Dinner', 'DINNER', 3, '19:00'::time, '22:00'::time, 'Recommended default dinner slot')
+        ) AS seed_data(
+            meal_type_name,
+            meal_type_code,
+            display_order,
+            start_time,
+            end_time,
+            description
+        )
+        WHERE NOT EXISTS (
+            SELECT 1
+            FROM meal_type_master existing_meal_type
+            WHERE existing_meal_type.institution_id = institutions.id
+              AND existing_meal_type.is_deleted = false
+              AND LOWER(existing_meal_type.meal_type_name) = LOWER(seed_data.meal_type_name)
+        )
+    `,
+    `
         CREATE TABLE IF NOT EXISTS tenants (
             id SERIAL PRIMARY KEY,
             institution_id INTEGER NOT NULL REFERENCES institutions(id) ON DELETE CASCADE,
@@ -581,11 +716,20 @@ const statements = [
         DROP CONSTRAINT IF EXISTS fk_inventory_management_floor
     `,
     `
-        ALTER TABLE inventory_management
-        ADD CONSTRAINT fk_inventory_management_floor
-        FOREIGN KEY (floor_id)
-        REFERENCES floors(id)
-        ON DELETE SET NULL
+        DO $$
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1
+                FROM pg_constraint
+                WHERE conname = 'fk_inventory_management_floor'
+            ) THEN
+                ALTER TABLE inventory_management
+                ADD CONSTRAINT fk_inventory_management_floor
+                FOREIGN KEY (floor_id)
+                REFERENCES floors(id)
+                ON DELETE SET NULL;
+            END IF;
+        END $$;
     `,
     `
         ALTER TABLE inventory_management
@@ -811,15 +955,15 @@ const statements = [
     `,
     `
         DELETE FROM urmg_profile_menus_actions
-        WHERE menu_id IN (5, 6, 7, 8, 9, 10, 11, 12, 13, 100, 101, 102, 103)
+        WHERE menu_id IN (5, 6, 7, 8, 9, 10, 11, 12, 13, 100, 101, 102, 103, 104, 105)
     `,
     `
         DELETE FROM urmg_menu_actions
-        WHERE menu_id IN (5, 6, 7, 8, 9, 10, 11, 12, 13, 100, 101, 102, 103)
+        WHERE menu_id IN (5, 6, 7, 8, 9, 10, 11, 12, 13, 100, 101, 102, 103, 104, 105)
     `,
     `
         DELETE FROM urmg_menus
-        WHERE menu_id IN (5, 6, 7, 8, 9, 10, 11, 12, 13, 100, 101, 102, 103)
+        WHERE menu_id IN (5, 6, 7, 8, 9, 10, 11, 12, 13, 100, 101, 102, 103, 104, 105)
     `,
     `
         INSERT INTO urmg_actions (
@@ -868,6 +1012,8 @@ const statements = [
             (14, 8, 1, 'Tenant History', 6, 1, 1),
             (100, NULL, 1, 'ExpenseManagement', 5, 1, 1),
             (101, 100, 1, 'Daily Expenses', 1, 1, 1),
+            (104, 100, 1, 'Meal Type Master', 2, 1, 1),
+            (105, 100, 1, 'Weekly Food Menu Configuration', 3, 1, 1),
             (102, NULL, 1, 'InventoryManagement', 6, 1, 1),
             (103, 102, 1, 'Inventory Master', 1, 1, 1)
         ON CONFLICT (menu_id) DO UPDATE SET
@@ -930,6 +1076,16 @@ const statements = [
             (101, 3, 3, 1, 1),
             (101, 4, 4, 1, 1),
             (101, 5, 5, 1, 1),
+            (104, 1, 1, 1, 1),
+            (104, 2, 2, 1, 1),
+            (104, 3, 3, 1, 1),
+            (104, 4, 4, 1, 1),
+            (104, 5, 5, 1, 1),
+            (105, 1, 1, 1, 1),
+            (105, 2, 2, 1, 1),
+            (105, 3, 3, 1, 1),
+            (105, 4, 4, 1, 1),
+            (105, 5, 5, 1, 1),
             (103, 1, 1, 1, 1),
             (103, 2, 2, 1, 1),
             (103, 3, 3, 1, 1),
@@ -1030,6 +1186,26 @@ const statements = [
             (2, 101, 3, 2, 1, 1),
             (2, 101, 4, 2, 1, 1),
             (2, 101, 5, 2, 1, 1),
+            (1, 104, 1, 2, 1, 1),
+            (1, 104, 2, 2, 1, 1),
+            (1, 104, 3, 2, 1, 1),
+            (1, 104, 4, 2, 1, 1),
+            (1, 104, 5, 2, 1, 1),
+            (2, 104, 1, 2, 1, 1),
+            (2, 104, 2, 2, 1, 1),
+            (2, 104, 3, 2, 1, 1),
+            (2, 104, 4, 2, 1, 1),
+            (2, 104, 5, 2, 1, 1),
+            (1, 105, 1, 2, 1, 1),
+            (1, 105, 2, 2, 1, 1),
+            (1, 105, 3, 2, 1, 1),
+            (1, 105, 4, 2, 1, 1),
+            (1, 105, 5, 2, 1, 1),
+            (2, 105, 1, 2, 1, 1),
+            (2, 105, 2, 2, 1, 1),
+            (2, 105, 3, 2, 1, 1),
+            (2, 105, 4, 2, 1, 1),
+            (2, 105, 5, 2, 1, 1),
             (1, 103, 1, 2, 1, 1),
             (1, 103, 2, 2, 1, 1),
             (1, 103, 3, 2, 1, 1),
@@ -1048,9 +1224,16 @@ const statements = [
 ];
 
 const initDatabase = async () => {
-    for (const statement of statements) {
+    console.time("initDatabase.total");
+
+    for (const [index, statement] of statements.entries()) {
+        const label = `initDatabase.statement.${index + 1}`;
+        console.time(label);
         await pool.query(statement);
+        console.timeEnd(label);
     }
+
+    console.timeEnd("initDatabase.total");
 };
 
 module.exports = initDatabase;

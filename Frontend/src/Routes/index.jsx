@@ -68,6 +68,27 @@ const EditTenant = lazy(() => {
 const DailyExpenses = lazy(() => {
   return import("../Components/Expense/DailyExpenses");
 });
+const MealTypeMaster = lazy(() => {
+  return import("../Components/Expense/MealTypeMaster/MealTypeMaster");
+});
+const AddMealType = lazy(() => {
+  return import("../Components/Expense/MealTypeMaster/AddMealType");
+});
+const EditMealType = lazy(() => {
+  return import("../Components/Expense/MealTypeMaster/EditMealType");
+});
+const ViewMealType = lazy(() => {
+  return import("../Components/Expense/MealTypeMaster/ViewMealType");
+});
+const WeeklyFoodMenu = lazy(() => {
+  return import("../Components/Expense/WeeklyFoodMenu/WeeklyFoodMenu");
+});
+const WeeklyFoodMenuAdd = lazy(() => {
+  return import("../Components/Expense/WeeklyFoodMenu/WeeklyFoodMenuAdd");
+});
+const WeeklyFoodMenuView = lazy(() => {
+  return import("../Components/Expense/WeeklyFoodMenu/WeeklyFoodMenuView");
+});
 const Inventory = lazy(() => {
   return import("../Components/InventoryManagement/Inventory");
 });
@@ -189,6 +210,34 @@ export const expenseRoutes = [
   {
     path: "/expenses/daily",
     element: withSuspense(<DailyExpenses />),
+  },
+  {
+    path: "/expense/meal-type-master",
+    element: withSuspense(<MealTypeMaster />),
+  },
+  {
+    path: "/expense/meal-type-master/add",
+    element: withSuspense(<AddMealType />),
+  },
+  {
+    path: "/expense/meal-type-master/edit/:id",
+    element: withSuspense(<EditMealType />),
+  },
+  {
+    path: "/expense/meal-type-master/view/:id",
+    element: withSuspense(<ViewMealType />),
+  },
+  {
+    path: "/expense/weekly-food-menu",
+    element: withSuspense(<WeeklyFoodMenu />),
+  },
+  {
+    path: "/expense/weekly-food-menu/add",
+    element: withSuspense(<WeeklyFoodMenuAdd />),
+  },
+  {
+    path: "/expense/weekly-food-menu/view",
+    element: withSuspense(<WeeklyFoodMenuView />),
   },
 ];
 

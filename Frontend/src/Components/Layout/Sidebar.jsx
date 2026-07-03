@@ -14,6 +14,8 @@ import {
   Wallet,
   Coins,
   Boxes,
+  UtensilsCrossed,
+  NotebookText,
 } from "lucide-react";
 import { useState } from "react";
 import { useDispatch } from "react-redux";
@@ -43,6 +45,8 @@ const menuIcons = {
   tenant_history: History,
   expense_management: Wallet,
   daily_expenses: Coins,
+  meal_type_master: UtensilsCrossed,
+  weekly_food_menu: NotebookText,
   inventory_management: Boxes,
 };
 

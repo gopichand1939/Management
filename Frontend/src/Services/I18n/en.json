@@ -31,8 +31,10 @@
     "tenantHistory": "Tenant History",
     "payments": "Payments",
     "userManagement": "UserManagement",
-    "expenseManagement": "Expense Management",
+    "expenseManagement": "Expenses",
     "dailyExpenses": "Daily Expenses",
+    "mealTypeMaster": "Meal Type Master",
+    "weeklyFoodMenu": "Weekly Food Menu Configuration",
     "inventoryManagement": "InventoryManagement",
     "inventoryMaster": "Inventory Master"
   },

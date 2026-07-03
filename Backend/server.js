@@ -13,10 +13,14 @@ const pgAdminRoutes = require("./PGAdmin/PGAdminRoutes");
 const tenantRoutes = require("./Tenant/TenantRoutes");
 const dashboardRoutes = require("./Dashboard/DashboardRoutes");
 const inventoryManagementRoutes = require("./InventoryManagement/InventoryManagementRoutes");
+const mealTypeRoutes = require("./Expenses/MealTypeMaster/MealTypeRoutes");
+const weeklyFoodMenuRoutes = require("./Expenses/WeeklyFoodMenu/WeeklyFoodMenuRoutes");
+
 
 const app = express();
 const logDirectory = path.join(__dirname, "logs");
 const runtimeLogPath = path.join(logDirectory, "runtime.log");
+const shouldInitDatabaseOnStartup = process.env.RUN_DB_INIT_ON_STARTUP === "true";
 
 const ensureLogDirectory = () => {
     if (!fs.existsSync(logDirectory)) {
@@ -97,24 +101,36 @@ app.use("/api/pg-admin", pgAdminRoutes);
 app.use("/api/tenant", tenantRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/inventory", inventoryManagementRoutes);
-
+app.use("/api/meal-type", mealTypeRoutes);
+app.use("/api/weekly-food-menu", weeklyFoodMenuRoutes);
 app.post("/", (req, res) => {
     res.send("Backend is running");
 });
 
 const port = process.env.PORT || 5000;
 
-initDatabase()
-    .then(() => {
-        const server = app.listen(port, () => {
-            console.log(`Server running on port ${port}`);
-        });
+const startServer = async () => {
+    console.time("startup.total");
 
-        server.on("error", (error) => {
-            logRuntimeEvent("HTTP Server Error", error);
-        });
-    })
-    .catch((error) => {
-        logRuntimeEvent("Database initialization failed", error);
-        process.exit(1);
+    if (shouldInitDatabaseOnStartup) {
+        console.time("startup.initDatabase");
+        await initDatabase();
+        console.timeEnd("startup.initDatabase");
+    }
+
+    console.time("startup.listen");
+    const server = app.listen(port, () => {
+        console.timeEnd("startup.listen");
+        console.timeEnd("startup.total");
+        console.log(`Server running on port ${port}`);
     });
+
+    server.on("error", (error) => {
+        logRuntimeEvent("HTTP Server Error", error);
+    });
+};
+
+startServer().catch((error) => {
+    logRuntimeEvent("Startup failed", error);
+    process.exit(1);
+});

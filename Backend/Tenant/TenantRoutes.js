@@ -1,45 +1,44 @@
 const express = require("express");
 const { protectAuth } = require("../Auth/AuthMiddleware");
-const {
-    addTenant,
-    addTenantPaymentEntry,
-    deleteTenant,
-    editTenant,
-    getBedDetails,
-    getTenantStats,
-    listActiveTenants,
-    listTenantActivity,
-    listTenantPayments,
-    listVacantBeds,
-    listVacatedTenants,
-    transferTenant,
-    vacateTenant,
-    verifyTenantPaymentEntry,
-    viewTenant,
-} = require("./TenantController");
-const { viewTenantHistory } = require("./TenantHistoryController");
-const { handleTenantUpload } = require("./TenantUploadMiddleware");
-
-
 
 const router = express.Router();
 const protectAdminAccess = protectAuth(["super_admin", "pg_admin"]);
+const lazyHandler = (loader, exportName) => {
+    return async (req, res, next) => {
+        try {
+            const module = loader();
+            return await module[exportName](req, res, next);
+        } catch (error) {
+            return next(error);
+        }
+    };
+};
+const lazyMiddleware = (loader, exportName) => {
+    return (req, res, next) => {
+        try {
+            const module = loader();
+            return module[exportName](req, res, next);
+        } catch (error) {
+            return next(error);
+        }
+    };
+};
 
-router.post("/create", protectAdminAccess, handleTenantUpload, addTenant);
-router.post("/active", protectAdminAccess, listActiveTenants);
-router.post("/vacant-beds", protectAdminAccess, listVacantBeds);
-router.post("/payments", protectAdminAccess, listTenantPayments);
-router.post("/vacated", protectAdminAccess, listVacatedTenants);
-router.post("/view", protectAdminAccess, viewTenant);
-router.post("/edit", protectAdminAccess, handleTenantUpload, editTenant);
-router.post("/delete", protectAdminAccess, deleteTenant);
-router.post("/payment/create", protectAdminAccess, handleTenantUpload, addTenantPaymentEntry);
-router.post("/payment/verify", protectAdminAccess, verifyTenantPaymentEntry);
-router.post("/bed/view", protectAdminAccess, getBedDetails);
-router.post("/transfer", protectAdminAccess, transferTenant);
-router.post("/vacate", protectAdminAccess, vacateTenant);
-router.post("/activity", protectAdminAccess, listTenantActivity);
-router.post("/history/view", protectAdminAccess, viewTenantHistory);
-router.post("/stats", protectAdminAccess, getTenantStats);
+router.post("/create", protectAdminAccess, lazyMiddleware(() => require("./TenantUploadMiddleware"), "handleTenantUpload"), lazyHandler(() => require("./TenantController"), "addTenant"));
+router.post("/active", protectAdminAccess, lazyHandler(() => require("./TenantController"), "listActiveTenants"));
+router.post("/vacant-beds", protectAdminAccess, lazyHandler(() => require("./TenantController"), "listVacantBeds"));
+router.post("/payments", protectAdminAccess, lazyHandler(() => require("./TenantController"), "listTenantPayments"));
+router.post("/vacated", protectAdminAccess, lazyHandler(() => require("./TenantController"), "listVacatedTenants"));
+router.post("/view", protectAdminAccess, lazyHandler(() => require("./TenantController"), "viewTenant"));
+router.post("/edit", protectAdminAccess, lazyMiddleware(() => require("./TenantUploadMiddleware"), "handleTenantUpload"), lazyHandler(() => require("./TenantController"), "editTenant"));
+router.post("/delete", protectAdminAccess, lazyHandler(() => require("./TenantController"), "deleteTenant"));
+router.post("/payment/create", protectAdminAccess, lazyMiddleware(() => require("./TenantUploadMiddleware"), "handleTenantUpload"), lazyHandler(() => require("./TenantController"), "addTenantPaymentEntry"));
+router.post("/payment/verify", protectAdminAccess, lazyHandler(() => require("./TenantController"), "verifyTenantPaymentEntry"));
+router.post("/bed/view", protectAdminAccess, lazyHandler(() => require("./TenantController"), "getBedDetails"));
+router.post("/transfer", protectAdminAccess, lazyHandler(() => require("./TenantController"), "transferTenant"));
+router.post("/vacate", protectAdminAccess, lazyHandler(() => require("./TenantController"), "vacateTenant"));
+router.post("/activity", protectAdminAccess, lazyHandler(() => require("./TenantController"), "listTenantActivity"));
+router.post("/history/view", protectAdminAccess, lazyHandler(() => require("./TenantHistoryController"), "viewTenantHistory"));
+router.post("/stats", protectAdminAccess, lazyHandler(() => require("./TenantController"), "getTenantStats"));
 
 module.exports = router;
