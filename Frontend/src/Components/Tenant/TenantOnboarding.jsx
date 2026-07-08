@@ -25,9 +25,11 @@ import {
   CheckCircle2,
   DollarSign,
   Info,
+  AlertCircle,
+  X,
 } from "lucide-react";
 
-import Error from "../Common/Error";
+import ErrorAlert from "../Common/Error";
 import PageLoader from "../Common/PageLoader";
 import TenantShell from "./TenantShell";
 import BedLayout from "../Institution/components/BedLayout";
@@ -127,6 +129,16 @@ const TenantOnboarding = () => {
 
   // Drag-and-drop state
   const [dragActives, setDragActives] = useState({});
+  const [toast, setToast] = useState(null);
+
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => {
+        setToast(null);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
 
   useEffect(() => {
     const fetchSetupData = async () => {
@@ -512,6 +524,7 @@ const TenantOnboarding = () => {
     const validationError = validateStep(0) || validateStep(1) || validateStep(2) || validateStep(3) || validateStep(4) || validateStep(5);
     if (validationError) {
       setError(validationError);
+      setToast({ message: validationError, type: "error" });
       return;
     }
 
@@ -527,15 +540,36 @@ const TenantOnboarding = () => {
         body: buildCreateFormData(formData),
       });
 
-      const data = await response.json();
+      let data;
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        data = await response.json();
+      } else {
+        const text = await response.text();
+        throw new Error(text || `Request failed with status ${response.status}`);
+      }
 
       if (!response.ok) {
         throw new Error(data.message || "Tenant onboarding failed");
       }
 
-      navigate("/tenant/active");
+      setToast({
+        message: "Tenant onboarding completed successfully!",
+        type: "success",
+      });
+
+      setTimeout(() => {
+        navigate("/tenant/active");
+      }, 1500);
     } catch (apiError) {
-      setError(apiError.message || "Tenant onboarding failed");
+      let msg = apiError.message || "Tenant onboarding failed";
+      if (msg.includes("Unexpected token") || msg.includes("is not valid JSON")) {
+        msg = "Server returned an invalid response. Please try again later.";
+      } else if (msg.includes("Failed to fetch")) {
+        msg = "Network connection failed. Please check your internet connection.";
+      }
+      setError(msg);
+      setToast({ message: msg, type: "error" });
     } finally {
       setSubmitting(false);
     }
@@ -1453,7 +1487,7 @@ const TenantOnboarding = () => {
           />
         </div>
 
-        <Error message={error} />
+        <ErrorAlert message={error} />
 
         {loading ? (
           <div className="rounded-[32px] border border-slate-100 bg-white p-16 shadow-sm">
@@ -1522,6 +1556,52 @@ const TenantOnboarding = () => {
           </>
         )}
       </div>
+
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            initial={{ opacity: 0, y: -20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.95 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className={`fixed top-6 right-6 z-[9999] flex w-[360px] items-center gap-3.5 rounded-2xl border bg-white/95 p-4.5 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.15)] backdrop-blur-md ${
+              toast.type === "success" ? "border-emerald-500/20" : "border-red-500/20"
+            }`}
+          >
+            <div
+              className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${
+                toast.type === "success"
+                  ? "bg-emerald-50 text-emerald-500"
+                  : "bg-red-50 text-red-500"
+              }`}
+            >
+              {toast.type === "success" ? (
+                <CheckCircle2 size={20} className="stroke-[2.5]" />
+              ) : (
+                <AlertCircle size={20} className="stroke-[2.5]" />
+              )}
+            </div>
+            <div className="flex-1 text-left">
+              <h4
+                className={`text-[10px] font-black uppercase tracking-wider ${
+                  toast.type === "success" ? "text-emerald-600" : "text-red-600"
+                }`}
+              >
+                {toast.type === "success" ? "Success" : "Onboarding Error"}
+              </h4>
+              <p className="mt-0.5 text-xs font-semibold text-slate-700 leading-snug">
+                {toast.message}
+              </p>
+            </div>
+            <button
+              onClick={() => setToast(null)}
+              className="grid h-8 w-8 place-items-center rounded-lg hover:bg-slate-100/50 text-slate-400 hover:text-slate-650 transition cursor-pointer"
+            >
+              <X size={14} className="stroke-[2.5]" />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </TenantShell>
   );
 };
