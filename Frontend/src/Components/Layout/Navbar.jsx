@@ -1,7 +1,9 @@
 import { Bell, ChevronDown, Menu, Search, Sun } from "lucide-react";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
+import { toggleSidebar } from "../../Redux/User/UserSlice";
 
 const Navbar = () => {
+  const dispatch = useDispatch();
   const { authUser } = useSelector((state) => state.user);
 
   return (
@@ -9,7 +11,7 @@ const Navbar = () => {
       className={`
         sticky
         top-0
-        z-50
+        z-40
         w-full
         shrink-0
         border-b
@@ -24,7 +26,8 @@ const Navbar = () => {
       <div className="flex items-center justify-between gap-6">
         <div className="flex flex-1 items-center gap-5">
           <button
-            className="text-slate-500 transition-colors hover:text-slate-900"
+            onClick={() => dispatch(toggleSidebar())}
+            className="text-slate-500 transition-colors hover:text-slate-900 lg:hidden cursor-pointer"
             type="button"
           >
             <Menu size={20} />

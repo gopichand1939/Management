@@ -11,6 +11,7 @@ const initialState = {
   users: [],
   loading: false,
   error: "",
+  isSidebarOpen: false,
 };
 
 const userSlice = createSlice({
@@ -66,6 +67,12 @@ const userSlice = createSlice({
     deleteUser: (state, action) => {
       state.users = state.users.filter((user) => user.id !== action.payload);
     },
+    toggleSidebar: (state) => {
+      state.isSidebarOpen = !state.isSidebarOpen;
+    },
+    setSidebarOpen: (state, action) => {
+      state.isSidebarOpen = action.payload;
+    },
   },
 });
 
@@ -79,6 +86,8 @@ export const {
   setUserList,
   setUserLoading,
   setUserProfile,
+  toggleSidebar,
+  setSidebarOpen,
 } = userSlice.actions;
 
 export default userSlice.reducer;

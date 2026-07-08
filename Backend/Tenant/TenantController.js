@@ -340,7 +340,7 @@ const mapTenantError = (error) => {
 
     return {
         statusCode: 500,
-        message: "Tenant operation failed",
+        message: error.message || "Tenant operation failed",
     };
 };
 

@@ -16,13 +16,13 @@ import {
   Boxes,
   UtensilsCrossed,
   NotebookText,
+  X,
 } from "lucide-react";
 import { useState } from "react";
-import { useDispatch } from "react-redux";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 
-import { logoutUser } from "../../Redux/User/UserSlice";
+import { logoutUser, setSidebarOpen } from "../../Redux/User/UserSlice";
 import { useTranslation } from "../../Services/I18n/I18nService";
 import {
   getMenuLabelKey,
@@ -57,7 +57,7 @@ const Sidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { authUser } = useSelector((state) => state.user);
+  const { authUser, isSidebarOpen } = useSelector((state) => state.user);
   const menuTree = getSidebarMenuTree(authUser);
   const [expandedMenus, setExpandedMenus] = useState({});
 
@@ -154,6 +154,7 @@ const Sidebar = () => {
       <NavLink
         key={menu.menu_id}
         to={route_path}
+        onClick={() => dispatch(setSidebarOpen(false))}
         className={({ isActive }) => `
           flex
           items-center
@@ -191,68 +192,82 @@ const Sidebar = () => {
   };
 
   return (
-    <aside
-      className={`
-        sticky
-        top-0
-        hidden
-        h-screen
-        max-h-screen
-        overflow-hidden
-        w-[270px]
-        border-r
-        border-slate-800
-        bg-[#111827]
-        p-6
-        shadow-xl
-        lg:flex
-        lg:flex-col
-      `}
-    >
-      <div className="mb-10 flex items-center gap-3 px-2">
-        <img
-          src={blrLogoCircular}
-          alt="BLR Stay"
-          className="h-14 w-14 rounded-full object-contain"
+    <>
+      {/* Backdrop overlay for mobile screen sizes */}
+      {isSidebarOpen && (
+        <div
+          onClick={() => dispatch(setSidebarOpen(false))}
+          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden cursor-pointer"
         />
+      )}
 
-        <span className="text-xl font-bold tracking-tight text-white">
-          BLR Stay
-        </span>
-      </div>
-
-      <nav className="flex flex-1 flex-col gap-2 overflow-y-auto min-h-0 no-scrollbar">
-        {menuTree.map((menu) => renderMenuItem(menu))}
-      </nav>
-
-      <button
+      <aside
         className={`
-          mt-auto
-          flex
-          w-full
-          items-center
-          gap-3
-          rounded-xl
-          border
-          border-red-500/20
-          bg-red-500/10
-          px-4
-          py-3
-          text-sm
-          font-semibold
-          text-red-200
-          transition-all
-          duration-200
-          hover:bg-red-500/20
-          hover:text-white
+          fixed inset-y-0 left-0 z-50
+          lg:sticky lg:top-0
+          h-screen max-h-screen w-[270px]
+          border-r border-slate-800 bg-[#111827] p-6 shadow-2xl
+          flex flex-col
+          transition-transform duration-300 ease-in-out
+          ${isSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
+          lg:flex
         `}
-        type="button"
-        onClick={handleLogout}
       >
-        <LogOut size={18} />
-        <span>Logout</span>
-      </button>
-    </aside>
+        <div className="mb-10 flex items-center justify-between px-2">
+          <div className="flex items-center gap-3">
+            <img
+              src={blrLogoCircular}
+              alt="BLR Stay"
+              className="h-14 w-14 rounded-full object-contain"
+            />
+            <span className="text-xl font-bold tracking-tight text-white">
+              BLR Stay
+            </span>
+          </div>
+
+          <button
+            onClick={() => dispatch(setSidebarOpen(false))}
+            className="text-slate-400 hover:text-white lg:hidden cursor-pointer"
+            type="button"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        <nav className="flex flex-1 flex-col gap-2 overflow-y-auto min-h-0 no-scrollbar">
+          {menuTree.map((menu) => renderMenuItem(menu))}
+        </nav>
+
+        <button
+          className={`
+            mt-auto
+            flex
+            w-full
+            items-center
+            gap-3
+            rounded-xl
+            border
+            border-red-500/20
+            bg-red-500/10
+            px-4
+            py-3
+            text-sm
+            font-semibold
+            text-red-200
+            transition-all
+            duration-200
+            hover:bg-red-500/20
+            hover:text-white
+            cursor-pointer
+          `}
+          type="button"
+          onClick={handleLogout}
+        >
+          <LogOut size={18} />
+          <span>Logout</span>
+        </button>
+      </aside>
+    </>
   );
 };
 
