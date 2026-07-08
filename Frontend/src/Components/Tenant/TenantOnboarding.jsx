@@ -1564,8 +1564,10 @@ const TenantOnboarding = () => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -20, scale: 0.95 }}
             transition={{ duration: 0.2, ease: "easeOut" }}
-            className={`fixed top-6 right-6 z-[9999] flex w-[360px] items-center gap-3.5 rounded-2xl border bg-white/95 p-4.5 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.15)] backdrop-blur-md ${
-              toast.type === "success" ? "border-emerald-500/20" : "border-red-500/20"
+            className={`fixed top-6 right-6 z-[9999] flex w-[360px] items-center gap-3.5 rounded-2xl border bg-white/95 p-4.5 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.15)] backdrop-blur-md ${
+              toast.type === "success"
+                ? "border-emerald-100 border-l-4 border-l-emerald-500"
+                : "border-red-100 border-l-4 border-l-red-500"
             }`}
           >
             <div
