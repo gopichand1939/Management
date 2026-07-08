@@ -171,14 +171,15 @@ const buildTenantDueSchedule = (tenant, rentAmount) => {
     const checkInDate = tenant.check_in_date;
     const billingCycleType = tenant.billing_cycle_type || "anniversary";
 
-    if (!normalizedRent || !checkInDate) {
+    const checkInDateObj = new Date(checkInDate);
+    if (!normalizedRent || !checkInDate || Number.isNaN(checkInDateObj.getTime())) {
         return [];
     }
 
     if (billingCycleType === "calendar_month_prorated") {
         const firstCycleEndDate = getLastDayOfMonth(checkInDate);
         const firstCycleDays = getInclusiveDaySpan(checkInDate, firstCycleEndDate);
-        const daysInMonth = getDaysInMonth(checkInDate);
+        const daysInMonth = getDaysInMonth(checkInDate) || 30;
         const firstCycleAmount = roundCurrency((normalizedRent / daysInMonth) * firstCycleDays);
         const nextCycleStartDate = getFirstDayOfNextMonth(checkInDate);
         const nextCycleEndDate = getLastDayOfMonth(nextCycleStartDate);
@@ -1001,7 +1002,7 @@ const createTenantOnboarding = async (data) => {
                     : checkInParts?.day || null,
             first_cycle_start_date: firstDue?.cycle_start_date || null,
             first_cycle_end_date: firstDue?.cycle_end_date || null,
-            first_cycle_amount: firstDue?.total_rent || 0,
+            first_cycle_amount: Number.isFinite(firstDue?.total_rent) ? firstDue.total_rent : 0,
         };
 
         const tenantResult = await client.query(`

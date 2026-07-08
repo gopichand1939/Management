@@ -112,6 +112,31 @@ const buildBillingPreview = (checkInDate, monthlyRent, billingCycleType) => {
   };
 };
 
+const getStepNameForError = (message) => {
+  const msg = String(message || "").toLowerCase();
+
+  if (msg.includes("institution")) {
+    return "Choose Building";
+  }
+  if (msg.includes("floor") || msg.includes("room") || msg.includes("bed") || msg.includes("check-in date")) {
+    return "Bed Selection";
+  }
+  if (msg.includes("name") || msg.includes("phone") || msg.includes("email") || msg.includes("occupation") || msg.includes("resident")) {
+    return "Booking Details";
+  }
+  if (msg.includes("guardian") || msg.includes("emergency")) {
+    return "Guardian Details";
+  }
+  if (msg.includes("aadhaar") || msg.includes("pan") || msg.includes("document")) {
+    return "Documents Upload";
+  }
+  if (msg.includes("rent") || msg.includes("deposit") || msg.includes("payment")) {
+    return "Payment Setup";
+  }
+
+  return "Review & Confirm";
+};
+
 const TenantOnboarding = () => {
   const navigate = useNavigate();
   const { authUser } = useSelector((state) => state.user);
@@ -521,11 +546,14 @@ const TenantOnboarding = () => {
   };
 
   const handleSubmit = async () => {
-    const validationError = validateStep(0) || validateStep(1) || validateStep(2) || validateStep(3) || validateStep(4) || validateStep(5);
-    if (validationError) {
-      setError(validationError);
-      setToast({ message: validationError, type: "error" });
-      return;
+    for (let i = 0; i < tenantOnboardingSteps.length; i++) {
+      const validationError = validateStep(i);
+      if (validationError) {
+        setError(validationError);
+        const stepName = tenantOnboardingSteps[i] || "Form Details";
+        setToast({ message: `${validationError} (Step: ${stepName})`, type: "error" });
+        return;
+      }
     }
 
     setSubmitting(true);
@@ -568,8 +596,10 @@ const TenantOnboarding = () => {
       } else if (msg.includes("Failed to fetch")) {
         msg = "Network connection failed. Please check your internet connection.";
       }
+      
+      const stepName = getStepNameForError(msg);
       setError(msg);
-      setToast({ message: msg, type: "error" });
+      setToast({ message: `${msg} (Step: ${stepName})`, type: "error" });
     } finally {
       setSubmitting(false);
     }

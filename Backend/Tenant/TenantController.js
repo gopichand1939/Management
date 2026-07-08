@@ -338,9 +338,22 @@ const mapTenantError = (error) => {
         };
     }
 
+    let detailMessage = error.message || "Tenant operation failed";
+    const locations = [];
+    if (error.table) locations.push(`Table: ${error.table}`);
+    if (error.column) locations.push(`Column: ${error.column}`);
+    if (error.constraint) locations.push(`Constraint: ${error.constraint}`);
+    
+    if (locations.length > 0) {
+        detailMessage += ` [${locations.join(", ")}]`;
+    }
+    if (error.detail) {
+        detailMessage += ` - ${error.detail}`;
+    }
+
     return {
         statusCode: 500,
-        message: error.message || "Tenant operation failed",
+        message: detailMessage,
     };
 };
 
