@@ -303,27 +303,6 @@ const mapTenantError = (error) => {
         };
     }
 
-    if (error.code === "DUPLICATE_PHONE") {
-        return {
-            statusCode: 400,
-            message: "Tenant phone already exists",
-        };
-    }
-
-    if (error.code === "DUPLICATE_EMAIL") {
-        return {
-            statusCode: 400,
-            message: "Tenant email already exists",
-        };
-    }
-
-    if (error.code === "DUPLICATE_AADHAAR") {
-        return {
-            statusCode: 400,
-            message: "Tenant Aadhaar already exists",
-        };
-    }
-
     if (error.code === "INSTITUTION_NOT_FOUND") {
         return {
             statusCode: 400,
@@ -334,7 +313,7 @@ const mapTenantError = (error) => {
     if (error.code === "23505") {
         return {
             statusCode: 400,
-            message: "A unique tenant or payment field already exists",
+            message: "System generated number conflict, please try again",
         };
     }
 

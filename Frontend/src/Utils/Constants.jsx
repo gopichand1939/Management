@@ -70,3 +70,9 @@ export const MEAL_TYPE_DELETE = BASE_URL + "/meal-type/delete";
 export const WEEKLY_FOOD_MENU_GRID = BASE_URL + "/weekly-food-menu/grid";
 export const WEEKLY_FOOD_MENU_SAVE = BASE_URL + "/weekly-food-menu/save";
 export const WEEKLY_FOOD_MENU_DELETE = BASE_URL + "/weekly-food-menu/delete";
+
+export const DAILY_EXPENSE_CREATE = BASE_URL + "/daily-expenses/create";
+export const DAILY_EXPENSE_LIST = BASE_URL + "/daily-expenses/list";
+export const DAILY_EXPENSE_VIEW = BASE_URL + "/daily-expenses/view";
+export const DAILY_EXPENSE_EDIT = BASE_URL + "/daily-expenses/edit";
+export const DAILY_EXPENSE_DELETE = BASE_URL + "/daily-expenses/delete";

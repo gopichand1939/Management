@@ -15,6 +15,7 @@ const dashboardRoutes = require("./Dashboard/DashboardRoutes");
 const inventoryManagementRoutes = require("./InventoryManagement/InventoryManagementRoutes");
 const mealTypeRoutes = require("./Expenses/MealTypeMaster/MealTypeRoutes");
 const weeklyFoodMenuRoutes = require("./Expenses/WeeklyFoodMenu/WeeklyFoodMenuRoutes");
+const dailyExpensesRoutes = require("./Expenses/DailyExpensesSpend/DailyexpensesRoutes");
 
 
 const app = express();
@@ -101,6 +102,7 @@ app.use("/api/pg-admin", pgAdminRoutes);
 app.use("/api/tenant", tenantRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/inventory", inventoryManagementRoutes);
+app.use("/api/daily-expenses", dailyExpensesRoutes);
 app.use("/api/meal-type", mealTypeRoutes);
 app.use("/api/weekly-food-menu", weeklyFoodMenuRoutes);
 app.post("/", (req, res) => {

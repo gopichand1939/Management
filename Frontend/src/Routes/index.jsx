@@ -65,8 +65,14 @@ const TenantProfile = lazy(() => {
 const EditTenant = lazy(() => {
   return import("../Components/Tenant/EditTenant");
 });
-const DailyExpenses = lazy(() => {
-  return import("../Components/Expense/DailyExpenses");
+const DailyExpensesSpend = lazy(() => {
+  return import("../Components/Expense/DailyExpensesSpend/DailyExpensesSpend");
+});
+const AddDailyExpense = lazy(() => {
+  return import("../Components/Expense/DailyExpensesSpend/AddDailyExpense");
+});
+const EditDailyExpense = lazy(() => {
+  return import("../Components/Expense/DailyExpensesSpend/EditDailyExpense");
 });
 const MealTypeMaster = lazy(() => {
   return import("../Components/Expense/MealTypeMaster/MealTypeMaster");
@@ -209,7 +215,15 @@ export const tenantRoutes = [
 export const expenseRoutes = [
   {
     path: "/expenses/daily",
-    element: withSuspense(<DailyExpenses />),
+    element: withSuspense(<DailyExpensesSpend />),
+  },
+  {
+    path: "/expenses/daily/add",
+    element: withSuspense(<AddDailyExpense />),
+  },
+  {
+    path: "/expenses/daily/edit/:id",
+    element: withSuspense(<EditDailyExpense />),
   },
   {
     path: "/expense/meal-type-master",

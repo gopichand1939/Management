@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 
 import Error from "../Common/Error";
+import FilePreviewModal from "../Common/FilePreviewModal";
 import PageLoader from "../Common/PageLoader";
 import StatusBadge from "../Common/StatusBadge";
 import Navbar from "../Layout/Navbar";
@@ -44,6 +45,7 @@ const ViewInventory = () => {
   const [inventory, setInventory] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [previewPhoto, setPreviewPhoto] = useState(null);
 
   useEffect(() => {
     const getInventory = async () => {
@@ -146,11 +148,18 @@ const ViewInventory = () => {
                       </span>
 
                       {inventory.item_photo?.file_url ? (
-                        <img
-                          src={inventory.item_photo.file_url}
-                          alt={inventory.item_name}
-                          className="block h-auto w-full rounded-2xl border border-slate-100 bg-slate-50 object-contain shadow-sm"
-                        />
+                        <button
+                          type="button"
+                          onClick={() => setPreviewPhoto(inventory.item_photo)}
+                          className="block w-full overflow-hidden rounded-2xl border border-slate-100 bg-slate-50 shadow-sm transition-all hover:border-orange-200"
+                          title="Preview image"
+                        >
+                          <img
+                            src={inventory.item_photo.file_url}
+                            alt={inventory.item_name}
+                            className="block h-auto w-full object-contain"
+                          />
+                        </button>
                       ) : (
                         <div className="grid min-h-[160px] w-full place-items-center rounded-2xl border border-dashed border-slate-200 bg-slate-50 text-sm font-bold text-slate-400">
                           No photo uploaded
@@ -168,6 +177,12 @@ const ViewInventory = () => {
           </div>
         </main>
       </div>
+
+      <FilePreviewModal
+        file={previewPhoto}
+        title="Inventory Image Preview"
+        onClose={() => setPreviewPhoto(null)}
+      />
     </div>
   );
 };

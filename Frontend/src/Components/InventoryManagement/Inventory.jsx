@@ -8,6 +8,7 @@ import {
 
 import ActionPopOver from "../Common/ActionPopOver";
 import Error from "../Common/Error";
+import FilePreviewModal from "../Common/FilePreviewModal";
 import PageLoader from "../Common/PageLoader";
 import SearchBar from "../Common/SearchBar";
 import StatusBadge from "../Common/StatusBadge";
@@ -92,6 +93,7 @@ const Inventory = () => {
   const [selectedMonth, setSelectedMonth] = useState("all");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [previewPhoto, setPreviewPhoto] = useState(null);
   const canCreate = hasMenuAction(authUser, "/inventory", MENU_ACTIONS.CREATE);
   const canEdit = hasMenuAction(authUser, "/inventory", MENU_ACTIONS.EDIT);
   const canView = hasMenuAction(authUser, "/inventory", MENU_ACTIONS.VIEW);
@@ -237,11 +239,18 @@ const Inventory = () => {
     return {
       ...inventory,
       photo: inventory.item_photo?.file_url ? (
-        <img
-          src={inventory.item_photo.file_url}
-          alt={inventory.item_name}
-          className="h-12 w-12 rounded-lg border border-slate-100 object-cover shadow-sm"
-        />
+        <button
+          type="button"
+          onClick={() => setPreviewPhoto(inventory.item_photo)}
+          className="block h-12 w-12 overflow-hidden rounded-lg border border-slate-100 bg-white shadow-sm transition-all hover:scale-105 hover:border-orange-200"
+          title="Preview image"
+        >
+          <img
+            src={inventory.item_photo.file_url}
+            alt={inventory.item_name}
+            className="h-full w-full object-cover"
+          />
+        </button>
       ) : (
         <span className="grid h-12 w-12 place-items-center rounded-lg border border-slate-100 bg-slate-50 text-xs font-bold text-slate-400">
           No
@@ -418,6 +427,12 @@ const Inventory = () => {
           </div>
         </main>
       </div>
+
+      <FilePreviewModal
+        file={previewPhoto}
+        title="Inventory Image Preview"
+        onClose={() => setPreviewPhoto(null)}
+      />
     </div>
   );
 };

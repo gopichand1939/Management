@@ -604,53 +604,6 @@ const replaceTenantDocuments = async (client, tenantId, institutionId, documents
     }
 };
 
-const validateDuplicateTenant = async (
-    client,
-    { phone, email, aadhaar_number, id = null }
-) => {
-    const duplicatesResult = await client.query(`
-        SELECT id, phone, email, aadhaar_number
-        FROM tenants
-        WHERE deleted_at IS NULL
-          AND ($1::int IS NULL OR id <> $1)
-          AND (
-            ($2::varchar IS NOT NULL AND phone = $2)
-            OR ($3::varchar IS NOT NULL AND LOWER(email) = LOWER($3))
-            OR ($4::varchar IS NOT NULL AND aadhaar_number = $4)
-          )
-        LIMIT 1
-    `, [
-        id,
-        phone || null,
-        email || null,
-        aadhaar_number || null,
-    ]);
-
-    const duplicate = duplicatesResult.rows[0];
-
-    if (!duplicate) {
-        return;
-    }
-
-    if (phone && duplicate.phone === phone) {
-        throw Object.assign(new Error("Phone number already exists"), {
-            code: "DUPLICATE_PHONE",
-        });
-    }
-
-    if (email && duplicate.email && String(duplicate.email).toLowerCase() === String(email).toLowerCase()) {
-        throw Object.assign(new Error("Email already exists"), {
-            code: "DUPLICATE_EMAIL",
-        });
-    }
-
-    if (aadhaar_number && duplicate.aadhaar_number === aadhaar_number) {
-        throw Object.assign(new Error("Aadhaar number already exists"), {
-            code: "DUPLICATE_AADHAAR",
-        });
-    }
-};
-
 const lockAndValidateBed = async (client, data) => {
     const bedResult = await client.query(`
         SELECT
@@ -979,8 +932,6 @@ const createTenantOnboarding = async (data) => {
 
     try {
         await client.query("BEGIN");
-
-        await validateDuplicateTenant(client, data);
 
         const bed = await lockAndValidateBed(client, data);
         const admissionNumber = await generateAdmissionNumber(client, data.institution_id);
@@ -1317,8 +1268,6 @@ const updateTenantOnboarding = async (data) => {
 
     try {
         await client.query("BEGIN");
-
-        await validateDuplicateTenant(client, data);
 
         const existingTenantResult = await client.query(`
             SELECT *

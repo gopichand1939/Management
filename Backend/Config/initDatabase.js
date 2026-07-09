@@ -276,6 +276,36 @@ const statements = [
         ON weekly_food_menu_config(institution_id, day_order, meal_type_id)
     `,
     `
+        CREATE TABLE IF NOT EXISTS daily_expenses_spend (
+            id SERIAL PRIMARY KEY,
+            institution_id INTEGER NOT NULL REFERENCES institutions(id) ON DELETE CASCADE,
+            expense_title VARCHAR(150) NOT NULL,
+            category VARCHAR(100) NOT NULL,
+            amount NUMERIC(12, 2) NOT NULL,
+            expense_date DATE NOT NULL,
+            expense_time TIME,
+            bill_file JSONB,
+            is_deleted BOOLEAN NOT NULL DEFAULT false,
+            created_by INTEGER,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_by INTEGER,
+            updated_at TIMESTAMP
+        )
+    `,
+    `
+        ALTER TABLE daily_expenses_spend
+        ADD COLUMN IF NOT EXISTS expense_time TIME
+    `,
+    `
+        ALTER TABLE daily_expenses_spend
+        ADD COLUMN IF NOT EXISTS bill_file JSONB
+    `,
+    `
+        CREATE INDEX IF NOT EXISTS daily_expenses_spend_institution_date_idx
+        ON daily_expenses_spend(institution_id, expense_date DESC, expense_time DESC)
+        WHERE is_deleted = false
+    `,
+    `
         INSERT INTO meal_type_master (
             institution_id,
             meal_type_name,
@@ -479,55 +509,13 @@ const statements = [
         WHERE deleted_at IS NULL AND aadhaar_number IS NOT NULL
     `,
     `
-        DO $$
-        BEGIN
-            IF NOT EXISTS (
-                SELECT 1
-                FROM tenants duplicate_tenants
-                WHERE duplicate_tenants.deleted_at IS NULL
-                  AND duplicate_tenants.phone IS NOT NULL
-                GROUP BY duplicate_tenants.phone
-                HAVING COUNT(*) > 1
-            ) THEN
-                CREATE UNIQUE INDEX IF NOT EXISTS tenants_active_phone_unique_idx
-                ON tenants(phone)
-                WHERE deleted_at IS NULL AND phone IS NOT NULL;
-            END IF;
-        END $$;
+        DROP INDEX IF EXISTS tenants_active_phone_unique_idx
     `,
     `
-        DO $$
-        BEGIN
-            IF NOT EXISTS (
-                SELECT 1
-                FROM tenants duplicate_tenants
-                WHERE duplicate_tenants.deleted_at IS NULL
-                  AND duplicate_tenants.email IS NOT NULL
-                GROUP BY LOWER(duplicate_tenants.email)
-                HAVING COUNT(*) > 1
-            ) THEN
-                CREATE UNIQUE INDEX IF NOT EXISTS tenants_active_email_unique_idx
-                ON tenants(LOWER(email))
-                WHERE deleted_at IS NULL AND email IS NOT NULL;
-            END IF;
-        END $$;
+        DROP INDEX IF EXISTS tenants_active_email_unique_idx
     `,
     `
-        DO $$
-        BEGIN
-            IF NOT EXISTS (
-                SELECT 1
-                FROM tenants duplicate_tenants
-                WHERE duplicate_tenants.deleted_at IS NULL
-                  AND duplicate_tenants.aadhaar_number IS NOT NULL
-                GROUP BY duplicate_tenants.aadhaar_number
-                HAVING COUNT(*) > 1
-            ) THEN
-                CREATE UNIQUE INDEX IF NOT EXISTS tenants_active_aadhaar_unique_idx
-                ON tenants(aadhaar_number)
-                WHERE deleted_at IS NULL AND aadhaar_number IS NOT NULL;
-            END IF;
-        END $$;
+        DROP INDEX IF EXISTS tenants_active_aadhaar_unique_idx
     `,
     `
         CREATE TABLE IF NOT EXISTS tenant_payments (
@@ -538,7 +526,7 @@ const statements = [
             payment_type VARCHAR(50) NOT NULL DEFAULT 'rent',
             payment_mode VARCHAR(50),
             payment_date DATE,
-            reference_number VARCHAR(120) UNIQUE,
+            reference_number VARCHAR(120),
             notes TEXT,
             status VARCHAR(30) NOT NULL DEFAULT 'completed',
             created_by INTEGER,
@@ -548,6 +536,13 @@ const statements = [
     `
         ALTER TABLE tenant_payments
         ADD COLUMN IF NOT EXISTS receipt_number VARCHAR(120)
+    `,
+    `
+        ALTER TABLE tenant_payments
+        DROP CONSTRAINT IF EXISTS tenant_payments_reference_number_key
+    `,
+    `
+        DROP INDEX IF EXISTS tenant_payments_reference_number_key
     `,
     `
         ALTER TABLE tenant_payments
