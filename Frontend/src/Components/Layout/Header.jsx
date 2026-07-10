@@ -8,7 +8,7 @@ const Header = ({ title, subtitle }) => {
         mb-2
       `}
     >
-      <span className="text-xs text-slate-400">Welcome back, Admin 👋</span>
+      {/* <span className="text-xs text-slate-400">Welcome back, Admin 👋</span> */}
       <h1
         className={`
           text-2xl
