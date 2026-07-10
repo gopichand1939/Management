@@ -652,6 +652,18 @@ const statements = [
         )
     `,
     `
+        CREATE TABLE IF NOT EXISTS payment_reminder_actions (
+            id SERIAL PRIMARY KEY,
+            monthly_due_id INTEGER NOT NULL REFERENCES tenant_monthly_dues(id) ON DELETE CASCADE,
+            tenant_id INTEGER NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+            action_type VARCHAR(50) NOT NULL DEFAULT 'follow_up',
+            action_note TEXT,
+            promise_date DATE,
+            created_by INTEGER,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    `,
+    `
         CREATE TABLE IF NOT EXISTS inventory_management (
             id SERIAL PRIMARY KEY,
             inventory_id VARCHAR(50) UNIQUE,
@@ -812,6 +824,10 @@ const statements = [
         ON tenant_monthly_dues(tenant_id, due_month DESC)
     `,
     `
+        CREATE INDEX IF NOT EXISTS payment_reminder_actions_due_idx
+        ON payment_reminder_actions(monthly_due_id, created_at DESC)
+    `,
+    `
         CREATE INDEX IF NOT EXISTS tenants_institution_status_idx
         ON tenants(institution_id, status)
     `,
@@ -950,15 +966,15 @@ const statements = [
     `,
     `
         DELETE FROM urmg_profile_menus_actions
-        WHERE menu_id IN (5, 6, 7, 8, 9, 10, 11, 12, 13, 100, 101, 102, 103, 104, 105)
+        WHERE menu_id IN (5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 100, 101, 102, 103, 104, 105)
     `,
     `
         DELETE FROM urmg_menu_actions
-        WHERE menu_id IN (5, 6, 7, 8, 9, 10, 11, 12, 13, 100, 101, 102, 103, 104, 105)
+        WHERE menu_id IN (5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 100, 101, 102, 103, 104, 105)
     `,
     `
         DELETE FROM urmg_menus
-        WHERE menu_id IN (5, 6, 7, 8, 9, 10, 11, 12, 13, 100, 101, 102, 103, 104, 105)
+        WHERE menu_id IN (5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 100, 101, 102, 103, 104, 105)
     `,
     `
         INSERT INTO urmg_actions (
@@ -1003,8 +1019,9 @@ const statements = [
             (10, 8, 1, 'Active Tenants', 2, 1, 1),
             (11, 8, 1, 'Vacant Beds', 3, 1, 1),
             (12, 8, 1, 'Payments', 4, 1, 1),
-            (13, 8, 1, 'Vacated History', 5, 1, 1),
-            (14, 8, 1, 'Tenant History', 6, 1, 1),
+            (15, 8, 1, 'Payment Reminders', 5, 1, 1),
+            (13, 8, 1, 'Vacated History', 6, 1, 1),
+            (14, 8, 1, 'Tenant History', 7, 1, 1),
             (100, NULL, 1, 'ExpenseManagement', 5, 1, 1),
             (101, 100, 1, 'Daily Expenses', 1, 1, 1),
             (104, 100, 1, 'Meal Type Master', 2, 1, 1),
@@ -1062,6 +1079,9 @@ const statements = [
             (12, 1, 1, 1, 1),
             (12, 3, 2, 1, 1),
             (12, 5, 3, 1, 1),
+            (15, 1, 1, 1, 1),
+            (15, 3, 2, 1, 1),
+            (15, 5, 3, 1, 1),
             (13, 3, 1, 1, 1),
             (13, 5, 2, 1, 1),
             (14, 3, 1, 1, 1),
@@ -1150,6 +1170,9 @@ const statements = [
             (1, 12, 1, 2, 1, 1),
             (1, 12, 3, 2, 1, 1),
             (1, 12, 5, 2, 1, 1),
+            (1, 15, 1, 2, 1, 1),
+            (1, 15, 3, 2, 1, 1),
+            (1, 15, 5, 2, 1, 1),
             (1, 13, 3, 2, 1, 1),
             (1, 13, 5, 2, 1, 1),
             (1, 14, 3, 2, 1, 1),
@@ -1169,6 +1192,9 @@ const statements = [
             (2, 12, 1, 2, 1, 1),
             (2, 12, 3, 2, 1, 1),
             (2, 12, 5, 2, 1, 1),
+            (2, 15, 1, 2, 1, 1),
+            (2, 15, 3, 2, 1, 1),
+            (2, 15, 5, 2, 1, 1),
             (2, 13, 3, 2, 1, 1),
             (2, 13, 5, 2, 1, 1),
             (1, 101, 1, 2, 1, 1),

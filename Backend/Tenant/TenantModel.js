@@ -30,6 +30,23 @@ const tenantBaseSelectQuery = `
         latest_tenant_payment.verification_status AS latest_payment_verification_status,
         latest_tenant_payment.payment_date AS latest_payment_date,
         latest_tenant_payment.reference_number AS latest_payment_reference_number,
+        joining_tenant_payment.id AS joining_payment_id,
+        CASE
+            WHEN joining_tenant_payment.amount IS NULL THEN NULL
+            WHEN COALESCE(tenants.agreed_monthly_rent, 0) > 0
+                THEN LEAST(joining_tenant_payment.amount, tenants.agreed_monthly_rent)
+            WHEN COALESCE(rooms.rent_amount, 0) > 0
+                THEN LEAST(joining_tenant_payment.amount, rooms.rent_amount)
+            WHEN COALESCE(tenants.deposit_paid, tenants.security_deposit, 0) > 0
+                AND joining_tenant_payment.amount > COALESCE(tenants.deposit_paid, tenants.security_deposit, 0)
+                THEN GREATEST(joining_tenant_payment.amount - COALESCE(tenants.deposit_paid, tenants.security_deposit, 0), 0)
+            ELSE joining_tenant_payment.amount
+        END AS joining_payment_amount,
+        joining_tenant_payment.payment_type AS joining_payment_type,
+        joining_tenant_payment.status AS joining_payment_status,
+        joining_tenant_payment.verification_status AS joining_payment_verification_status,
+        joining_tenant_payment.payment_date AS joining_payment_date,
+        joining_tenant_payment.reference_number AS joining_payment_reference_number,
         tenants.billing_cycle_type,
         tenants.billing_cycle_anchor_day,
         tenants.first_cycle_start_date,
@@ -58,6 +75,30 @@ const tenantBaseSelectQuery = `
         ORDER BY tenant_payments.payment_date DESC NULLS LAST, tenant_payments.id DESC
         LIMIT 1
     ) AS latest_tenant_payment
+        ON TRUE
+    LEFT JOIN LATERAL (
+        SELECT
+            tenant_payments.id,
+            tenant_payments.amount,
+            tenant_payments.payment_type,
+            tenant_payments.status,
+            tenant_payments.verification_status,
+            tenant_payments.payment_date,
+            tenant_payments.reference_number
+        FROM tenant_payments
+        WHERE tenant_payments.tenant_id = tenants.id
+          AND LOWER(COALESCE(tenant_payments.payment_type, '')) NOT IN (
+              'deposit',
+              'security_deposit',
+              'security deposit',
+              'advance_deposit',
+              'advance deposit',
+              'deposit_refund',
+              'deposit refund'
+          )
+        ORDER BY tenant_payments.payment_date ASC NULLS LAST, tenant_payments.id ASC
+        LIMIT 1
+    ) AS joining_tenant_payment
         ON TRUE
 `;
 

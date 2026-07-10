@@ -16,6 +16,7 @@ import {
   Boxes,
   UtensilsCrossed,
   NotebookText,
+  BellRing,
   X,
 } from "lucide-react";
 import { useState } from "react";
@@ -41,6 +42,7 @@ const menuIcons = {
   tenant_onboarding: UserPlus,
   tenant_vacant_beds: BedDouble,
   tenant_payments: ReceiptText,
+  payment_reminders: BellRing,
   tenant_vacated: Users,
   tenant_history: History,
   expense_management: Wallet,

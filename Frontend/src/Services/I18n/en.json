@@ -30,6 +30,7 @@
     "vacatedHistory": "Vacated History",
     "tenantHistory": "Tenant History",
     "payments": "Payments",
+    "paymentReminders": "Payment Reminders",
     "userManagement": "UserManagement",
     "expenseManagement": "Expenses",
     "dailyExpenses": "Daily Expenses",

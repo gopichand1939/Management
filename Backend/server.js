@@ -16,6 +16,7 @@ const inventoryManagementRoutes = require("./InventoryManagement/InventoryManage
 const mealTypeRoutes = require("./Expenses/MealTypeMaster/MealTypeRoutes");
 const weeklyFoodMenuRoutes = require("./Expenses/WeeklyFoodMenu/WeeklyFoodMenuRoutes");
 const dailyExpensesRoutes = require("./Expenses/DailyExpensesSpend/DailyexpensesRoutes");
+const paymentReminderRoutes = require("./PaymnetReminder/PaymnetReminderRoutes");
 
 
 const app = express();
@@ -105,6 +106,7 @@ app.use("/api/inventory", inventoryManagementRoutes);
 app.use("/api/daily-expenses", dailyExpensesRoutes);
 app.use("/api/meal-type", mealTypeRoutes);
 app.use("/api/weekly-food-menu", weeklyFoodMenuRoutes);
+app.use("/api/payment-reminder", paymentReminderRoutes);
 app.post("/", (req, res) => {
     res.send("Backend is running");
 });

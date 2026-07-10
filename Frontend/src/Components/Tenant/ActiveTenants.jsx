@@ -75,6 +75,106 @@ const formatLabel = (value) => {
     .replace(/\b\w/g, (character) => character.toUpperCase());
 };
 
+const activityFieldLabels = {
+  admission_number: "Admission No.",
+  bed_id: "Bed",
+  status: "Tenant Status",
+  tenant_status: "Tenant Status",
+  payment_id: "Payment",
+  payment_status: "Payment Status",
+  payment_verification_status: "Verification",
+  verification_status: "Verification",
+  check_in_date: "Check-in",
+  checkout_date: "Check-out",
+  floor_id: "Floor",
+  room_id: "Room",
+  amount: "Amount",
+  payment_type: "Payment Type",
+  payment_mode: "Payment Mode",
+  reference_number: "Reference No.",
+};
+
+const hiddenActivityFields = new Set([
+  "tenant_id",
+  "institution_id",
+  "performed_by",
+  "updated_by",
+  "created_by",
+]);
+
+const coerceActivityValue = (value) => {
+  if (!value) {
+    return null;
+  }
+
+  if (typeof value === "object") {
+    return value;
+  }
+
+  try {
+    return JSON.parse(value);
+  } catch {
+    return value;
+  }
+};
+
+const formatActivityValue = (key, value) => {
+  if (value === null || value === undefined || value === "") {
+    return "-";
+  }
+
+  if (key.includes("date") || key.endsWith("_at")) {
+    return formatDisplayDate(value);
+  }
+
+  if (key.includes("amount")) {
+    return formatCurrency(value);
+  }
+
+  if (key.endsWith("_id") || key === "payment_id") {
+    return `#${value}`;
+  }
+
+  if (typeof value === "boolean") {
+    return value ? "Yes" : "No";
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((item) => formatLabel(item)).join(", ");
+  }
+
+  if (typeof value === "object") {
+    return Object.entries(value)
+      .filter(([, nestedValue]) => nestedValue !== null && nestedValue !== undefined && nestedValue !== "")
+      .map(([nestedKey, nestedValue]) => `${formatLabel(nestedKey)}: ${formatActivityValue(nestedKey, nestedValue)}`)
+      .join(", ");
+  }
+
+  return formatLabel(value);
+};
+
+const getActivityDetails = (log) => {
+  const activityValue = coerceActivityValue(log?.new_value);
+
+  if (!activityValue) {
+    return [{ label: "Update", value: "Activity recorded" }];
+  }
+
+  if (typeof activityValue !== "object") {
+    return [{ label: "Details", value: String(activityValue) }];
+  }
+
+  const details = Object.entries(activityValue)
+    .filter(([key, value]) => !hiddenActivityFields.has(key) && value !== null && value !== undefined && value !== "")
+    .map(([key, value]) => ({
+      label: activityFieldLabels[key] || formatLabel(key),
+      value: formatActivityValue(key, value),
+    }))
+    .filter((item) => item.value && item.value !== "-");
+
+  return details.length ? details : [{ label: "Update", value: "Activity recorded" }];
+};
+
 const getProfilePhotoUrl = (profilePhoto) => {
   if (!profilePhoto) {
     return null;
@@ -110,6 +210,27 @@ const getNextDueDate = (tenant) => {
   const nextDueDate = new Date(anchorDate);
   nextDueDate.setMonth(nextDueDate.getMonth() + 1);
   return nextDueDate;
+};
+
+const getJoiningRentOnlyAmount = (tenant) => {
+  const paymentAmount = Number(tenant?.joining_payment_amount || 0);
+  const monthlyRent = Number(
+    tenant?.agreed_monthly_rent ||
+    tenant?.room_rent_amount ||
+    tenant?.first_cycle_amount ||
+    0
+  );
+
+  if (monthlyRent > 0) {
+    return Math.min(paymentAmount || monthlyRent, monthlyRent);
+  }
+
+  const depositAmount = Number(tenant?.deposit_paid || tenant?.security_deposit || 0);
+  if (depositAmount > 0 && paymentAmount > depositAmount) {
+    return paymentAmount - depositAmount;
+  }
+
+  return paymentAmount;
 };
 
 const getPreviewKind = (fileUrl = "", mimeType = "") => {
@@ -712,13 +833,13 @@ const ActiveTenants = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 text-left">
             {filteredTenants.map((ten) => (
               (() => {
-                const hasCollectedPayment = Boolean(ten.latest_payment_id) &&
-                  String(ten.latest_payment_status || "").toLowerCase() === "completed";
-                const hasPendingVerification = hasCollectedPayment &&
-                  String(ten.latest_payment_verification_status || "").toLowerCase() === "pending";
-                const hasVerifiedAdmissionPayment = hasCollectedPayment &&
-                  String(ten.latest_payment_verification_status || "").toLowerCase() === "verified";
-                const canCollectPayment = !hasCollectedPayment;
+                const hasJoiningPayment = Boolean(ten.joining_payment_id) &&
+                  String(ten.joining_payment_status || "").toLowerCase() === "completed";
+                const hasPendingVerification = hasJoiningPayment &&
+                  String(ten.joining_payment_verification_status || "").toLowerCase() === "pending";
+                const hasVerifiedAdmissionPayment = hasJoiningPayment &&
+                  String(ten.joining_payment_verification_status || "").toLowerCase() === "verified";
+                const canCollectPayment = !hasJoiningPayment;
                 const nextDueDate = getNextDueDate(ten);
 
                 return (
@@ -776,22 +897,22 @@ const ActiveTenants = () => {
                     </div>
                   </div>
 
-                  {hasCollectedPayment && (
+                  {hasJoiningPayment && (
                     <div className="mt-3 flex items-center justify-between gap-3 rounded-2xl border border-emerald-100 bg-emerald-50/70 px-3 py-2">
                       <div className="min-w-0">
                         <p className="text-[9px] font-black uppercase tracking-widest text-emerald-600">
-                          Admission Payment Logged
+                          Joining Payment Logged
                         </p>
                         <p className="mt-1 text-xs font-bold text-emerald-900">
-                          {formatCurrency(ten.latest_payment_amount)} • {ten.latest_payment_type || "payment"}
+                          {formatCurrency(getJoiningRentOnlyAmount(ten))}
                         </p>
                       </div>
                       <span
                         className={`shrink-0 rounded-full border px-2 py-1 text-[9px] font-black uppercase tracking-wider ${getStatusBadgeClassName(
-                          ten.latest_payment_verification_status || "pending"
+                          ten.joining_payment_verification_status || "pending"
                         )}`}
                       >
-                        {ten.latest_payment_verification_status || "pending"}
+                        {ten.joining_payment_verification_status || "pending"}
                       </span>
                     </div>
                   )}
@@ -1160,17 +1281,28 @@ const ActiveTenants = () => {
                           {(selectedTenantProfile.activity_logs || []).length === 0 ? (
                             <p className="text-sm font-semibold text-slate-500">No activity logs recorded.</p>
                           ) : (
-                            selectedTenantProfile.activity_logs.map((log) => (
-                              <div key={log.id} className="rounded-2xl border border-slate-100 bg-slate-50/70 p-3">
-                                <p className="text-sm font-black text-slate-800">{formatLabel(log.action || "activity")}</p>
-                                <p className="mt-1 text-[11px] font-bold uppercase tracking-wider text-slate-400">{formatDisplayDate(log.created_at)}</p>
-                                <p className="mt-2 text-xs font-semibold text-slate-600">
-                                  {typeof log.new_value === "object"
-                                    ? JSON.stringify(log.new_value)
-                                    : String(log.new_value || "-")}
-                                </p>
-                              </div>
-                            ))
+                            selectedTenantProfile.activity_logs.slice(0, 1).map((log) => {
+                              const activityDetails = getActivityDetails(log);
+
+                              return (
+                                <div key={log.id} className="rounded-2xl border border-slate-100 bg-slate-50/70 p-3">
+                                  <p className="text-sm font-black text-slate-800">{formatLabel(log.action || "activity")}</p>
+                                  <p className="mt-1 text-[11px] font-bold uppercase tracking-wider text-slate-400">{formatDisplayDate(log.created_at)}</p>
+                                  <div className="mt-3 grid gap-2">
+                                    {activityDetails.map((item) => (
+                                      <div key={`${log.id}-${item.label}`} className="flex items-start justify-between gap-3 rounded-xl border border-slate-100 bg-white px-3 py-2">
+                                        <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                                          {item.label}
+                                        </span>
+                                        <span className="max-w-[58%] text-right text-xs font-bold text-slate-700 break-words">
+                                          {item.value}
+                                        </span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              );
+                            })
                           )}
                         </div>
                       </div>

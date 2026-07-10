@@ -53,6 +53,9 @@ const VacantBeds = lazy(() => {
 const TenantPayments = lazy(() => {
   return import("../Components/Tenant/TenantPayments");
 });
+const PaymentReminders = lazy(() => {
+  return import("../Components/Tenant/PaymentReminder/PaymentReminders");
+});
 const VacatedHistory = lazy(() => {
   return import("../Components/Tenant/VacatedHistory");
 });
@@ -193,6 +196,10 @@ export const tenantRoutes = [
   {
     path: "/tenant/payments",
     element: withSuspense(<TenantPayments />),
+  },
+  {
+    path: "/tenant/payment-reminders",
+    element: withSuspense(<PaymentReminders />),
   },
   {
     path: "/tenant/vacated",
