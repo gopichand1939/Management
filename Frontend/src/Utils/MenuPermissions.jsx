@@ -31,6 +31,7 @@ const MENU_CONFIG_BY_ID = {
 };
 
 const MENU_CONFIG_BY_NAME = {
+  "ration management": { route_path: "/ration-management", icon_key: "ration_management" },
   dashboard: { route_path: "/dashboard", icon_key: "dashboard" },
   "super admin": { route_path: "/super-admins", icon_key: "super_admin" },
   institutions: { route_path: "/institutions", icon_key: "institutions" },
@@ -135,6 +136,7 @@ export const getDefaultRoute = (user) => {
 
 export const getSidebarMenuTree = (user) => {
   const menus = getUserMenus(user);
+  menus.push({ menu_id: "ration-management-demo", menu_name: "Ration Management", route_path: "/ration-management", icon_key: "ration_management", priority: 999 });
   const menuMap = new Map();
 
   for (const menu of menus) {
@@ -232,6 +234,7 @@ export const getRequiredActionForPath = (pathname) => {
 };
 
 export const isPathAllowedForUser = (user, pathname) => {
+  if (pathname === "/ration-management") return true;
   const menu = getMenuByRoute(user, pathname);
 
   if (!menu) {

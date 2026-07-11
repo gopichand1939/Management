@@ -17,6 +17,7 @@ import {
   UtensilsCrossed,
   NotebookText,
   BellRing,
+  CookingPot,
   X,
 } from "lucide-react";
 import { useState } from "react";
@@ -50,6 +51,7 @@ const menuIcons = {
   meal_type_master: UtensilsCrossed,
   weekly_food_menu: NotebookText,
   inventory_management: Boxes,
+  ration_management: CookingPot,
 };
 
 const MENU_ICON_SIZE = 18;

@@ -110,6 +110,7 @@ const EditInventory = lazy(() => {
 const ViewInventory = lazy(() => {
   return import("../Components/InventoryManagement/ViewInventory");
 });
+const RationManagement = lazy(() => import("../Components/RationManagement/RationManagement"));
 
 const withSuspense = (component) => {
   return (
@@ -293,4 +294,8 @@ export const applicationRoutes = [
   ...tenantRoutes,
   ...expenseRoutes,
   ...inventoryRoutes,
+  {
+    path: "/ration-management",
+    element: withSuspense(<RationManagement />),
+  },
 ];
