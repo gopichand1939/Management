@@ -263,6 +263,7 @@ const ActiveTenants = () => {
 
   const [tenants, setTenants] = useState([]);
   const [dashboardStats, setDashboardStats] = useState(null);
+  const [collectionMonth, setCollectionMonth] = useState("all");
   const [searchText, setSearchText] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [error, setError] = useState("");
@@ -406,12 +407,12 @@ const ActiveTenants = () => {
     }
   };
 
-  const fetchStats = async () => {
+  const fetchStats = async (month = collectionMonth) => {
     try {
       const response = await fetch(TENANT_STATS, {
         method: "POST",
         headers: getAuthHeaders(),
-        body: JSON.stringify({}),
+        body: JSON.stringify({ collection_month: month }),
       });
       const data = await response.json();
       if (response.ok) {
@@ -479,12 +480,35 @@ const ActiveTenants = () => {
 
   useEffect(() => {
     fetchTenants();
-    fetchStats();
   }, []);
+
+  useEffect(() => {
+    fetchStats(collectionMonth);
+  }, [collectionMonth]);
+
+  const monthFilteredTenants = useMemo(() => {
+    if (collectionMonth === "all") {
+      return tenants;
+    }
+
+    return tenants.filter((tenant) => {
+      if (!tenant.check_in_date) {
+        return false;
+      }
+
+      const checkInDate = new Date(tenant.check_in_date);
+      if (Number.isNaN(checkInDate.getTime())) {
+        return false;
+      }
+
+      const tenantMonth = `${checkInDate.getFullYear()}-${String(checkInDate.getMonth() + 1).padStart(2, "0")}`;
+      return tenantMonth === collectionMonth;
+    });
+  }, [collectionMonth, tenants]);
 
   const filteredTenants = useMemo(() => {
     const term = searchText.toLowerCase();
-    return tenants.filter((tenant) => {
+    return monthFilteredTenants.filter((tenant) => {
       const matchesSearch =
         tenant.full_name?.toLowerCase().includes(term) ||
         tenant.phone?.toLowerCase().includes(term) ||
@@ -498,7 +522,7 @@ const ActiveTenants = () => {
 
       return matchesSearch && matchesStatus;
     });
-  }, [searchText, tenants, selectedStatus]);
+  }, [searchText, monthFilteredTenants, selectedStatus]);
 
   // Handle Transfer submit
   const handleTransferSubmit = async () => {
@@ -700,34 +724,62 @@ const ActiveTenants = () => {
   }, [selectedTransferFloor]);
 
   // Computed display stats
-  const activeTenantsCount = tenants.filter(t => t.status === "active").length;
-  const pendingTenantsCount = tenants.filter(t => t.status === "pending_verification").length;
-  const totalOccupiedBeds = tenants.length;
+  const activeTenantsCount = monthFilteredTenants.filter(t => t.status === "active").length;
+  const pendingTenantsCount = monthFilteredTenants.filter(t => t.status === "pending_verification").length;
+  const totalOccupiedBeds = monthFilteredTenants.length;
+  const collectionMonthOptions = useMemo(() => {
+    const formatter = new Intl.DateTimeFormat("en-IN", { month: "long", year: "numeric" });
+    const today = new Date();
+    const monthValues = new Set(Array.from({ length: 12 }, (_, index) => {
+      const date = new Date(today.getFullYear(), today.getMonth() - index, 1);
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+    }));
+
+    tenants.forEach((tenant) => {
+      if (!tenant.check_in_date) return;
+      const checkInDate = new Date(tenant.check_in_date);
+      if (Number.isNaN(checkInDate.getTime())) return;
+      monthValues.add(`${checkInDate.getFullYear()}-${String(checkInDate.getMonth() + 1).padStart(2, "0")}`);
+    });
+
+    return [...monthValues]
+      .sort((firstMonth, secondMonth) => secondMonth.localeCompare(firstMonth))
+      .map((value) => {
+        const [year, month] = value.split("-").map(Number);
+        return { value, label: formatter.format(new Date(year, month - 1, 1)) };
+      });
+  }, [tenants]);
 
   const statItems = [
     {
       label: "Active Residents",
-      value: dashboardStats?.active_tenants ?? activeTenantsCount,
+      value: activeTenantsCount,
       icon: UserRound,
       color: "from-emerald-500 to-teal-500 bg-emerald-50 text-emerald-600 border-emerald-100/50",
     },
     {
       label: "Pending Verification",
-      value: dashboardStats?.pending_verification_tenants ?? pendingTenantsCount,
+      value: pendingTenantsCount,
       icon: Clock3,
       color: "from-amber-500 to-orange-500 bg-amber-50 text-amber-500 border-amber-100/50",
     },
     {
       label: "Beds Occupied",
-      value: dashboardStats?.occupied_beds ?? totalOccupiedBeds,
+      value: totalOccupiedBeds,
       icon: BedDouble,
       color: "from-sky-500 to-blue-500 bg-sky-50 text-sky-600 border-sky-100/50",
     },
     {
-      label: "Estimated Revenue",
-      value: formatCurrency(dashboardStats?.rent_revenue || 0),
+      label: "Overall Collected Rent",
+      value: formatCurrency(dashboardStats?.collected_rent || 0),
       icon: Wallet,
       color: "from-violet-500 to-indigo-500 bg-violet-50 text-violet-650 border-violet-100/50",
+    },
+    {
+      label: "Overall Collected Deposit",
+      value: formatCurrency(dashboardStats?.collected_deposit || 0),
+      icon: Landmark,
+      color: "from-orange-500 to-rose-500 bg-orange-50 text-orange-600 border-orange-100/50",
     },
   ];
 
@@ -758,7 +810,23 @@ const ActiveTenants = () => {
         </div>
 
         {/* Banners stats grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
+            <div className="text-left">
+              <span className="block text-[9px] font-black uppercase tracking-widest text-slate-400">Collection Period</span>
+              <span className="mt-1 block text-xs font-bold text-slate-600">Rent and deposits are reported separately for tenants who joined in the selected month.</span>
+            </div>
+            <select
+              value={collectionMonth}
+              onChange={(event) => setCollectionMonth(event.target.value)}
+              className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 outline-none transition-all focus:border-orange-500/50 focus:ring-4 focus:ring-orange-500/10"
+              aria-label="Collection month"
+            >
+              <option value="all">All Months</option>
+              {collectionMonthOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+            </select>
+          </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           {statItems.map((st, idx) => {
             const Icon = st.icon;
             return (
@@ -776,7 +844,7 @@ const ActiveTenants = () => {
               </div>
             );
           })}
-        </div>
+        </div></div>
 
         {/* Filters and search desk */}
         <div className="flex flex-col md:flex-row items-center justify-between gap-4 bg-white p-3 rounded-[32px] border border-slate-150 shadow-[0_15px_40px_-20px_rgba(15,23,42,0.04)]">

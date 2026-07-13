@@ -1,0 +1,23 @@
+node:internal/fs/watchers:321
+    const error = new UVException({
+                  ^
+
+Error: EBUSY: resource busy or locked, watch 'C:\Users\Innovitegra Solution\Desktop\folder\Management\Frontend\dist.zip'
+    at FSWatcher.<computed> (node:internal/fs/watchers:321:19)
+    at Object.watch (node:fs:2548:36)
+    at createFsWatchInstance (file:///C:/Users/Innovitegra%20Solution/Desktop/folder/Management/Frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:22195:17)
+    at setFsWatchListener (file:///C:/Users/Innovitegra%20Solution/Desktop/folder/Management/Frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:22242:15)
+    at NodeFsHandler._watchWithNodeFs (file:///C:/Users/Innovitegra%20Solution/Desktop/folder/Management/Frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:22397:14)
+    at NodeFsHandler._handleFile (file:///C:/Users/Innovitegra%20Solution/Desktop/folder/Management/Frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:22461:23)
+    at NodeFsHandler._addToNodeFs (file:///C:/Users/Innovitegra%20Solution/Desktop/folder/Management/Frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:22703:21)
+Emitted 'error' event on FSWatcher instance at:
+    at FSWatcher._handleError (file:///C:/Users/Innovitegra%20Solution/Desktop/folder/Management/Frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:23896:10)
+    at NodeFsHandler._addToNodeFs (file:///C:/Users/Innovitegra%20Solution/Desktop/folder/Management/Frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:22711:18) {
+  errno: -4082,
+  syscall: 'watch',
+  code: 'EBUSY',
+  path: 'C:\\Users\\Innovitegra Solution\\Desktop\\folder\\Management\\Frontend\\dist.zip',
+  filename: 'C:\\Users\\Innovitegra Solution\\Desktop\\folder\\Management\\Frontend\\dist.zip'
+}
+
+Node.js v24.18.0

@@ -1091,6 +1091,24 @@ const createTenantOnboarding = async (data) => {
             }, client);
         }
 
+        const collectedDeposit = normalizeNumber(data.deposit_paid) || 0;
+        if (collectedDeposit > 0 && data.payment?.payment_type !== "deposit") {
+            await createTenantPayment({
+                tenant_id: tenant.id,
+                institution_id: tenant.institution_id,
+                amount: collectedDeposit,
+                payment_type: "deposit",
+                payment_mode: data.payment?.payment_mode || null,
+                payment_date: data.payment?.payment_date || null,
+                reference_number: data.payment?.reference_number || null,
+                payment_proof_url: data.payment?.payment_proof_url || null,
+                verification_status: data.payment?.verification_status || "pending",
+                notes: "Security deposit collected during tenant onboarding",
+                status: data.payment?.status || "completed",
+                created_by: data.created_by || null,
+            }, client);
+        }
+
         await client.query(`
             INSERT INTO tenant_bed_history (
                 tenant_id,
@@ -1987,7 +2005,7 @@ const deleteTenantById = async (id, deletedBy = null) => {
     }
 };
 
-const getTenantDashboardStats = async (institutionId = null) => {
+const getTenantDashboardStats = async (institutionId = null, collectionMonth = null) => {
     await reconcileVerifiedTenantStatuses(pool, institutionId);
     await syncOccupancyStats(pool, institutionId);
 
@@ -2001,6 +2019,27 @@ const getTenantDashboardStats = async (institutionId = null) => {
         tenantScope.push(`institution_id = $${values.length}`);
         bedScope.push(`institution_id = $${values.length}`);
         paymentScope.push(`institution_id = $${values.length}`);
+    }
+
+    const paymentValues = [...values];
+    paymentScope.push("LOWER(COALESCE(status, 'completed')) = 'completed'");
+    paymentScope.push("LOWER(COALESCE(verification_status, 'pending')) = 'verified'");
+
+    if (collectionMonth && collectionMonth !== "all") {
+        paymentValues.push(`${collectionMonth}-01`);
+        paymentScope.push(`COALESCE(payment_date, created_at::date) >= $${paymentValues.length}::date`);
+        paymentScope.push(`COALESCE(payment_date, created_at::date) < ($${paymentValues.length}::date + INTERVAL '1 month')`);
+
+        values.push(`${collectionMonth}-01`);
+        tenantScope.push(`check_in_date >= $${values.length}::date`);
+        tenantScope.push(`check_in_date < ($${values.length}::date + INTERVAL '1 month')`);
+        bedScope.push(`EXISTS (
+            SELECT 1 FROM tenants selected_tenant
+            WHERE selected_tenant.bed_id = beds.id
+              AND selected_tenant.deleted_at IS NULL
+              AND selected_tenant.check_in_date >= $${values.length}::date
+              AND selected_tenant.check_in_date < ($${values.length}::date + INTERVAL '1 month')
+        )`);
     }
 
     const [tenantSummary, bedSummary, paymentSummary] = await Promise.all([
@@ -2021,14 +2060,95 @@ const getTenantDashboardStats = async (institutionId = null) => {
                 COUNT(*) FILTER (WHERE status = 'maintenance') AS maintenance_beds
             FROM beds
             ${bedScope.length ? `WHERE ${bedScope.join(" AND ")}` : ""}
-        `, institutionId ? [institutionId] : []),
+        `, values),
         pool.query(`
+            WITH ranked_payments AS (
+                SELECT
+                    payments.*,
+                    tenants.first_cycle_amount,
+                    COUNT(*) FILTER (WHERE LOWER(payments.payment_type) IN ('rent', 'admission')) OVER (
+                        PARTITION BY payments.tenant_id
+                        ORDER BY payments.payment_date ASC NULLS LAST, payments.id ASC
+                        ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+                    ) AS rent_sequence
+                FROM tenant_payments payments
+                INNER JOIN tenants ON tenants.id = payments.tenant_id
+                WHERE LOWER(COALESCE(payments.status, 'completed')) = 'completed'
+                  AND LOWER(COALESCE(payments.verification_status, 'pending')) = 'verified'
+                  ${institutionId ? "AND payments.institution_id = $1" : ""}
+                  ${collectionMonth && collectionMonth !== "all"
+                    ? `AND tenants.check_in_date >= $${paymentValues.length}::date
+                       AND tenants.check_in_date < ($${paymentValues.length}::date + INTERVAL '1 month')`
+                    : ""}
+            ), normalized_collections AS (
+                SELECT
+                    CASE
+                        WHEN LOWER(payment_type) IN ('rent', 'admission') THEN 'rent'
+                        WHEN LOWER(payment_type) = 'deposit' THEN 'deposit'
+                    END AS collection_type,
+                    CASE
+                        WHEN LOWER(payment_type) IN ('rent', 'admission')
+                             AND rent_sequence = 1
+                             AND COALESCE(first_cycle_amount, 0) > 0
+                            THEN LEAST(amount, first_cycle_amount)
+                        ELSE amount
+                    END AS collection_amount,
+                    COALESCE(payment_date, created_at::date) AS collection_date
+                FROM ranked_payments
+                WHERE LOWER(payment_type) IN ('rent', 'admission', 'deposit')
+                  ${collectionMonth && collectionMonth !== "all"
+                    ? "AND (LOWER(payment_type) = 'deposit' OR rent_sequence = 1)"
+                    : ""}
+
+                UNION ALL
+
+                SELECT
+                    'deposit',
+                    tenants.deposit_paid,
+                    COALESCE(first_payment.payment_date, tenants.created_at::date)
+                FROM tenants
+                LEFT JOIN LATERAL (
+                    SELECT COALESCE(payment_date, created_at::date) AS payment_date
+                    FROM tenant_payments
+                    WHERE tenant_id = tenants.id
+                    ORDER BY payment_date ASC NULLS LAST, id ASC
+                    LIMIT 1
+                ) first_payment ON TRUE
+                WHERE COALESCE(tenants.deposit_paid, 0) > 0
+                  AND tenants.deleted_at IS NULL
+                  ${institutionId ? "AND tenants.institution_id = $1" : ""}
+                  ${collectionMonth && collectionMonth !== "all"
+                    ? `AND tenants.check_in_date >= $${paymentValues.length}::date
+                       AND tenants.check_in_date < ($${paymentValues.length}::date + INTERVAL '1 month')`
+                    : ""}
+                  AND NOT EXISTS (
+                      SELECT 1 FROM tenant_payments deposit_payment
+                      WHERE deposit_payment.tenant_id = tenants.id
+                        AND LOWER(deposit_payment.payment_type) = 'deposit'
+                        AND LOWER(COALESCE(deposit_payment.status, 'completed')) = 'completed'
+                        AND LOWER(COALESCE(deposit_payment.verification_status, 'pending')) = 'verified'
+                  )
+            )
             SELECT
-                COALESCE(SUM(CASE WHEN payment_type = 'rent' THEN amount ELSE 0 END), 0) AS rent_revenue,
-                COALESCE(SUM(CASE WHEN verification_status = 'pending' THEN amount ELSE 0 END), 0) AS pending_payment_amount
-            FROM tenant_payments
-            ${paymentScope.length ? `WHERE ${paymentScope.join(" AND ")}` : ""}
-        `, institutionId ? [institutionId] : []),
+                COALESCE(SUM(collection_amount) FILTER (WHERE collection_type = 'rent'), 0) AS collected_rent,
+                COALESCE(SUM(collection_amount) FILTER (WHERE collection_type = 'deposit'), 0) AS collected_deposit,
+                (
+                    SELECT COALESCE(SUM(monthly_dues.pending_amount), 0)
+                    FROM tenant_monthly_dues monthly_dues
+                    INNER JOIN tenants due_tenant
+                        ON due_tenant.id = monthly_dues.tenant_id
+                    WHERE monthly_dues.pending_amount > 0
+                      AND due_tenant.deleted_at IS NULL
+                      AND due_tenant.status IN ('active', 'notice_period', 'pending_verification')
+                      ${institutionId ? "AND monthly_dues.institution_id = $1" : ""}
+                      ${collectionMonth && collectionMonth !== "all"
+                        ? `AND monthly_dues.due_month >= $${paymentValues.length}::date
+                           AND monthly_dues.due_month < ($${paymentValues.length}::date + INTERVAL '1 month')`
+                        : ""}
+                ) AS pending_payment_amount
+            FROM normalized_collections
+            WHERE 1 = 1
+        `, paymentValues),
     ]);
 
     return {

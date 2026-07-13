@@ -873,7 +873,10 @@ const listTenantActivity = async (req, res) => {
 const getTenantStats = async (req, res) => {
     try {
         const stats = await getTenantDashboardStats(
-            isPgAdminRequest(req) ? req.pgAdmin.institution_id : normalizeInteger(req.body.institution_id)
+            isPgAdminRequest(req) ? req.pgAdmin.institution_id : normalizeInteger(req.body.institution_id),
+            /^\d{4}-\d{2}$/.test(String(req.body.collection_month || ""))
+                ? req.body.collection_month
+                : req.body.collection_month === "all" ? "all" : null
         );
 
         return res.status(200).json({
