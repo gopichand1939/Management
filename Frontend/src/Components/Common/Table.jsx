@@ -1,6 +1,14 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-const Table = ({ columns, data, renderActions }) => {
+const Table = ({
+  columns,
+  data,
+  renderActions,
+  currentPage = 1,
+  totalPages = 1,
+  onPageChange,
+  totalRecords = data.length,
+}) => {
   if (data.length === 0) {
     return (
       <div
@@ -28,6 +36,10 @@ const Table = ({ columns, data, renderActions }) => {
       </div>
     );
   }
+
+  // Calculate standard showing values (e.g. 1 to 10 of 25)
+  const fromRecord = totalRecords > 0 ? (currentPage - 1) * 10 + 1 : 0;
+  const toRecord = Math.min(currentPage * 10, totalRecords);
 
   return (
     <div
@@ -164,104 +176,175 @@ const Table = ({ columns, data, renderActions }) => {
             text-slate-500
           `}
         >
-          Showing 1 to {data.length} of {data.length} users
+          {onPageChange 
+            ? `Showing ${fromRecord} to ${toRecord} of ${totalRecords} records`
+            : `Showing 1 to ${data.length} of ${data.length} records`}
         </span>
         <div className="flex items-center gap-1">
-          <button
-            className={`
-              p-1
-              rounded-md
-              border
-              border-slate-200
-              text-slate-400
-              hover:bg-slate-50
-              transition-all
-            `}
-          >
-            <ChevronLeft size={14} />
-          </button>
-          <button
-            className={`
-              w-7
-              h-7
-              rounded-md
-              text-xs
-              font-bold
-              text-white
-              bg-orange-500
-              flex
-              items-center
-              justify-center
-              shadow-sm
-            `}
-          >
-            1
-          </button>
-          <button
-            className={`
-              w-7
-              h-7
-              rounded-md
-              text-xs
-              font-bold
-              text-slate-600
-              hover:bg-slate-50
-              flex
-              items-center
-              justify-center
-              transition-all
-            `}
-          >
-            2
-          </button>
-          <button
-            className={`
-              w-7
-              h-7
-              rounded-md
-              text-xs
-              font-bold
-              text-slate-600
-              hover:bg-slate-50
-              flex
-              items-center
-              justify-center
-              transition-all
-            `}
-          >
-            3
-          </button>
-          <span className="text-xs text-slate-400 px-1">...</span>
-          <button
-            className={`
-              w-7
-              h-7
-              rounded-md
-              text-xs
-              font-bold
-              text-slate-600
-              hover:bg-slate-50
-              flex
-              items-center
-              justify-center
-              transition-all
-            `}
-          >
-            26
-          </button>
-          <button
-            className={`
-              p-1
-              rounded-md
-              border
-              border-slate-200
-              text-slate-400
-              hover:bg-slate-50
-              transition-all
-            `}
-          >
-            <ChevronRight size={14} />
-          </button>
+          {onPageChange ? (
+            <>
+              <button
+                onClick={() => onPageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                className={`
+                  p-1
+                  rounded-md
+                  border
+                  border-slate-200
+                  text-slate-400
+                  hover:bg-slate-50
+                  disabled:opacity-50
+                  disabled:hover:bg-transparent
+                  transition-all
+                  cursor-pointer
+                `}
+              >
+                <ChevronLeft size={14} />
+              </button>
+              {Array.from({ length: totalPages }, (_, idx) => {
+                const pageNum = idx + 1;
+                const isCurrent = pageNum === currentPage;
+                return (
+                  <button
+                    key={pageNum}
+                    onClick={() => onPageChange(pageNum)}
+                    className={`
+                      w-7
+                      h-7
+                      rounded-md
+                      text-xs
+                      font-bold
+                      flex
+                      items-center
+                      justify-center
+                      shadow-sm
+                      cursor-pointer
+                      transition-all
+                      ${isCurrent ? "text-white bg-orange-500" : "text-slate-600 hover:bg-slate-50"}
+                    `}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              })}
+              <button
+                onClick={() => onPageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className={`
+                  p-1
+                  rounded-md
+                  border
+                  border-slate-200
+                  text-slate-400
+                  hover:bg-slate-50
+                  disabled:opacity-50
+                  disabled:hover:bg-transparent
+                  transition-all
+                  cursor-pointer
+                `}
+              >
+                <ChevronRight size={14} />
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                className={`
+                  p-1
+                  rounded-md
+                  border
+                  border-slate-200
+                  text-slate-400
+                  hover:bg-slate-50
+                  transition-all
+                `}
+              >
+                <ChevronLeft size={14} />
+              </button>
+              <button
+                className={`
+                  w-7
+                  h-7
+                  rounded-md
+                  text-xs
+                  font-bold
+                  text-white
+                  bg-orange-500
+                  flex
+                  items-center
+                  justify-center
+                  shadow-sm
+                `}
+              >
+                1
+              </button>
+              <button
+                className={`
+                  w-7
+                  h-7
+                  rounded-md
+                  text-xs
+                  font-bold
+                  text-slate-600
+                  hover:bg-slate-50
+                  flex
+                  items-center
+                  justify-center
+                  transition-all
+                `}
+              >
+                2
+              </button>
+              <button
+                className={`
+                  w-7
+                  h-7
+                  rounded-md
+                  text-xs
+                  font-bold
+                  text-slate-600
+                  hover:bg-slate-50
+                  flex
+                  items-center
+                  justify-center
+                  transition-all
+                `}
+              >
+                3
+              </button>
+              <span className="text-xs text-slate-400 px-1">...</span>
+              <button
+                className={`
+                  w-7
+                  h-7
+                  rounded-md
+                  text-xs
+                  font-bold
+                  text-slate-600
+                  hover:bg-slate-50
+                  flex
+                  items-center
+                  justify-center
+                  transition-all
+                `}
+              >
+                26
+              </button>
+              <button
+                className={`
+                  p-1
+                  rounded-md
+                  border
+                  border-slate-200
+                  text-slate-400
+                  hover:bg-slate-50
+                  transition-all
+                `}
+              >
+                <ChevronRight size={14} />
+              </button>
+            </>
+          )}
         </div>
       </div>
     </div>

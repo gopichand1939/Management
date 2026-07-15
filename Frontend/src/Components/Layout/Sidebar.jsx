@@ -52,6 +52,7 @@ const menuIcons = {
   weekly_food_menu: NotebookText,
   inventory_management: Boxes,
   ration_management: CookingPot,
+  ration_inventory: CookingPot,
 };
 
 const MENU_ICON_SIZE = 18;

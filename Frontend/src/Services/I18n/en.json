@@ -37,7 +37,17 @@
     "mealTypeMaster": "Meal Type Master",
     "weeklyFoodMenu": "Weekly Food Menu Configuration",
     "inventoryManagement": "InventoryManagement",
-    "inventoryMaster": "Inventory Master"
+    "inventoryMaster": "Inventory Master",
+    "rationInventory": "Ration Inventory",
+    "categoryMaster": "Category Master",
+    "itemMaster": "Item Master",
+    "unitMaster": "Unit Master",
+    "supplierMaster": "Supplier Master",
+    "kitchenRequest": "Kitchen Request",
+    "stockIssue": "Stock Issue",
+    "stockAdjustment": "Stock Adjustment",
+    "stockAudit": "Stock Audit",
+    "inventoryDashboard": "Inventory Dashboard"
   },
   "institution": {
     "addInstitution": "Add Institution",

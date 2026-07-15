@@ -28,6 +28,18 @@ const MENU_CONFIG_BY_ID = {
   105: { route_path: "/expense/weekly-food-menu", icon_key: "weekly_food_menu" },
   102: { route_path: null, icon_key: "inventory_management" },
   103: { route_path: "/inventory", icon_key: "inventory_management" },
+  200: { route_path: null, icon_key: "ration_inventory" },
+  201: { route_path: "/ration-inventory/category-master", icon_key: "ration_inventory" },
+  202: { route_path: "/ration-inventory/item-master", icon_key: "ration_inventory" },
+  203: { route_path: "/ration-inventory/unit-master", icon_key: "ration_inventory" },
+  204: { route_path: "/ration-inventory/supplier-master", icon_key: "ration_inventory" },
+  205: { route_path: "/ration-inventory/purchases", icon_key: "ration_inventory" },
+  206: { route_path: "/ration-inventory/current-stock", icon_key: "ration_inventory" },
+  207: { route_path: "/ration-inventory/kitchen-request", icon_key: "ration_inventory" },
+  208: { route_path: "/ration-inventory/stock-issue", icon_key: "ration_inventory" },
+  209: { route_path: "/ration-inventory/stock-adjustment", icon_key: "ration_inventory" },
+  210: { route_path: "/ration-inventory/stock-audit", icon_key: "ration_inventory" },
+  211: { route_path: "/ration-inventory/inventory-dashboard", icon_key: "ration_inventory" },
 };
 
 const MENU_CONFIG_BY_NAME = {
@@ -59,6 +71,18 @@ const MENU_CONFIG_BY_NAME = {
   inventorymanagement: { route_path: null, icon_key: "inventory_management" },
   "inventory management": { route_path: null, icon_key: "inventory_management" },
   "inventory master": { route_path: "/inventory", icon_key: "inventory_management" },
+  "ration inventory": { route_path: null, icon_key: "ration_inventory" },
+  "category master": { route_path: "/ration-inventory/category-master", icon_key: "ration_inventory" },
+  "item master": { route_path: "/ration-inventory/item-master", icon_key: "ration_inventory" },
+  "unit master": { route_path: "/ration-inventory/unit-master", icon_key: "ration_inventory" },
+  "supplier master": { route_path: "/ration-inventory/supplier-master", icon_key: "ration_inventory" },
+  "purchases": { route_path: "/ration-inventory/purchases", icon_key: "ration_inventory" },
+  "current stock": { route_path: "/ration-inventory/current-stock", icon_key: "ration_inventory" },
+  "kitchen request": { route_path: "/ration-inventory/kitchen-request", icon_key: "ration_inventory" },
+  "stock issue": { route_path: "/ration-inventory/stock-issue", icon_key: "ration_inventory" },
+  "stock adjustment": { route_path: "/ration-inventory/stock-adjustment", icon_key: "ration_inventory" },
+  "stock audit": { route_path: "/ration-inventory/stock-audit", icon_key: "ration_inventory" },
+  "inventory dashboard": { route_path: "/ration-inventory/inventory-dashboard", icon_key: "ration_inventory" },
 };
 
 const normalizeMenuName = (menuName) => {
@@ -92,6 +116,18 @@ const MENU_LABEL_KEYS_BY_NAME = {
   inventorymanagement: "menu.inventoryManagement",
   "inventory management": "menu.inventoryManagement",
   "inventory master": "menu.inventoryMaster",
+  "ration inventory": "menu.rationInventory",
+  "category master": "menu.categoryMaster",
+  "item master": "menu.itemMaster",
+  "unit master": "menu.unitMaster",
+  "supplier master": "menu.supplierMaster",
+  "purchases": "menu.purchases",
+  "current stock": "menu.currentStock",
+  "kitchen request": "menu.kitchenRequest",
+  "stock issue": "menu.stockIssue",
+  "stock adjustment": "menu.stockAdjustment",
+  "stock audit": "menu.stockAudit",
+  "inventory dashboard": "menu.inventoryDashboard",
 };
 
 export const getMenuMeta = (menu) => {
@@ -226,7 +262,7 @@ export const getRequiredActionForPath = (pathname) => {
     return MENU_ACTIONS.EDIT;
   }
 
-  if (pathname.includes("/view/") || pathname.includes("/profile/")) {
+  if (pathname.includes("/view/") || pathname.includes("/profile/") || pathname.includes("/history/")) {
     return MENU_ACTIONS.VIEW;
   }
 

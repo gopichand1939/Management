@@ -59,13 +59,13 @@ CREATE TABLE IF NOT EXISTS urmg_profile_menus_actions (
 );
 
 DELETE FROM urmg_profile_menus_actions
-WHERE menu_id IN (5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 100, 101, 102, 103, 104, 105);
+WHERE menu_id IN (5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 100, 101, 102, 103, 104, 105, 200, 201, 202, 203);
 
 DELETE FROM urmg_menu_actions
-WHERE menu_id IN (5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 100, 101, 102, 103, 104, 105);
+WHERE menu_id IN (5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 100, 101, 102, 103, 104, 105, 200, 201, 202, 203);
 
 DELETE FROM urmg_menus
-WHERE menu_id IN (5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 100, 101, 102, 103, 104, 105);
+WHERE menu_id IN (5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 100, 101, 102, 103, 104, 105, 200, 201, 202, 203);
 
 INSERT INTO urmg_actions (action_id, action_name, priority, status, inst_id)
 VALUES
@@ -110,7 +110,11 @@ VALUES
     (104, 100, 1, 'Meal Type Master', 2, 1, 1),
     (105, 100, 1, 'Weekly Food Menu Configuration', 3, 1, 1),
     (102, NULL, 1, 'InventoryManagement', 6, 1, 1),
-    (103, 102, 1, 'Inventory Master', 1, 1, 1)
+    (103, 102, 1, 'Inventory Master', 1, 1, 1),
+    (200, NULL, 1, 'Ration Inventory', 7, 1, 1),
+    (201, 200, 1, 'Category Master', 1, 1, 1),
+    (202, 200, 1, 'Item Master', 2, 1, 1),
+    (203, 200, 1, 'Unit Master', 3, 1, 1)
 ON CONFLICT (menu_id) DO UPDATE SET
     parent_menu_id = EXCLUDED.parent_menu_id,
     module_id = EXCLUDED.module_id,
@@ -181,7 +185,22 @@ VALUES
     (103, 2, 2, 1, 1),
     (103, 3, 3, 1, 1),
     (103, 4, 4, 1, 1),
-    (103, 5, 5, 1, 1)
+    (103, 5, 5, 1, 1),
+    (201, 1, 1, 1, 1),
+    (201, 2, 2, 1, 1),
+    (201, 3, 3, 1, 1),
+    (201, 4, 4, 1, 1),
+    (201, 5, 5, 1, 1),
+    (202, 1, 1, 1, 1),
+    (202, 2, 2, 1, 1),
+    (202, 3, 3, 1, 1),
+    (202, 4, 4, 1, 1),
+    (202, 5, 5, 1, 1),
+    (203, 1, 1, 1, 1),
+    (203, 2, 2, 1, 1),
+    (203, 3, 3, 1, 1),
+    (203, 4, 4, 1, 1),
+    (203, 5, 5, 1, 1)
 ON CONFLICT (menu_id, action_id) DO UPDATE SET
     priority = EXCLUDED.priority,
     status = EXCLUDED.status,
@@ -311,7 +330,37 @@ VALUES
     (2, 103, 2, 2, 1, 1),
     (2, 103, 3, 2, 1, 1),
     (2, 103, 4, 2, 1, 1),
-    (2, 103, 5, 2, 1, 1)
+    (2, 103, 5, 2, 1, 1),
+    (1, 201, 1, 2, 1, 1),
+    (1, 201, 2, 2, 1, 1),
+    (1, 201, 3, 2, 1, 1),
+    (1, 201, 4, 2, 1, 1),
+    (1, 201, 5, 2, 1, 1),
+    (1, 202, 1, 2, 1, 1),
+    (1, 202, 2, 2, 1, 1),
+    (1, 202, 3, 2, 1, 1),
+    (1, 202, 4, 2, 1, 1),
+    (1, 202, 5, 2, 1, 1),
+    (1, 203, 1, 2, 1, 1),
+    (1, 203, 2, 2, 1, 1),
+    (1, 203, 3, 2, 1, 1),
+    (1, 203, 4, 2, 1, 1),
+    (1, 203, 5, 2, 1, 1),
+    (2, 201, 1, 2, 1, 1),
+    (2, 201, 2, 2, 1, 1),
+    (2, 201, 3, 2, 1, 1),
+    (2, 201, 4, 2, 1, 1),
+    (2, 201, 5, 2, 1, 1),
+    (2, 202, 1, 2, 1, 1),
+    (2, 202, 2, 2, 1, 1),
+    (2, 202, 3, 2, 1, 1),
+    (2, 202, 4, 2, 1, 1),
+    (2, 202, 5, 2, 1, 1),
+    (2, 203, 1, 2, 1, 1),
+    (2, 203, 2, 2, 1, 1),
+    (2, 203, 3, 2, 1, 1),
+    (2, 203, 4, 2, 1, 1),
+    (2, 203, 5, 2, 1, 1)
 ON CONFLICT (profile_id, menu_id, action_id) DO UPDATE SET
     is_configuration_only = EXCLUDED.is_configuration_only,
     status = EXCLUDED.status,

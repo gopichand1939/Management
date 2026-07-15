@@ -1,6 +1,6 @@
 import { Edit, Eye, Trash2 } from "lucide-react";
 
-const ActionPopOver = ({ onView, onEdit, onDelete }) => {
+const ActionPopOver = ({ onView, onEdit, onDelete, actions }) => {
   const iconButtonClassName = `
     grid
     h-8
@@ -20,6 +20,27 @@ const ActionPopOver = ({ onView, onEdit, onDelete }) => {
     hover:text-slate-800
     shadow-sm
   `;
+
+  if (actions && Array.isArray(actions)) {
+    return (
+      <div className="flex gap-1.5">
+        {actions.map((act, index) => {
+          if (!act) return null;
+          const Icon = act.icon;
+          return (
+            <button
+              key={index}
+              className={`${iconButtonClassName} ${act.className || ""}`}
+              title={act.label}
+              onClick={act.onClick}
+            >
+              {Icon ? <Icon size={14} /> : null}
+            </button>
+          );
+        })}
+      </div>
+    );
+  }
 
   return (
     <div

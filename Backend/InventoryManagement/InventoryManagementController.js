@@ -193,6 +193,7 @@ const getInventoryInstitutions = async (req, res) => {
             success: true,
             message: "Institution list",
             data: result.rows,
+            institutions: result.rows,
         });
     } catch (error) {
         console.error("Error fetching institution list:", error);

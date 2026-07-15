@@ -27,10 +27,7 @@ router.post("/list", protectAdminAccess, listPgAdmin);
 router.post("/view", protectAdminAccess, viewPgAdmin);
 router.post("/edit", protectAdminAccess, editPgAdmin);
 router.post("/delete", protectAdminAccess, deletePgAdmin);
-router.post(
-    "/institution/dropdown/getInstitutionList",
-    protectAdminAccess,
-    getInstitutionList
+router.post("/institution/dropdown/getInstitutionList",protectAdminAccess,getInstitutionList
 );
 router.post("/my-institution", protectPgAdmin, getMyInstitution);
 

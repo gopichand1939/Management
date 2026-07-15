@@ -1,10 +1,36 @@
-import { Bell, ChevronDown, Menu, Search, Sun } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Bell, ChevronDown, Menu, Search, Sun, Maximize, Minimize } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { toggleSidebar } from "../../Redux/User/UserSlice";
 
 const Navbar = () => {
   const dispatch = useDispatch();
   const { authUser } = useSelector((state) => state.user);
+
+  const [isFullscreen, setIsFullscreen] = useState(!!document.fullscreenElement);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    };
+  }, []);
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch((err) => {
+        console.error("Error attempting to enable fullscreen:", err);
+      });
+    } else {
+      document.exitFullscreen().catch((err) => {
+        console.error("Error attempting to exit fullscreen:", err);
+      });
+    }
+  };
+
 
   return (
     <div
@@ -70,11 +96,21 @@ const Navbar = () => {
 
         <div className="flex items-center gap-5">
           <button
-            className="text-slate-500 transition-colors hover:text-slate-900"
+            className="text-slate-500 transition-colors hover:text-slate-900 cursor-pointer"
             type="button"
           >
             <Sun size={19} />
           </button>
+
+          <button
+            onClick={toggleFullscreen}
+            className="text-slate-500 transition-colors hover:text-slate-900 cursor-pointer"
+            type="button"
+            title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
+          >
+            {isFullscreen ? <Minimize size={19} /> : <Maximize size={19} />}
+          </button>
+
 
           <button
             className="relative text-slate-500 transition-colors hover:text-slate-900"

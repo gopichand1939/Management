@@ -1,3 +1,4 @@
+require("dns").setDefaultResultOrder("ipv4first");
 const express = require("express");
 const cors = require("cors");
 const rateLimit = require("express-rate-limit");
@@ -17,6 +18,18 @@ const mealTypeRoutes = require("./Expenses/MealTypeMaster/MealTypeRoutes");
 const weeklyFoodMenuRoutes = require("./Expenses/WeeklyFoodMenu/WeeklyFoodMenuRoutes");
 const dailyExpensesRoutes = require("./Expenses/DailyExpensesSpend/DailyexpensesRoutes");
 const paymentReminderRoutes = require("./PaymnetReminder/PaymnetReminderRoutes");
+const rationCategoryRoutes = require("./RationInventory/CategoryMaster/RationCategoryRoutes");
+const rationUnitRoutes = require("./RationInventory/UnitMaster/RationUnitRoutes");
+const rationItemRoutes = require("./RationInventory/ItemMaster/RationItemRoutes");
+const rationSupplierRoutes = require("./RationInventory/SupplierMaster/RationSupplierRoutes");
+const rationPurchaseRoutes = require("./RationInventory/Purchase/RationPurchaseRoutes");
+const rationCurrentStockRoutes = require("./RationInventory/CurrentStock/RationCurrentStockRoutes");
+const rationKitchenRequestRoutes = require("./RationInventory/KitchenRequest/KitchenRequestRoutes");
+const rationStockIssueRoutes = require("./RationInventory/StockIssue/RationStockIssueRoutes");
+const rationStockAdjustmentRoutes = require("./RationInventory/StockAdjustment/RationStockAdjustmentRoutes");
+const rationStockAuditRoutes = require("./RationInventory/StockAudit/RationStockAuditRoutes");
+const rationInventoryDashboardRoutes = require("./RationInventory/InventoryDashboard/RationInventoryDashboardRoutes");
+
 
 
 const app = express();
@@ -107,6 +120,18 @@ app.use("/api/daily-expenses", dailyExpensesRoutes);
 app.use("/api/meal-type", mealTypeRoutes);
 app.use("/api/weekly-food-menu", weeklyFoodMenuRoutes);
 app.use("/api/payment-reminder", paymentReminderRoutes);
+app.use("/api/ration-category", rationCategoryRoutes);
+app.use("/api/ration-unit", rationUnitRoutes);
+app.use("/api/ration-item", rationItemRoutes);
+app.use("/api/ration-supplier", rationSupplierRoutes);
+app.use("/api/ration-purchase", rationPurchaseRoutes);
+app.use("/api/ration-current-stock", rationCurrentStockRoutes);
+app.use("/api/ration-kitchen-request", rationKitchenRequestRoutes);
+app.use("/api/ration-stock-issue", rationStockIssueRoutes);
+app.use("/api/ration-stock-adjustment", rationStockAdjustmentRoutes);
+app.use("/api/ration-stock-audit", rationStockAuditRoutes);
+app.use("/api/ration-inventory-dashboard", rationInventoryDashboardRoutes);
+
 app.post("/", (req, res) => {
     res.send("Backend is running");
 });
