@@ -378,10 +378,6 @@ const RationPurchaseModel = {
                 remarks: `Purchase created successfully with status ${purchase.status}`
             }, localClient);
 
-            if (isOwnClient) {
-                await localClient.query("COMMIT");
-            }
-
             // Format final response object
             const fullPurchase = await RationPurchaseModel.getRationPurchaseById(
                 purchase.id,
@@ -1187,10 +1183,6 @@ const RationPurchaseModel = {
                 new_values: { purchase, items: insertedItems },
                 remarks: `Purchase updated to version ${purchase.version} with status ${purchase.status}`
             }, localClient);
-
-            if (isOwnClient) {
-                await localClient.query("COMMIT");
-            }
 
             const fullPurchase = await RationPurchaseModel.getRationPurchaseById(id, institutionId, localClient);
 
