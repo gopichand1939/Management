@@ -1,4 +1,5 @@
-const pool = require("../Config/Database");
+const db = require("../Config/Database");
+const pool = db;
 
 const inventorySelectQuery = `
     SELECT
@@ -37,11 +38,7 @@ const buildInventoryId = (id) => {
 };
 
 const createInventory = async (data) => {
-    const client = await pool.connect();
-
-    try {
-        await client.query("BEGIN");
-
+    return await db.transaction(async (client) => {
         const createdInventoryResult = await client.query(`
             INSERT INTO inventory_management (
                 institution_id,
@@ -82,15 +79,8 @@ const createInventory = async (data) => {
             createdInventoryId,
         ]);
 
-        await client.query("COMMIT");
-
         return inventoryResult.rows[0];
-    } catch (error) {
-        await client.query("ROLLBACK");
-        throw error;
-    } finally {
-        client.release();
-    }
+    });
 };
 
 const getInventoryList = async (institutionId = null) => {
@@ -262,6 +252,77 @@ const deleteInventoryById = async (id) => {
     return result.rows[0];
 };
 
+const getInventoryInstitutions = async (institutionId = null) => {
+    const values = [];
+    const whereConditions = ["status = 'active'"];
+
+    if (institutionId) {
+        values.push(institutionId);
+        whereConditions.push(`id = $${values.length}`);
+    }
+
+    const queryText = `
+        SELECT
+            id,
+            institution_name,
+            institution_code
+        FROM institutions
+        WHERE ${whereConditions.join(" AND ")}
+        ORDER BY institution_name ASC
+    `;
+
+    const result = await db.query({
+        name: "get-inventory-institutions",
+        text: queryText,
+        values
+    });
+    return result.rows;
+};
+
+const getInventoryFloors = async (institutionId) => {
+    const queryText = `
+        SELECT
+            id,
+            institution_id,
+            floor_name,
+            floor_number
+        FROM floors
+        WHERE institution_id = $1
+          AND status = 'active'
+        ORDER BY floor_number ASC, id ASC
+    `;
+
+    const result = await db.query({
+        name: "get-inventory-floors",
+        text: queryText,
+        values: [institutionId]
+    });
+    return result.rows;
+};
+
+const getInventoryRooms = async (institutionId, floorId) => {
+    const queryText = `
+        SELECT
+            id,
+            institution_id,
+            floor_id,
+            room_number,
+            room_type
+        FROM rooms
+        WHERE institution_id = $1
+          AND floor_id = $2
+          AND status = 'active'
+        ORDER BY room_number ASC, id ASC
+    `;
+
+    const result = await db.query({
+        name: "get-inventory-rooms",
+        text: queryText,
+        values: [institutionId, floorId]
+    });
+    return result.rows;
+};
+
 module.exports = {
     createInventory,
     deleteInventoryById,
@@ -271,4 +332,7 @@ module.exports = {
     findInventoryLocation,
     getInventoryList,
     updateInventory,
+    getInventoryInstitutions,
+    getInventoryFloors,
+    getInventoryRooms,
 };

@@ -1,4 +1,5 @@
-const pool = require("../Config/Database");
+const db = require("../Config/Database");
+const pool = db;
 
 const institutionSelectQuery = `
     SELECT
@@ -282,10 +283,8 @@ const createInstitution = async (data) => {
 };
 
 const createInstitutionOnboarding = async (data) => {
-    const client = await pool.connect();
-
-    try {
-        await client.query("BEGIN");
+    return await db.transaction(async (client) => {
+        try {
 
         const institutionResult = await client.query(`
             INSERT INTO institutions (
@@ -318,15 +317,11 @@ const createInstitutionOnboarding = async (data) => {
             data.floors
         );
 
-        await client.query("COMMIT");
-
         return buildInstitutionHierarchy(institution, createdFloors);
     } catch (error) {
-        await client.query("ROLLBACK");
         throw error;
-    } finally {
-        client.release();
     }
+    });
 };
 
 const getInstitutionList = async () => {
@@ -445,10 +440,8 @@ const updateInstitution = async (data) => {
 };
 
 const updateInstitutionOnboarding = async (data) => {
-    const client = await pool.connect();
-
-    try {
-        await client.query("BEGIN");
+    return await db.transaction(async (client) => {
+        try {
 
         const institutionResult = await client.query(`
             UPDATE institutions
@@ -700,15 +693,11 @@ const updateInstitutionOnboarding = async (data) => {
             });
         }
 
-        await client.query("COMMIT");
-
         return buildInstitutionHierarchy(institution, reconciledFloors);
     } catch (error) {
-        await client.query("ROLLBACK");
         throw error;
-    } finally {
-        client.release();
     }
+    });
 };
 
 const deleteInstitutionById = async (id) => {

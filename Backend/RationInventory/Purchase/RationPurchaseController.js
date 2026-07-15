@@ -1,4 +1,3 @@
-const pool = require("../../Config/Database");
 const RationPurchaseModel = require("./RationPurchaseModel");
 const RationItemModel = require("../ItemMaster/RationItemModel");
 const RationSupplierModel = require("../SupplierMaster/RationSupplierModel");
@@ -124,14 +123,14 @@ const validatePurchaseData = async (institutionId, reqData) => {
         }
 
         // Verify category active
-        const catRes = await pool.query("SELECT status FROM ration_item_categories WHERE id = $1", [dbItem.category_id]);
-        if (catRes.rows.length === 0 || catRes.rows[0].status !== "active") {
+        const isCatActive = await RationPurchaseModel.checkCategoryActive(dbItem.category_id);
+        if (!isCatActive) {
             throw new Error(`Category linked to item '${dbItem.item_name}' is inactive`);
         }
 
         // Verify unit active
-        const unitRes = await pool.query("SELECT status FROM ration_units WHERE id = $1", [dbItem.unit_id]);
-        if (unitRes.rows.length === 0 || unitRes.rows[0].status !== "active") {
+        const isUnitActive = await RationPurchaseModel.checkUnitActive(dbItem.unit_id);
+        if (!isUnitActive) {
             throw new Error(`Unit linked to item '${dbItem.item_name}' is inactive`);
         }
 

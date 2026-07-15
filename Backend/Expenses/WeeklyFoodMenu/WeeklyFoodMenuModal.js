@@ -1,4 +1,5 @@
-const pool = require("../../Config/Database");
+const db = require("../../Config/Database");
+const pool = db;
 
 const getActiveInstitutionMealTypes = async (institutionId) => {
     try {
@@ -61,10 +62,8 @@ const getWeeklyFoodMenuList = async (institutionId) => {
 };
 
 const saveWeeklyFoodMenus = async (institutionId, menus, userId) => {
-    const client = await pool.connect();
-
-    try {
-        await client.query("BEGIN");
+    return await db.transaction(async (client) => {
+        try {
 
         const savedMenus = [];
 
@@ -135,14 +134,11 @@ const saveWeeklyFoodMenus = async (institutionId, menus, userId) => {
             savedMenus.push(insertResult.rows[0]);
         }
 
-        await client.query("COMMIT");
         return savedMenus;
     } catch (error) {
-        await client.query("ROLLBACK");
         throw error;
-    } finally {
-        client.release();
     }
+    });
 };
 
 const findWeeklyFoodMenuById = async (id) => {

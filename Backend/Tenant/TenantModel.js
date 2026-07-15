@@ -1,4 +1,5 @@
-const pool = require("../Config/Database");
+const db = require("../Config/Database");
+const pool = db;
 const {
     generateAdmissionNumber,
     generateReceiptNumber,
@@ -542,8 +543,8 @@ const reconcileBedOccupancy = async (client, institutionId = null) => {
             SELECT
                 tenants.bed_id,
                 CASE
-                    WHEN tenants.status IN ('draft') THEN 'reserved'
-                    WHEN tenants.status IN (
+                    WHEN LOWER(tenants.status) IN ('draft') THEN 'reserved'
+                    WHEN LOWER(tenants.status) IN (
                         'pending_verification',
                         'active',
                         'notice_period'
@@ -969,10 +970,8 @@ const createTenantPayment = async (data, client = null) => {
 };
 
 const createTenantOnboarding = async (data) => {
-    const client = await pool.connect();
-
-    try {
-        await client.query("BEGIN");
+    return await db.transaction(async (client) => {
+        try {
 
         const bed = await lockAndValidateBed(client, data);
         const admissionNumber = await generateAdmissionNumber(client, data.institution_id);
@@ -1145,15 +1144,12 @@ const createTenantOnboarding = async (data) => {
         );
 
         await syncOccupancyStats(client, tenant.institution_id);
-        await client.query("COMMIT");
 
         return getTenantByIdWithPayments(tenant.id);
     } catch (error) {
-        await client.query("ROLLBACK");
         throw error;
-    } finally {
-        client.release();
     }
+    });
 };
 
 const getActiveTenants = async (
@@ -1162,6 +1158,7 @@ const getActiveTenants = async (
     statuses = ["active", "pending_verification", "notice_period"]
 ) => {
     await reconcileVerifiedTenantStatuses(pool, institutionId);
+    await syncOccupancyStats(pool, institutionId);
 
     const values = [];
     const whereConditions = buildTenantSearchConditions(
@@ -1185,6 +1182,7 @@ const getVacatedTenants = async (
     search = "",
     statuses = ["vacated"]
 ) => {
+    await syncOccupancyStats(pool, institutionId);
     const values = [];
     const whereConditions = buildTenantSearchConditions(
         institutionId,
@@ -1323,10 +1321,8 @@ const getTenantPayments = async (institutionId = null, search = "", tenantId = n
 };
 
 const updateTenantOnboarding = async (data) => {
-    const client = await pool.connect();
-
-    try {
-        await client.query("BEGIN");
+    return await db.transaction(async (client) => {
+        try {
 
         const existingTenantResult = await client.query(`
             SELECT *
@@ -1618,15 +1614,12 @@ const updateTenantOnboarding = async (data) => {
         );
 
         await syncOccupancyStats(client, data.institution_id);
-        await client.query("COMMIT");
 
         return getTenantByIdWithPayments(data.id);
     } catch (error) {
-        await client.query("ROLLBACK");
         throw error;
-    } finally {
-        client.release();
     }
+    });
 };
 
 const verifyTenantPayment = async ({
@@ -1635,10 +1628,8 @@ const verifyTenantPayment = async ({
     verification_status,
     verified_by,
 }) => {
-    const client = await pool.connect();
-
-    try {
-        await client.query("BEGIN");
+    return await db.transaction(async (client) => {
+        try {
 
         const paymentResult = await client.query(`
             UPDATE tenant_payments
@@ -1697,15 +1688,11 @@ const verifyTenantPayment = async ({
             );
         }
 
-        await client.query("COMMIT");
-
         return payment;
     } catch (error) {
-        await client.query("ROLLBACK");
         throw error;
-    } finally {
-        client.release();
     }
+    });
 };
 
 const transferTenantBed = async ({
@@ -1717,10 +1704,8 @@ const transferTenantBed = async ({
     transfer_reason,
     transferred_by,
 }) => {
-    const client = await pool.connect();
-
-    try {
-        await client.query("BEGIN");
+    return await db.transaction(async (client) => {
+        try {
 
         const tenantResult = await client.query(`
             SELECT *
@@ -1830,15 +1815,12 @@ const transferTenantBed = async ({
         );
 
         await syncOccupancyStats(client, institution_id);
-        await client.query("COMMIT");
 
         return getTenantByIdWithPayments(tenant_id);
     } catch (error) {
-        await client.query("ROLLBACK");
         throw error;
-    } finally {
-        client.release();
     }
+    });
 };
 
 const vacateTenantStay = async ({
@@ -1851,10 +1833,8 @@ const vacateTenantStay = async ({
     notes,
     performed_by,
 }) => {
-    const client = await pool.connect();
-
-    try {
-        await client.query("BEGIN");
+    return await db.transaction(async (client) => {
+        try {
 
         const tenantResult = await client.query(`
             SELECT *
@@ -1923,22 +1903,17 @@ const vacateTenantStay = async ({
         );
 
         await syncOccupancyStats(client, institution_id);
-        await client.query("COMMIT");
 
         return getTenantByIdWithPayments(tenant_id);
     } catch (error) {
-        await client.query("ROLLBACK");
         throw error;
-    } finally {
-        client.release();
     }
+    });
 };
 
 const deleteTenantById = async (id, deletedBy = null) => {
-    const client = await pool.connect();
-
-    try {
-        await client.query("BEGIN");
+    return await db.transaction(async (client) => {
+        try {
 
         const tenantResult = await client.query(`
             SELECT *
@@ -1990,7 +1965,6 @@ const deleteTenantById = async (id, deletedBy = null) => {
         );
 
         await syncOccupancyStats(client, tenant.institution_id);
-        await client.query("COMMIT");
 
         return {
             ...tenant,
@@ -1998,11 +1972,9 @@ const deleteTenantById = async (id, deletedBy = null) => {
             deleted_by: deletedBy,
         };
     } catch (error) {
-        await client.query("ROLLBACK");
         throw error;
-    } finally {
-        client.release();
     }
+    });
 };
 
 const getTenantDashboardStats = async (institutionId = null, collectionMonth = null) => {

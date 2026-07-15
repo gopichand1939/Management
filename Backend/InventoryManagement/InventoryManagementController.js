@@ -7,8 +7,10 @@ const {
     findInventoryLocation,
     getInventoryList,
     updateInventory,
+    getInventoryInstitutions: fetchInventoryInstitutions,
+    getInventoryFloors: fetchInventoryFloors,
+    getInventoryRooms: fetchInventoryRooms,
 } = require("./InventoryManagementModal");
-const pool = require("../Config/Database");
 
 const isPgAdminRequest = (req) => {
     return req.user?.role === "pg_admin";
@@ -171,29 +173,14 @@ const validateInventoryLocation = async (data) => {
 
 const getInventoryInstitutions = async (req, res) => {
     try {
-        const values = [];
-        const whereConditions = ["status = 'active'"];
-
-        if (isPgAdminRequest(req)) {
-            values.push(req.pgAdmin.institution_id);
-            whereConditions.push(`id = $${values.length}`);
-        }
-
-        const result = await pool.query(`
-            SELECT
-                id,
-                institution_name,
-                institution_code
-            FROM institutions
-            WHERE ${whereConditions.join(" AND ")}
-            ORDER BY institution_name ASC
-        `, values);
+        const institutionId = isPgAdminRequest(req) ? req.pgAdmin.institution_id : null;
+        const list = await fetchInventoryInstitutions(institutionId);
 
         return res.status(200).json({
             success: true,
             message: "Institution list",
-            data: result.rows,
-            institutions: result.rows,
+            data: list,
+            institutions: list,
         });
     } catch (error) {
         console.error("Error fetching institution list:", error);
@@ -218,22 +205,12 @@ const getInventoryFloors = async (req, res) => {
             });
         }
 
-        const result = await pool.query(`
-            SELECT
-                id,
-                institution_id,
-                floor_name,
-                floor_number
-            FROM floors
-            WHERE institution_id = $1
-              AND status = 'active'
-            ORDER BY floor_number ASC, id ASC
-        `, [institutionId]);
+        const list = await fetchInventoryFloors(institutionId);
 
         return res.status(200).json({
             success: true,
             message: "Floor list",
-            data: result.rows,
+            data: list,
         });
     } catch (error) {
         console.error("Error fetching floor list:", error);
@@ -259,27 +236,12 @@ const getInventoryRooms = async (req, res) => {
             });
         }
 
-        const result = await pool.query(`
-            SELECT
-                id,
-                institution_id,
-                floor_id,
-                room_number,
-                room_type
-            FROM rooms
-            WHERE institution_id = $1
-              AND floor_id = $2
-              AND status = 'active'
-            ORDER BY room_number ASC, id ASC
-        `, [
-            institutionId,
-            floorId,
-        ]);
+        const list = await fetchInventoryRooms(institutionId, floorId);
 
         return res.status(200).json({
             success: true,
             message: "Room list",
-            data: result.rows,
+            data: list,
         });
     } catch (error) {
         console.error("Error fetching room list:", error);

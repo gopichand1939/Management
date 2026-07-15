@@ -1,6 +1,6 @@
 const fs = require("fs");
 const path = require("path");
-const pool = require("../Config/Database");
+const db = require("../Config/Database");
 
 const runSQL = async () => {
     try {
@@ -9,11 +9,13 @@ const runSQL = async () => {
         const sqlContent = fs.readFileSync(filePath, "utf8");
 
         console.log("Executing SQL migration and seeding...");
-        await pool.query(sqlContent);
+        await db.query(sqlContent);
         console.log("Successfully executed Kitchen Request database initialization!");
+        await db.shutdownPool();
         process.exit(0);
     } catch (error) {
         console.error("Error executing SQL:", error);
+        await db.shutdownPool();
         process.exit(1);
     }
 };

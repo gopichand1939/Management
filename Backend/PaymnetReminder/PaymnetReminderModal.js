@@ -1,4 +1,5 @@
-const pool = require("../Config/Database");
+const db = require("../Config/Database");
+const pool = db;
 const { createTenantPayment } = require("../Tenant/TenantModel");
 
 const normalizeInteger = (value) => {
@@ -348,10 +349,8 @@ const collectPaymentReminderDues = async ({
         });
     }
 
-    const client = await pool.connect();
-
-    try {
-        await client.query("BEGIN");
+    return await db.transaction(async (client) => {
+        try {
 
         const values = [normalizedDueIds];
         const whereConditions = [
@@ -433,19 +432,15 @@ const collectPaymentReminderDues = async ({
             ]);
         }
 
-        await client.query("COMMIT");
-
         return {
             payment,
             collected_dues: duesResult.rows,
             total_amount: totalAmount,
         };
     } catch (error) {
-        await client.query("ROLLBACK");
         throw error;
-    } finally {
-        client.release();
     }
+    });
 };
 
 module.exports = {

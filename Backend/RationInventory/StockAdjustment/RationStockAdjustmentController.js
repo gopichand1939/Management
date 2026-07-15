@@ -1,16 +1,4 @@
 const RationStockAdjustmentModel = require("./RationStockAdjustmentModel");
-const pool = require("../../Config/Database");
-
-const sendResponse = (res, statusCode, success, message, data = null, pagination = null, meta = null) => {
-    return res.status(statusCode).json({
-        success,
-        message,
-        data,
-        pagination,
-        meta,
-        timestamp: new Date().toISOString()
-    });
-};
 
 const resolveInstitutionId = async (req) => {
     let institutionId = req.user?.institution_id;
@@ -18,6 +6,15 @@ const resolveInstitutionId = async (req) => {
         institutionId = Number(req.body.institution_id);
     }
     return institutionId;
+};
+
+const sendResponse = (res, statusCode, success, message, data = null) => {
+    return res.status(statusCode).json({
+        success,
+        message,
+        data,
+        timestamp: new Date().toISOString()
+    });
 };
 
 const getNextAdjustmentNumber = async (req, res) => {
@@ -30,13 +27,12 @@ const getNextAdjustmentNumber = async (req, res) => {
         const nextNum = await RationStockAdjustmentModel.getNextAdjustmentNumber(institutionId);
         return sendResponse(res, 200, true, "Next stock adjustment number generated successfully", { adjustment_number: nextNum });
     } catch (error) {
-        console.error("Error generating stock adjustment number:", error);
+        console.error("Error generating next stock adjustment number:", error);
         return sendResponse(res, 500, false, error.message || "Internal Server Error");
     }
 };
 
 const createRationStockAdjustment = async (req, res) => {
-    const client = await pool.connect();
     try {
         const institutionId = await resolveInstitutionId(req);
         if (!institutionId) {
@@ -62,93 +58,17 @@ const createRationStockAdjustment = async (req, res) => {
             return sendResponse(res, 400, false, "At least one item is required for stock adjustment");
         }
 
-        await client.query("BEGIN");
-
-        // Generate next sequence number
-        const adjNumber = await RationStockAdjustmentModel.getNextAdjustmentNumber(institutionId, client);
-
-        // Insert Header
-        const adjHeader = await RationStockAdjustmentModel.createStockAdjustment({
-            institution_id: institutionId,
-            adjustment_number: adjNumber,
+        const result = await RationStockAdjustmentModel.createStockAdjustmentTransaction(institutionId, createdBy, {
             adjustment_date,
             reason,
-            remarks,
-            status: "completed",
-            created_by: createdBy
-        }, client);
+            remarks
+        }, items);
 
-        const stockAdjustmentId = adjHeader.id;
-
-        // Process items
-        for (const item of items) {
-            const itemId = Number(item.item_id);
-            const adjQty = parseFloat(item.adjustment_quantity);
-            const direction = item.adjustment_direction; // "increase" or "decrease"
-            const itemRemarks = item.remarks || null;
-            const itemReason = item.reason || reason;
-
-            if (isNaN(adjQty) || adjQty <= 0) {
-                throw new Error("Adjustment quantity must be greater than zero");
-            }
-            if (direction !== "increase" && direction !== "decrease") {
-                throw new Error("Adjustment direction must be either 'increase' or 'decrease'");
-            }
-
-            // Get dynamic current stock inside transaction
-            const currentStock = await RationStockAdjustmentModel.getCurrentStockForItem(itemId, institutionId, client);
-
-            if (direction === "decrease" && adjQty > currentStock) {
-                throw new Error(`Adjustment decrease quantity (${adjQty}) cannot exceed current available stock (${currentStock}) for item ID ${itemId}`);
-            }
-
-            const previousStock = currentStock;
-            const newStock = direction === "increase" ? previousStock + adjQty : previousStock - adjQty;
-
-            // Create Adjustment Item line
-            await RationStockAdjustmentModel.createStockAdjustmentItem({
-                stock_adjustment_id: stockAdjustmentId,
-                institution_id: institutionId,
-                item_id: itemId,
-                current_stock: currentStock,
-                adjustment_quantity: adjQty,
-                adjustment_direction: direction,
-                previous_stock: previousStock,
-                new_stock: newStock,
-                reason: itemReason,
-                remarks: itemRemarks
-            }, client);
-
-            // Create Transaction
-            await RationStockAdjustmentModel.createStockTransaction({
-                institution_id: institutionId,
-                item_id: itemId,
-                transaction_type: "ADJUSTMENT",
-                reference_type: "ADJUSTMENT",
-                reference_id: stockAdjustmentId,
-                reference_number: adjNumber,
-                quantity_in: direction === "increase" ? adjQty : 0,
-                quantity_out: direction === "decrease" ? adjQty : 0,
-                batch_number: null,
-                expiry_date: null,
-                unit_price: 0,
-                remarks: itemRemarks || remarks,
-                created_by: createdBy
-            }, client);
-        }
-
-        await client.query("COMMIT");
-        return sendResponse(res, 201, true, "Stock adjustment created successfully", {
-            id: stockAdjustmentId,
-            adjustment_number: adjNumber
-        });
+        return sendResponse(res, 201, true, "Stock adjustment created successfully", result);
 
     } catch (error) {
-        await client.query("ROLLBACK");
         console.error("Error creating stock adjustment:", error);
         return sendResponse(res, 500, false, error.message || "Internal Server Error");
-    } finally {
-        client.release();
     }
 };
 
@@ -213,7 +133,7 @@ const getRationStockAdjustmentById = async (req, res) => {
 
         const header = await RationStockAdjustmentModel.getAdjustmentById(Number(id), institutionId);
         if (!header) {
-            return sendResponse(res, 404, false, "Stock adjustment not found");
+            return sendResponse(res, 404, false, "Stock adjustment details not found");
         }
 
         const items = await RationStockAdjustmentModel.getAdjustmentItems(Number(id), institutionId);
@@ -229,7 +149,6 @@ const getRationStockAdjustmentById = async (req, res) => {
 };
 
 const cancelRationStockAdjustment = async (req, res) => {
-    const client = await pool.connect();
     try {
         const institutionId = await resolveInstitutionId(req);
         if (!institutionId) {
@@ -243,73 +162,13 @@ const cancelRationStockAdjustment = async (req, res) => {
 
         const createdBy = req.user?.id;
 
-        await client.query("BEGIN");
+        await RationStockAdjustmentModel.cancelStockAdjustmentTransaction(Number(id), institutionId, createdBy);
 
-        // Fetch and lock header
-        const selectQuery = `
-            SELECT id, adjustment_number, status 
-            FROM ration_stock_adjustments 
-            WHERE id = $1 AND institution_id = $2 
-            FOR UPDATE
-        `;
-        const selectRes = await client.query(selectQuery, [Number(id), institutionId]);
-        if (selectRes.rows.length === 0) {
-            throw new Error("Stock adjustment not found or unauthorized");
-        }
-
-        const adjustment = selectRes.rows[0];
-        if (adjustment.status !== "completed") {
-            throw new Error(`Only completed stock adjustments can be cancelled. Current status is '${adjustment.status}'.`);
-        }
-
-        // Fetch item lines to create offset transactions
-        const items = await RationStockAdjustmentModel.getAdjustmentItems(Number(id), institutionId, client);
-
-        // Perform reversals
-        for (const item of items) {
-            const itemId = Number(item.item_id);
-            const adjQty = parseFloat(item.adjustment_quantity);
-            const direction = item.adjustment_direction;
-
-            // Recalculate dynamic stock balance before cancellation to check decrease offsets
-            const currentStock = await RationStockAdjustmentModel.getCurrentStockForItem(itemId, institutionId, client);
-
-            // If the original adjustment was an INCREASE, cancelling it acts as a DECREASE of stock.
-            // Check if there is enough stock remaining to reverse the increase.
-            if (direction === "increase" && adjQty > currentStock) {
-                throw new Error(`Cannot cancel stock adjustment. Reversal requires subtracting ${adjQty} units of ${item.item_name}, but current available stock is only ${currentStock}.`);
-            }
-
-            // Insert reversal transaction: flip quantity_in and quantity_out
-            await RationStockAdjustmentModel.createStockTransaction({
-                institution_id: institutionId,
-                item_id: itemId,
-                transaction_type: "ADJUSTMENT",
-                reference_type: "ADJUSTMENT_CANCEL",
-                reference_id: Number(id),
-                reference_number: adjustment.adjustment_number,
-                quantity_in: direction === "decrease" ? adjQty : 0,  // Decreased stock is returned
-                quantity_out: direction === "increase" ? adjQty : 0, // Increased stock is removed
-                batch_number: null,
-                expiry_date: null,
-                unit_price: 0,
-                remarks: `Cancellation offset for Stock Adjustment ${adjustment.adjustment_number}`,
-                created_by: createdBy
-            }, client);
-        }
-
-        // Update adjustment status
-        await RationStockAdjustmentModel.cancelStockAdjustment(Number(id), institutionId, client);
-
-        await client.query("COMMIT");
         return sendResponse(res, 200, true, "Stock adjustment cancelled successfully");
 
     } catch (error) {
-        await client.query("ROLLBACK");
         console.error("Error cancelling stock adjustment:", error);
         return sendResponse(res, 500, false, error.message || "Internal Server Error");
-    } finally {
-        client.release();
     }
 };
 

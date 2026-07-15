@@ -1,4 +1,5 @@
-const pool = require("../Config/Database");
+const db = require("../Config/Database");
+const pool = db;
 const { ensurePaymentReminderSchema } = require("./PaymnetReminderModal");
 
 const initPaymentReminder = async () => {
@@ -101,7 +102,9 @@ if (require.main === module) {
             console.error("Payment reminder init failed:", error);
             process.exitCode = 1;
         })
-        .finally(() => pool.end());
+        .finally(async () => {
+            await db.shutdownPool();
+        });
 }
 
 module.exports = initPaymentReminder;

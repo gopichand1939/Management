@@ -1,5 +1,4 @@
 const KitchenRequestModel = require("./KitchenRequestModel");
-const pool = require("../../Config/Database");
 
 const sendResponse = (res, statusCode, success, message, data = null, pagination = null, meta = null) => {
     return res.status(statusCode).json({
@@ -193,10 +192,7 @@ const getKitchenRequestById = async (req, res) => {
         let institutionId = await resolveInstitutionId(req);
         if (!institutionId && (req.user?.role === "super_admin" || req.user?.profile_id === 1)) {
             // Retrieve institution ID from db if needed
-            const result = await pool.query("SELECT institution_id FROM ration_kitchen_requests WHERE id = $1", [id]);
-            if (result.rows.length > 0) {
-                institutionId = result.rows[0].institution_id;
-            }
+            institutionId = await KitchenRequestModel.getInstitutionIdByRequestId(id);
         }
 
         if (!institutionId) {

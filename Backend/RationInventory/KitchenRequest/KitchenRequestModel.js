@@ -1,4 +1,5 @@
-const pool = require("../../Config/Database");
+const db = require("../../Config/Database");
+const pool = db;
 
 const KitchenRequestModel = {
     getNextRequestNumber: async (institutionId, client = pool) => {
@@ -24,14 +25,15 @@ const KitchenRequestModel = {
         }
     },
 
-    createKitchenRequest: async (requestData, itemsData, createdBy, client = pool) => {
-        const localClient = client === pool ? await pool.connect() : client;
-        let isOwnClient = client === pool;
+    createKitchenRequest: async (requestData, itemsData, createdBy, client) => {
+        if (!client) {
+            return await db.transaction(async (trxClient) => {
+                return await KitchenRequestModel.createKitchenRequest(requestData, itemsData, createdBy, trxClient);
+            });
+        }
+        const localClient = client;
 
         try {
-            if (isOwnClient) {
-                await localClient.query("BEGIN");
-            }
 
             const requestNumber = await KitchenRequestModel.getNextRequestNumber(
                 requestData.institution_id,
@@ -100,31 +102,21 @@ const KitchenRequestModel = {
                 await localClient.query(insertItemQuery, itemValues);
             }
 
-            if (isOwnClient) {
-                await localClient.query("COMMIT");
-            }
-
             return { id: requestId, request_number: requestNumber };
         } catch (error) {
-            if (isOwnClient) {
-                await localClient.query("ROLLBACK");
-            }
             throw error;
-        } finally {
-            if (isOwnClient) {
-                localClient.release();
-            }
         }
     },
 
-    updateKitchenRequest: async (requestId, requestData, itemsData, updatedBy, client = pool) => {
-        const localClient = client === pool ? await pool.connect() : client;
-        let isOwnClient = client === pool;
+    updateKitchenRequest: async (requestId, requestData, itemsData, updatedBy, client) => {
+        if (!client) {
+            return await db.transaction(async (trxClient) => {
+                return await KitchenRequestModel.updateKitchenRequest(requestId, requestData, itemsData, updatedBy, trxClient);
+            });
+        }
+        const localClient = client;
 
         try {
-            if (isOwnClient) {
-                await localClient.query("BEGIN");
-            }
 
             const checkQuery = `SELECT status FROM ration_kitchen_requests WHERE id = $1 AND institution_id = $2`;
             const checkResult = await localClient.query(checkQuery, [requestId, requestData.institution_id]);
@@ -191,20 +183,9 @@ const KitchenRequestModel = {
                 await localClient.query(insertItemQuery, itemValues);
             }
 
-            if (isOwnClient) {
-                await localClient.query("COMMIT");
-            }
-
             return { id: requestId };
         } catch (error) {
-            if (isOwnClient) {
-                await localClient.query("ROLLBACK");
-            }
             throw error;
-        } finally {
-            if (isOwnClient) {
-                localClient.release();
-            }
         }
     },
 
@@ -444,14 +425,15 @@ const KitchenRequestModel = {
         }
     },
 
-    approveKitchenRequest: async (id, institutionId, approvedItems, approvedBy, client = pool) => {
-        const localClient = client === pool ? await pool.connect() : client;
-        let isOwnClient = client === pool;
+    approveKitchenRequest: async (id, institutionId, approvedItems, approvedBy, client) => {
+        if (!client) {
+            return await db.transaction(async (trxClient) => {
+                return await KitchenRequestModel.approveKitchenRequest(id, institutionId, approvedItems, approvedBy, trxClient);
+            });
+        }
+        const localClient = client;
 
         try {
-            if (isOwnClient) {
-                await localClient.query("BEGIN");
-            }
 
             const checkQuery = `SELECT status FROM ration_kitchen_requests WHERE id = $1 AND institution_id = $2 FOR UPDATE`;
             const checkResult = await localClient.query(checkQuery, [id, institutionId]);
@@ -490,20 +472,9 @@ const KitchenRequestModel = {
                 ]);
             }
 
-            if (isOwnClient) {
-                await localClient.query("COMMIT");
-            }
-
             return true;
         } catch (error) {
-            if (isOwnClient) {
-                await localClient.query("ROLLBACK");
-            }
             throw error;
-        } finally {
-            if (isOwnClient) {
-                localClient.release();
-            }
         }
     },
 
@@ -562,6 +533,12 @@ const KitchenRequestModel = {
         } catch (error) {
             throw error;
         }
+    },
+
+    getInstitutionIdByRequestId: async (id) => {
+        const queryText = "SELECT institution_id FROM ration_kitchen_requests WHERE id = $1";
+        const result = await db.query(queryText, [id]);
+        return result.rows[0]?.institution_id || null;
     }
 };
 

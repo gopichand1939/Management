@@ -1,13 +1,13 @@
-const pool = require("./Config/Database");
+const db = require("./Config/Database");
 
 const checkUsers = async () => {
-    const res = await pool.query("SELECT id, email, role, institution_id, super_admin_id, pg_admin_id FROM user_credentials");
+    const res = await db.query("SELECT id, email, role, institution_id, super_admin_id, pg_admin_id FROM user_credentials");
     console.log("CREDENTIALS:");
     console.log(res.rows);
-    pool.end();
+    await db.shutdownPool();
 };
 
-checkUsers().catch(err => {
+checkUsers().catch(async (err) => {
     console.error(err);
-    pool.end();
+    await db.shutdownPool();
 });

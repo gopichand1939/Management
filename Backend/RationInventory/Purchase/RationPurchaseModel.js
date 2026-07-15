@@ -1,4 +1,5 @@
-const pool = require("../../Config/Database");
+const db = require("../../Config/Database");
+const pool = db;
 
 const RationPurchaseModel = {
     getNextPurchaseNumber: async (institutionId, client = pool) => {
@@ -80,14 +81,15 @@ const RationPurchaseModel = {
         await client.query(query, values);
     },
 
-    createRationPurchase: async (purchaseData, itemsData, createdBy, client = pool) => {
-        const localClient = client === pool ? await pool.connect() : client;
-        let isOwnClient = client === pool;
+    createRationPurchase: async (purchaseData, itemsData, createdBy, client) => {
+        if (!client) {
+            return await db.transaction(async (trxClient) => {
+                return await RationPurchaseModel.createRationPurchase(purchaseData, itemsData, createdBy, trxClient);
+            });
+        }
+        const localClient = client;
 
         try {
-            if (isOwnClient) {
-                await localClient.query("BEGIN");
-            }
 
             // Generate Purchase Number
             const purchaseNumber = await RationPurchaseModel.getNextPurchaseNumber(
@@ -399,14 +401,7 @@ const RationPurchaseModel = {
 
             return fullPurchase;
         } catch (error) {
-            if (isOwnClient) {
-                await localClient.query("ROLLBACK");
-            }
             throw error;
-        } finally {
-            if (isOwnClient) {
-                localClient.release();
-            }
         }
     },
 
@@ -896,14 +891,15 @@ const RationPurchaseModel = {
         }
     },
 
-    updateRationPurchase: async (id, institutionId, purchaseData, itemsData, updatedBy, client = pool) => {
-        const localClient = client === pool ? await pool.connect() : client;
-        let isOwnClient = client === pool;
+    updateRationPurchase: async (id, institutionId, purchaseData, itemsData, updatedBy, client) => {
+        if (!client) {
+            return await db.transaction(async (trxClient) => {
+                return await RationPurchaseModel.updateRationPurchase(id, institutionId, purchaseData, itemsData, updatedBy, trxClient);
+            });
+        }
+        const localClient = client;
 
         try {
-            if (isOwnClient) {
-                await localClient.query("BEGIN");
-            }
 
             // Fetch old record for audit logging
             const oldRecord = await RationPurchaseModel.getRationPurchaseById(id, institutionId, localClient);
@@ -1209,22 +1205,12 @@ const RationPurchaseModel = {
 
             return fullPurchase;
         } catch (error) {
-            if (isOwnClient) {
-                await localClient.query("ROLLBACK");
-            }
             throw error;
-        } finally {
-            if (isOwnClient) {
-                localClient.release();
-            }
         }
     },
 
     deleteRationPurchase: async (id, institutionId, performedBy) => {
-        const client = await pool.connect();
-        try {
-            await client.query("BEGIN");
-
+        return await db.transaction(async (client) => {
             // Verify exists and is draft
             const checkQuery = `
                 SELECT status, purchase_number FROM ration_purchases
@@ -1274,21 +1260,12 @@ const RationPurchaseModel = {
             `;
             const result = await client.query(deleteQuery, [id, institutionId]);
 
-            await client.query("COMMIT");
             return result.rows[0];
-        } catch (error) {
-            await client.query("ROLLBACK");
-            throw error;
-        } finally {
-            client.release();
-        }
+        });
     },
 
     completeRationPurchase: async (id, institutionId, updatedBy) => {
-        const client = await pool.connect();
-        try {
-            await client.query("BEGIN");
-
+        return await db.transaction(async (client) => {
             const checkQuery = `
                 SELECT status, purchase_number FROM ration_purchases
                 WHERE id = $1 AND institution_id = $2
@@ -1429,8 +1406,6 @@ const RationPurchaseModel = {
                 remarks: `Purchase approved & completed. Stocks updated.`
             }, client);
 
-            await client.query("COMMIT");
-
             const fullPurchase = await RationPurchaseModel.getRationPurchaseById(id, institutionId, client);
             fullPurchase.inventory_integration = {
                 inventory_transaction_id: inventoryTransactionIds[0] || null,
@@ -1440,19 +1415,11 @@ const RationPurchaseModel = {
             };
 
             return fullPurchase;
-        } catch (error) {
-            await client.query("ROLLBACK");
-            throw error;
-        } finally {
-            client.release();
-        }
+        });
     },
 
     cancelRationPurchase: async (id, institutionId, updatedBy, reason = "") => {
-        const client = await pool.connect();
-        try {
-            await client.query("BEGIN");
-
+        return await db.transaction(async (client) => {
             // Verify exists and is completed
             const checkQuery = `
                 SELECT status, purchase_number FROM ration_purchases
@@ -1606,8 +1573,6 @@ const RationPurchaseModel = {
                 remarks: `Purchase cancelled. Stocks reversed. Reason: ${reason || "None specified"}`
             }, client);
 
-            await client.query("COMMIT");
-
             const fullPurchase = await RationPurchaseModel.getRationPurchaseById(id, institutionId, client);
             fullPurchase.inventory_integration = {
                 inventory_transaction_id: inventoryTransactionIds[0] || null,
@@ -1617,12 +1582,7 @@ const RationPurchaseModel = {
             };
 
             return fullPurchase;
-        } catch (error) {
-            await client.query("ROLLBACK");
-            throw error;
-        } finally {
-            client.release();
-        }
+        });
     },
 
     getPurchaseDashboardData: async (institutionId) => {
@@ -1700,6 +1660,18 @@ const RationPurchaseModel = {
         } catch (error) {
             throw error;
         }
+    },
+
+    checkCategoryActive: async (categoryId) => {
+        const queryText = "SELECT status FROM ration_item_categories WHERE id = $1";
+        const result = await db.query(queryText, [categoryId]);
+        return result.rows[0]?.status === "active";
+    },
+
+    checkUnitActive: async (unitId) => {
+        const queryText = "SELECT status FROM ration_units WHERE id = $1";
+        const result = await db.query(queryText, [unitId]);
+        return result.rows[0]?.status === "active";
     }
 };
 

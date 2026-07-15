@@ -1,7 +1,6 @@
 const RationItemModel = require("./RationItemModel");
 const RationCategoryModel = require("../CategoryMaster/RationCategoryModel");
 const RationUnitModel = require("../UnitMaster/RationUnitModel");
-const pool = require("../../Config/Database");
 
 const createRationItem = async (req, res) => {
     const institutionId = req.user?.institution_id || req.body.institution_id;
@@ -15,7 +14,6 @@ const createRationItem = async (req, res) => {
         });
     }
 
-    const client = await pool.connect();
     try {
         const {
             item_name,
@@ -109,42 +107,31 @@ const createRationItem = async (req, res) => {
             return res.status(409).json({ success: false, message: "Barcode already exists" });
         }
 
-        // Begin transaction
-        await client.query("BEGIN");
-
-        // Generate SKU atomically
-        const skuId = await RationItemModel.getNextSkuId(institutionId, client);
-
-        // Image upload URL
-        const imageUrl = req.file ? req.file.cloudinaryUrl : null;
-
         const isBatch = batch_tracking === "true" || batch_tracking === true;
         const isExpiry = expiry_tracking === "true" || expiry_tracking === true;
 
-        const item = await RationItemModel.createRationItem(
+        const item = await RationItemModel.createRationItemTransaction(
             institutionId,
             pgAdminId,
-            item_name.trim(),
-            item_code.trim(),
-            skuId,
-            barcode.trim(),
-            catId,
-            utId,
-            description,
-            imageUrl,
-            minStock,
-            maxStock,
-            reorderQty,
-            purchasePrice,
-            gstPct,
-            isBatch,
-            isExpiry,
-            status,
             createdBy,
-            client
+            {
+                item_name,
+                item_code,
+                barcode,
+                category_id: catId,
+                unit_id: utId,
+                description,
+                minStock,
+                maxStock,
+                reorderQty,
+                purchasePrice,
+                gstPct,
+                isBatch,
+                isExpiry,
+                status
+            },
+            req.file ? req.file.cloudinaryUrl : null
         );
-
-        await client.query("COMMIT");
 
         return res.status(201).json({
             success: true,
@@ -152,7 +139,6 @@ const createRationItem = async (req, res) => {
             data: item,
         });
     } catch (error) {
-        await client.query("ROLLBACK");
         console.error("Error creating ration item:", error);
 
         if (error.code === "23505") {
@@ -180,8 +166,6 @@ const createRationItem = async (req, res) => {
             success: false,
             message: error.message || "Internal Server Error",
         });
-    } finally {
-        client.release();
     }
 };
 

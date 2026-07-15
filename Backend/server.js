@@ -7,6 +7,7 @@ const path = require("path");
 require("dotenv").config({ quiet: true });
 
 const initDatabase = require("./Config/initDatabase");
+const { contextStorage, shutdownPool } = require("./Config/Database");
 const authRoutes = require("./Auth/AuthRoutes");
 const superAdminRoutes = require("./SuperAdmin/SuperAdminRoutes");
 const institutionRoutes = require("./Institution/InstitutionRoutes");
@@ -33,6 +34,16 @@ const rationInventoryDashboardRoutes = require("./RationInventory/InventoryDashb
 
 
 const app = express();
+
+let reqCounter = 0;
+// Register HTTP request context middleware for database logging URL resolution
+app.use((req, res, next) => {
+    const requestId = `${Date.now()}-${++reqCounter}`;
+    contextStorage.run({ requestId, method: req.method, url: req.originalUrl || req.url }, () => {
+        next();
+    });
+});
+
 const logDirectory = path.join(__dirname, "logs");
 const runtimeLogPath = path.join(logDirectory, "runtime.log");
 const shouldInitDatabaseOnStartup = process.env.RUN_DB_INIT_ON_STARTUP === "true";
@@ -79,13 +90,15 @@ process.on("warning", (warning) => {
     logRuntimeEvent("Process Warning", warning);
 });
 
-process.on("SIGINT", () => {
+process.on("SIGINT", async () => {
     logRuntimeEvent("Process Signal", "Received SIGINT");
+    await shutdownPool();
     process.exit(0);
 });
 
-process.on("SIGTERM", () => {
+process.on("SIGTERM", async () => {
     logRuntimeEvent("Process Signal", "Received SIGTERM");
+    await shutdownPool();
     process.exit(0);
 });
 
