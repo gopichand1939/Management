@@ -20,7 +20,14 @@ const InventoryDashboardTables = ({
   const formatDate = (val) => {
     if (!val) return "-";
     try {
-      return new Date(val).toLocaleDateString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+      return new Date(val).toLocaleString("en-IN", {
+        timeZone: "Asia/Kolkata",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true
+      });
     } catch (e) {
       return String(val);
     }

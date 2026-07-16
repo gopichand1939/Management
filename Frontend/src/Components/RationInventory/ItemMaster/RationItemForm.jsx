@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import { QRCodeCanvas } from "qrcode.react";
+import { QRCodeSVG } from "qrcode.react";
 import { AlignLeft, Hash, Tag, Building2, Scale, Percent, Landmark, ShieldAlert, Image, Plus, RefreshCw, Download, Printer } from "lucide-react";
 
 import Button from "../../Common/Button";
@@ -528,12 +528,19 @@ const RationItemForm = ({
                 {formData.item_name || "Ration Item"}
               </span>
               <div className="bg-white p-1.5 border border-slate-100 rounded-lg">
-                <QRCodeCanvas
-                  id="ration-item-qr-canvas"
+                <QRCodeSVG
+                  id="ration-item-qr-svg"
                   value={formData.barcode ? `${formData.barcode}` : "NONE"}
-                  size={120}
+                  size={256}
                   level="H"
                   includeMargin={true}
+                  className="qr-code-svg"
+                  style={{
+                    width: "120px",
+                    height: "120px",
+                    imageRendering: "pixelated",
+                    shapeRendering: "crispEdges"
+                  }}
                 />
               </div>
               <span className="text-[10px] font-mono text-slate-500 mt-2 font-bold select-all">

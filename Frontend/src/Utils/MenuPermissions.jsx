@@ -175,11 +175,20 @@ export const getDefaultRoute = (user) => {
 
 export const getSidebarMenuTree = (user) => {
   const menus = getUserMenus(user);
-  menus.push({ menu_id: "ration-management-demo", menu_name: "Ration Management", route_path: "/ration-management", icon_key: "ration_management", priority: 999 });
+  if (user?.role === "super_admin") {
+    menus.push({
+      menu_id: "menu-restrictions",
+      menu_name: "Restrictions",
+      route_path: "/restriction/menu-permissions",
+      icon_key: "super_admin",
+      priority: 998
+    });
+  }
   
-  // Inject QR Labels sub-menu dynamically if Ration Inventory parent is present
+  // Inject QR Labels sub-menu dynamically if Ration Inventory parent is present and QR Labels is allowed
   const hasRation = menus.some(m => m.menu_id === 200);
-  if (hasRation) {
+  const wasQrLabelsAllowed = menus.some(m => m.menu_id === 212);
+  if (hasRation && wasQrLabelsAllowed) {
     menus.push({
       menu_id: 212,
       menu_name: "QR Labels",
@@ -286,7 +295,7 @@ export const getRequiredActionForPath = (pathname) => {
 };
 
 export const isPathAllowedForUser = (user, pathname) => {
-  if (pathname === "/ration-management" || pathname === "/ration-inventory/qr-labels") return true;
+  if (pathname === "/ration-management" || pathname === "/restriction/menu-permissions") return true;
   const menu = getMenuByRoute(user, pathname);
 
   if (!menu) {

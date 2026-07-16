@@ -41,7 +41,7 @@ import {
 const columns = [
   { key: "serial_number", label: "S.No" },
   { key: "purchase_number", label: "Purchase No" },
-  { key: "purchase_date", label: "Purchase Date" },
+  { key: "created_at", label: "Created At" },
   { key: "supplier_name", label: "Supplier" },
   { key: "supplier_invoice_number", label: "Invoice No" },
   { key: "total_items", label: "Total Items" },
@@ -80,10 +80,14 @@ const selectClassName = `
 const formatDate = (value) => {
   if (!value) return "-";
   try {
-    return new Date(value).toLocaleDateString(undefined, {
+    return new Date(value).toLocaleString("en-IN", {
+      timeZone: "Asia/Kolkata",
       year: "numeric",
       month: "short",
       day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true
     });
   } catch (e) {
     return String(value);
@@ -261,7 +265,20 @@ const RationPurchaseHistory = () => {
       supplier_name: purchase.supplier?.supplier_name || purchase.supplier_name,
       supplier_invoice_number: purchase.invoice_number || purchase.supplier_invoice_number,
       total_items: purchase.items?.length || purchase.total_items || 0,
-      purchase_date: formatDate(purchase.purchase_date),
+      created_at: purchase.created_at ? new Date(purchase.created_at).toLocaleString("en-IN", {
+        timeZone: "Asia/Kolkata",
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true
+      }) : (purchase.purchase_date ? new Date(purchase.purchase_date).toLocaleDateString("en-IN", {
+        timeZone: "Asia/Kolkata",
+        year: "numeric",
+        month: "short",
+        day: "numeric"
+      }) : "-"),
       grand_total: formatCurrency(purchase.grand_total),
       paid_amount: formatCurrency(purchase.paid_amount),
       balance_amount: formatCurrency(purchase.balance_amount),

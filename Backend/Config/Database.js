@@ -1,4 +1,7 @@
-const { Pool } = require("pg");
+const { Pool, types } = require("pg");
+// Parse PostgreSQL TIMESTAMP (without timezone, OID 1114) as UTC to avoid timezone shifting
+types.setTypeParser(1114, (val) => val ? new Date(val + "Z") : null);
+
 require("dotenv").config({ quiet: true });
 const dns = require("dns");
 const { AsyncLocalStorage } = require("async_hooks");

@@ -3,6 +3,7 @@ import { lazy, Suspense } from "react";
 import PageLoader from "../Components/Common/PageLoader";
 
 const Dashboard = lazy(() => import("../Pages/Dashboard/Dashboard"));
+const MenuRestrictions = lazy(() => import("../Components/Restriction/MenuRestrictions"));
 const LoginPage = lazy(() => import("../Pages/Login/LoginPage"));
 const RegisterPage = lazy(() => import("../Pages/Register/RegisterPage"));
 const AddSuperAdmin = lazy(() => {
@@ -273,6 +274,10 @@ export const superAdminRoutes = [
   {
     path: "/super-admins/view/:id",
     element: withSuspense(<ViewSuperAdmin />),
+  },
+  {
+    path: "/restriction/menu-permissions",
+    element: withSuspense(<MenuRestrictions />),
   },
 ];
 

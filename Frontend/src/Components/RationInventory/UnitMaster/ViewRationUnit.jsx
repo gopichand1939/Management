@@ -19,7 +19,10 @@ const formatDate = (value) => {
     return "-";
   }
   try {
-    return new Date(value).toLocaleString();
+    return new Date(value).toLocaleString("en-IN", {
+      timeZone: "Asia/Kolkata",
+      hour12: true
+    });
   } catch (e) {
     return String(value);
   }

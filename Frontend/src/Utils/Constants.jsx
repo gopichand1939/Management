@@ -164,7 +164,8 @@ export const RATION_INVENTORY_DASHBOARD_SUMMARY = BASE_URL + "/ration-inventory-
 export const RATION_INVENTORY_DASHBOARD_RECENT_TRANSACTIONS = BASE_URL + "/ration-inventory-dashboard/recent-transactions";
 export const RATION_INVENTORY_DASHBOARD_LOW_STOCK = BASE_URL + "/ration-inventory-dashboard/low-stock";
 export const RATION_INVENTORY_DASHBOARD_EXPIRY_ALERTS = BASE_URL + "/ration-inventory-dashboard/expiry-alerts";
-
+export const GET_RESTRICTION_ADMINS = BASE_URL + "/restriction/pg-admins";
+export const GET_RESTRICTION_RULES = BASE_URL + "/restriction/rules";
 
 
 

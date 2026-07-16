@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
-import { QRCodeCanvas } from "qrcode.react";
+import { QRCodeSVG } from "qrcode.react";
 import { ArrowLeft, Tag, Hash, Building2, Scale, Percent, Landmark, ShieldAlert, AlignLeft, Calendar, Image as ImageIcon, Download, Printer } from "lucide-react";
 
 import PageLoader from "../../Common/PageLoader";
@@ -202,7 +202,7 @@ const ViewRationItem = () => {
                         <ViewField label="SKU ID" value={item.sku_id} icon={Hash} />
                         <ViewField
                           label="Created At"
-                          value={item.created_at ? new Date(item.created_at).toLocaleString() : ""}
+                          value={item.created_at ? new Date(item.created_at).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", hour12: true }) : ""}
                           icon={Calendar}
                         />
                       </div>
@@ -280,12 +280,19 @@ const ViewRationItem = () => {
                             {item.item_name}
                           </span>
                           <div className="bg-white p-1.5 border border-slate-100 rounded-lg">
-                            <QRCodeCanvas
-                              id="ration-item-qr-canvas-view"
+                            <QRCodeSVG
+                              id="ration-item-qr-svg-view"
                               value={item.barcode ? `${item.barcode}` : "NONE"}
-                              size={120}
+                              size={256}
                               level="H"
                               includeMargin={true}
+                              className="qr-code-svg"
+                              style={{
+                                width: "120px",
+                                height: "120px",
+                                imageRendering: "pixelated",
+                                shapeRendering: "crispEdges"
+                              }}
                             />
                           </div>
                           <span className="text-[10px] font-mono text-slate-500 mt-2 font-bold select-all">

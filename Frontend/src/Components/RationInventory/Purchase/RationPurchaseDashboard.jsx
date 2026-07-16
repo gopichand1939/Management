@@ -363,7 +363,7 @@ const RationPurchaseDashboard = () => {
                         <thead>
                           <tr className="bg-slate-50/50 text-[10px] font-black uppercase tracking-wider text-slate-400 border-b">
                             <th className="px-5 py-3 text-left">Purchase No</th>
-                            <th className="px-5 py-3 text-left">Purchase Date</th>
+                            <th className="px-5 py-3 text-left">Created At</th>
                             <th className="px-5 py-3 text-left">Supplier</th>
                             <th className="px-5 py-3 text-right">Grand Total</th>
                             <th className="px-5 py-3 text-center">Status</th>
@@ -381,11 +381,24 @@ const RationPurchaseDashboard = () => {
                               <tr key={purchase.id} className="border-b last:border-0 hover:bg-slate-50/10 font-semibold text-slate-650">
                                 <td className="px-5 py-3.5 text-left text-slate-800 font-bold">{purchase.purchase_number}</td>
                                 <td className="px-5 py-3.5 text-left">
-                                  {new Date(purchase.purchase_date).toLocaleDateString(undefined, {
-                                    year: "numeric",
-                                    month: "short",
-                                    day: "numeric"
-                                  })}
+                                  {purchase.created_at ? (
+                                    new Date(purchase.created_at).toLocaleString("en-IN", {
+                                      timeZone: "Asia/Kolkata",
+                                      year: "numeric",
+                                      month: "short",
+                                      day: "numeric",
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                      hour12: true
+                                    })
+                                  ) : (
+                                    new Date(purchase.purchase_date).toLocaleDateString("en-IN", {
+                                      timeZone: "Asia/Kolkata",
+                                      year: "numeric",
+                                      month: "short",
+                                      day: "numeric"
+                                    })
+                                  )}
                                 </td>
                                 <td className="px-5 py-3.5 text-left">{purchase.supplier_name}</td>
                                 <td className="px-5 py-3.5 text-right text-slate-800 font-bold">{formatCurrency(purchase.grand_total)}</td>

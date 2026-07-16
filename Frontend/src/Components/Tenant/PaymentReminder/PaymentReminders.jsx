@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSelector } from "react-redux";
 import {
   BellRing,
   CalendarClock,
@@ -19,6 +20,7 @@ import {
   PAYMENT_REMINDER_ACTION,
   PAYMENT_REMINDER_COLLECT,
   PAYMENT_REMINDER_LIST,
+  GET_INSTITUTION_LIST,
 } from "../../../Utils/Constants";
 import {
   buildMetricCards,
@@ -108,7 +110,12 @@ const formatShortDueDate = (value) => {
 };
 
 const PaymentReminders = () => {
+  const { authUser } = useSelector((state) => state.user);
+  const isPgAdmin = authUser?.role === "pg_admin";
+
   const [reminders, setReminders] = useState([]);
+  const [institutions, setInstitutions] = useState([]);
+  const [selectedInstitutionId, setSelectedInstitutionId] = useState("all");
   const [summary, setSummary] = useState({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -119,19 +126,39 @@ const PaymentReminders = () => {
   const [referenceNumber, setReferenceNumber] = useState("");
   const [savingCollection, setSavingCollection] = useState(false);
 
-  const fetchReminders = async () => {
+  const fetchInstitutions = async () => {
+    try {
+      const response = await fetch(GET_INSTITUTION_LIST, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify({}),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setInstitutions(data.institutions || data.data || []);
+      }
+    } catch (err) {
+      console.error("Failed to load institutions:", err);
+    }
+  };
+
+  const fetchReminders = async (instId = selectedInstitutionId) => {
     setLoading(true);
     setError("");
 
     try {
+      const payload = {
+        search: "",
+        status: "all",
+        window_days: 30,
+      };
+      if (instId && instId !== "all") {
+        payload.institution_id = Number(instId);
+      }
       const response = await fetch(PAYMENT_REMINDER_LIST, {
         method: "POST",
         headers: getAuthHeaders(),
-        body: JSON.stringify({
-          search: "",
-          status: "all",
-          window_days: 30,
-        }),
+        body: JSON.stringify(payload),
       });
 
       const data = await response.json();
@@ -150,9 +177,15 @@ const PaymentReminders = () => {
   };
 
   useEffect(() => {
-    const timeoutId = window.setTimeout(fetchReminders, 250);
+    if (!isPgAdmin) {
+      fetchInstitutions();
+    }
+  }, [isPgAdmin]);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => fetchReminders(selectedInstitutionId), 250);
     return () => window.clearTimeout(timeoutId);
-  }, []);
+  }, [selectedInstitutionId]);
 
   const metricCards = buildMetricCards([
     {
@@ -302,13 +335,33 @@ const PaymentReminders = () => {
   return (
     <TenantShell>
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-3">
-        <div className="border-b border-slate-100 pb-2 text-left">
-          <h1 className="text-lg font-black tracking-tight text-slate-850">
-            Payment Reminders
-          </h1>
-          <p className="mt-0.5 text-[10px] font-bold text-slate-400">
-            Aging queue for rent due now or within the next 30 days.
-          </p>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-2">
+          <div className="text-left">
+            <h1 className="text-lg font-black tracking-tight text-slate-850">
+              Payment Reminders
+            </h1>
+            <p className="mt-0.5 text-[10px] font-bold text-slate-400">
+              Aging queue for rent due now or within the next 30 days.
+            </p>
+          </div>
+          {!isPgAdmin && (
+            <div className="flex flex-col text-left shrink-0">
+              <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider mb-1">Institution</span>
+              <select
+                value={selectedInstitutionId}
+                onChange={(e) => setSelectedInstitutionId(e.target.value)}
+                className="h-9 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 outline-none transition-all focus:border-orange-500/50 focus:ring-4 focus:ring-orange-500/10"
+                aria-label="Filter by Institution"
+              >
+                <option value="all">All Institutions</option>
+                {institutions.map((inst) => (
+                  <option key={inst.id} value={inst.id}>
+                    {inst.institution_name || inst.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">

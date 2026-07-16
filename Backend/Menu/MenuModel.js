@@ -9,7 +9,7 @@ const getProfileIdByRole = (role) => {
     return ROLE_PROFILE_MAP[role] || null;
 };
 
-const getMenusByRole = async (role) => {
+const getMenusByRole = async (role, userId = null) => {
     const profileId = getProfileIdByRole(role);
 
     if (!profileId) {
@@ -87,6 +87,43 @@ const getMenusByRole = async (role) => {
                 action_name: row.action_name,
                 priority: row.action_priority,
             });
+        }
+    }
+
+    if (userId && role === "pg_admin") {
+        const sql = `
+            SELECT 
+                menu_id,
+                action_id,
+                is_allowed
+            FROM urmg_user_menu_restrictions
+            WHERE user_id = $1
+        `;
+        const res = await pool.query(
+            sql,
+            [userId]
+        );
+        for (const item of res.rows) {
+            const mId = item.menu_id;
+            const aId = item.action_id;
+            const ok = item.is_allowed;
+            if (aId === null && ok === false) {
+                menuMap.delete(mId);
+                continue;
+            }
+            if (aId !== null && ok === false) {
+                const m = menuMap.get(mId);
+                if (m) {
+                    m.actions = m.actions.filter(
+                        (act) => act.action_id !== aId
+                    );
+                }
+            }
+        }
+        for (const [mId, menu] of menuMap.entries()) {
+            if (menu.parent_menu_id && !menuMap.has(menu.parent_menu_id)) {
+                menuMap.delete(mId);
+            }
         }
     }
 

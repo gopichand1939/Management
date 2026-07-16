@@ -18,7 +18,8 @@ import { hasMenuAction, MENU_ACTIONS } from "../../../Utils/MenuPermissions";
 const formatDate = (value) => {
   if (!value) return "-";
   try {
-    return new Date(value).toLocaleDateString(undefined, {
+    return new Date(value).toLocaleDateString("en-IN", {
+      timeZone: "Asia/Kolkata",
       year: "numeric",
       month: "short",
       day: "numeric",
@@ -31,12 +32,14 @@ const formatDate = (value) => {
 const formatDateTime = (value) => {
   if (!value) return "-";
   try {
-    return new Date(value).toLocaleDateString(undefined, {
+    return new Date(value).toLocaleString("en-IN", {
+      timeZone: "Asia/Kolkata",
       year: "numeric",
       month: "short",
       day: "numeric",
       hour: "2-digit",
-      minute: "2-digit"
+      minute: "2-digit",
+      hour12: true
     });
   } catch (e) {
     return String(value);
@@ -320,7 +323,7 @@ const ViewKitchenRequest = () => {
                 <div className="space-y-4 text-xs font-semibold text-slate-650">
                   <div className="flex justify-between items-center pb-2.5 border-b border-slate-50">
                     <span className="text-slate-400">Requested By:</span>
-                    <span className="text-slate-800 font-bold">{header.requested_by_email || `ID: ${header.requested_by}`}</span>
+                    <span className="text-slate-800 font-bold">{header.requested_by_name || header.requested_by_email || `ID: ${header.requested_by}`}</span>
                   </div>
                   <div className="flex justify-between items-center pb-2.5 border-b border-slate-50">
                     <span className="text-slate-400">Created Date:</span>
@@ -328,7 +331,7 @@ const ViewKitchenRequest = () => {
                   </div>
                   <div className="flex justify-between items-center pb-2.5 border-b border-slate-50">
                     <span className="text-slate-400">Approved By:</span>
-                    <span className="text-slate-800 font-bold">{header.approved_by_email || (header.approved_by ? `ID: ${header.approved_by}` : "-")}</span>
+                    <span className="text-slate-800 font-bold">{header.approved_by_name || header.approved_by_email || (header.approved_by ? `ID: ${header.approved_by}` : "-")}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-slate-400">Approval Date:</span>

@@ -18,10 +18,14 @@ const RationPurchaseItemsTable = ({ items, onEdit, onRemove, readOnly = false })
   const formatDate = (val) => {
     if (!val) return "-";
     try {
-      return new Date(val).toLocaleDateString(undefined, {
+      return new Date(val).toLocaleString("en-IN", {
+        timeZone: "Asia/Kolkata",
         year: "numeric",
         month: "short",
         day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true
       });
     } catch {
       return String(val);

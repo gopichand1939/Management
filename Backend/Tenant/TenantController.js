@@ -374,7 +374,7 @@ const listActiveTenants = async (req, res) => {
             : undefined;
 
         const tenants = await getActiveTenants(
-            isPgAdminRequest(req) ? req.pgAdmin.institution_id : null,
+            isPgAdminRequest(req) ? req.pgAdmin.institution_id : normalizeInteger(req.body.institution_id),
             normalizeText(req.body.search) || "",
             statuses && statuses.length ? statuses : undefined
         );
@@ -395,7 +395,7 @@ const listActiveTenants = async (req, res) => {
 const listVacantBeds = async (req, res) => {
     try {
         const beds = await getVacantBeds(
-            isPgAdminRequest(req) ? req.pgAdmin.institution_id : null,
+            isPgAdminRequest(req) ? req.pgAdmin.institution_id : normalizeInteger(req.body.institution_id),
             normalizeText(req.body.search) || ""
         );
 
@@ -415,7 +415,7 @@ const listVacantBeds = async (req, res) => {
 const listTenantPayments = async (req, res) => {
     try {
         const payments = await getTenantPayments(
-            isPgAdminRequest(req) ? req.pgAdmin.institution_id : null,
+            isPgAdminRequest(req) ? req.pgAdmin.institution_id : normalizeInteger(req.body.institution_id),
             normalizeText(req.body.search) || "",
             normalizeInteger(req.body.tenant_id)
         );
@@ -440,7 +440,7 @@ const listVacatedTenants = async (req, res) => {
             : ["vacated"];
 
         const tenants = await getVacatedTenants(
-            isPgAdminRequest(req) ? req.pgAdmin.institution_id : null,
+            isPgAdminRequest(req) ? req.pgAdmin.institution_id : normalizeInteger(req.body.institution_id),
             normalizeText(req.body.search) || "",
             statuses
         );

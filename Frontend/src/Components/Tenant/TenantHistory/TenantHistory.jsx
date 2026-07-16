@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSelector } from "react-redux";
 import {
   BadgeIndianRupee,
   CalendarClock,
@@ -16,6 +17,7 @@ import TenantShell from "../TenantShell";
 import {
   TENANT_ACTIVE_LIST,
   TENANT_HISTORY_VIEW,
+  GET_INSTITUTION_LIST,
 } from "../../../Utils/Constants";
 import {
   formatCurrency,
@@ -52,7 +54,12 @@ const formatBillingCycleLabel = (value) => {
 };
 
 const TenantHistory = () => {
+  const { authUser } = useSelector((state) => state.user);
+  const isPgAdmin = authUser?.role === "pg_admin";
+
   const [tenants, setTenants] = useState([]);
+  const [institutions, setInstitutions] = useState([]);
+  const [selectedInstitutionId, setSelectedInstitutionId] = useState("all");
   const [selectedTenantId, setSelectedTenantId] = useState("");
   const [history, setHistory] = useState(null);
   const [searchText, setSearchText] = useState("");
@@ -60,39 +67,67 @@ const TenantHistory = () => {
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    const fetchTenants = async () => {
-      setLoadingTenants(true);
-      setError("");
-
-      try {
-        const response = await fetch(TENANT_ACTIVE_LIST, {
-          method: "POST",
-          headers: getAuthHeaders(),
-          body: JSON.stringify({}),
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.message || "Tenant list fetch failed");
-        }
-
-        const tenantList = data.tenants || [];
-        setTenants(tenantList);
-
-        if (tenantList.length > 0) {
-          setSelectedTenantId(String(tenantList[0].id));
-        }
-      } catch (apiError) {
-        setError(apiError.message || "Tenant list fetch failed");
-      } finally {
-        setLoadingTenants(false);
+  const fetchInstitutions = async () => {
+    try {
+      const response = await fetch(GET_INSTITUTION_LIST, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify({}),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setInstitutions(data.institutions || data.data || []);
       }
-    };
+    } catch (err) {
+      console.error("Failed to load institutions:", err);
+    }
+  };
 
-    fetchTenants();
-  }, []);
+  const fetchTenants = async (instId = selectedInstitutionId) => {
+    setLoadingTenants(true);
+    setError("");
+
+    try {
+      const payload = {};
+      if (instId && instId !== "all") {
+        payload.institution_id = Number(instId);
+      }
+      const response = await fetch(TENANT_ACTIVE_LIST, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Tenant list fetch failed");
+      }
+
+      const tenantList = data.tenants || [];
+      setTenants(tenantList);
+
+      if (tenantList.length > 0) {
+        setSelectedTenantId(String(tenantList[0].id));
+      } else {
+        setSelectedTenantId("");
+      }
+    } catch (apiError) {
+      setError(apiError.message || "Tenant list fetch failed");
+    } finally {
+      setLoadingTenants(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!isPgAdmin) {
+      fetchInstitutions();
+    }
+  }, [isPgAdmin]);
+
+  useEffect(() => {
+    fetchTenants(selectedInstitutionId);
+  }, [selectedInstitutionId]);
 
   useEffect(() => {
     const fetchTenantHistory = async () => {
@@ -160,24 +195,42 @@ const TenantHistory = () => {
           </p>
         </div>
 
-        <div className={`${cardClassName} flex flex-col gap-4 md:flex-row md:items-center md:justify-between`}>
-          <div className="flex w-full max-w-sm items-center gap-2 rounded-xl border border-slate-200/80 bg-slate-50 px-3 text-slate-400 transition-all duration-200 focus-within:border-orange-500/50 focus-within:bg-white focus-within:ring-4 focus-within:ring-orange-500/10 focus-within:shadow-sm">
+        <div className={`${cardClassName} flex flex-col gap-3 md:flex-row md:items-center md:justify-between`}>
+          {!isPgAdmin && (
+            <div className="w-full md:max-w-xs">
+              <select
+                value={selectedInstitutionId}
+                onChange={(event) => setSelectedInstitutionId(event.target.value)}
+                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 outline-none transition-all hover:border-slate-300 focus:border-orange-500/50"
+              >
+                <option value="all">All Institutions</option>
+                {institutions.map((inst) => (
+                  <option key={inst.id} value={inst.id}>
+                    {inst.institution_name || inst.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          <div className="flex w-full md:max-w-xs items-center gap-2 rounded-xl border border-slate-200/80 bg-slate-50 px-3 text-slate-400 transition-all duration-200 focus-within:border-orange-500/50 focus-within:bg-white focus-within:ring-4 focus-within:ring-orange-500/10 focus-within:shadow-sm">
             <Search size={14} />
             <input
               type="text"
               value={searchText}
               onChange={(event) => setSearchText(event.target.value)}
               placeholder="Search tenant name, phone, admission..."
-              className="h-10 w-full border-0 bg-transparent text-xs font-semibold text-slate-800 outline-none placeholder:text-slate-455"
+              className="h-9 w-full border-0 bg-transparent text-xs font-semibold text-slate-800 outline-none placeholder:text-slate-455"
             />
           </div>
 
-          <div className="w-full md:max-w-sm">
+          <div className="w-full md:max-w-xs">
             <select
               value={selectedTenantId}
               onChange={(event) => setSelectedTenantId(event.target.value)}
               className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 outline-none transition-all hover:border-slate-300 focus:border-orange-500/50"
             >
+              <option value="">Select Tenant</option>
               {filteredTenants.map((tenantOption) => (
                 <option key={tenantOption.id} value={tenantOption.id}>
                   {tenantOption.full_name} - {tenantOption.admission_number || tenantOption.phone}

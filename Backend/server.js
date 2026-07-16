@@ -30,6 +30,7 @@ const rationStockIssueRoutes = require("./RationInventory/StockIssue/RationStock
 const rationStockAdjustmentRoutes = require("./RationInventory/StockAdjustment/RationStockAdjustmentRoutes");
 const rationStockAuditRoutes = require("./RationInventory/StockAudit/RationStockAuditRoutes");
 const rationInventoryDashboardRoutes = require("./RationInventory/InventoryDashboard/RationInventoryDashboardRoutes");
+const restrictionRoutes = require("./Restriction/RestrictionRoutes");
 
 
 
@@ -144,6 +145,7 @@ app.use("/api/ration-stock-issue", rationStockIssueRoutes);
 app.use("/api/ration-stock-adjustment", rationStockAdjustmentRoutes);
 app.use("/api/ration-stock-audit", rationStockAuditRoutes);
 app.use("/api/ration-inventory-dashboard", rationInventoryDashboardRoutes);
+app.use("/api/restriction", restrictionRoutes);
 
 app.post("/", (req, res) => {
     res.send("Backend is running");

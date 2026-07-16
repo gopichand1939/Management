@@ -1595,12 +1595,12 @@ const RationPurchaseModel = {
             const summaryResult = await pool.query(summaryQuery, [institutionId]);
             const summary = summaryResult.rows[0];
 
-            // 2. Recent purchases
             const recentQuery = `
                 SELECT
                     rp.id,
                     rp.purchase_number,
                     rp.purchase_date,
+                    rp.created_at,
                     rs.supplier_name,
                     rp.grand_total,
                     rp.status

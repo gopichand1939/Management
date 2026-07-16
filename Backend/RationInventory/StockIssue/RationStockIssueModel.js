@@ -32,7 +32,9 @@ const RationStockIssueModel = {
                 mtm.meal_type_name,
                 rkr.priority,
                 uc.email as requested_by_email,
+                COALESCE(sa.name, pa.pg_admin_name, uc.email) as requested_by_name,
                 rkr.status,
+                rkr.created_at,
                 (SELECT COUNT(*)::integer FROM ration_kitchen_request_items rkri WHERE rkri.request_id = rkr.id) as total_items,
                 (SELECT COUNT(*)::integer FROM ration_kitchen_request_items rkri WHERE rkri.request_id = rkr.id AND rkri.approved_quantity > rkri.issued_quantity) as remaining_items,
                 (SELECT COALESCE(SUM(rkri.approved_quantity), 0)::numeric FROM ration_kitchen_request_items rkri WHERE rkri.request_id = rkr.id) as total_approved_quantity,
@@ -40,6 +42,8 @@ const RationStockIssueModel = {
             FROM ration_kitchen_requests rkr
             LEFT JOIN meal_type_master mtm ON rkr.meal_type_id = mtm.id
             LEFT JOIN user_credentials uc ON rkr.requested_by = uc.id
+            LEFT JOIN super_admins sa ON uc.super_admin_id = sa.id
+            LEFT JOIN pg_admin pa ON uc.pg_admin_id = pa.id
             WHERE rkr.institution_id = $1
               AND rkr.status IN ('approved', 'partially_issued')
               AND EXISTS (
@@ -52,7 +56,7 @@ const RationStockIssueModel = {
         let paramIndex = 2;
 
         if (search) {
-            query += ` AND (rkr.request_number ILIKE $${paramIndex} OR uc.email ILIKE $${paramIndex} OR rkr.remarks ILIKE $${paramIndex})`;
+            query += ` AND (rkr.request_number ILIKE $${paramIndex} OR uc.email ILIKE $${paramIndex} OR sa.name ILIKE $${paramIndex} OR pa.pg_admin_name ILIKE $${paramIndex} OR rkr.remarks ILIKE $${paramIndex})`;
             values.push(`%${search}%`);
             paramIndex++;
         }
@@ -70,6 +74,8 @@ const RationStockIssueModel = {
             SELECT COUNT(*)::integer as count
             FROM ration_kitchen_requests rkr
             LEFT JOIN user_credentials uc ON rkr.requested_by = uc.id
+            LEFT JOIN super_admins sa ON uc.super_admin_id = sa.id
+            LEFT JOIN pg_admin pa ON uc.pg_admin_id = pa.id
             WHERE rkr.institution_id = $1
               AND rkr.status IN ('approved', 'partially_issued')
               AND EXISTS (
@@ -82,7 +88,7 @@ const RationStockIssueModel = {
         let paramIndex = 2;
 
         if (search) {
-            query += ` AND (rkr.request_number ILIKE $${paramIndex} OR uc.email ILIKE $${paramIndex} OR rkr.remarks ILIKE $${paramIndex})`;
+            query += ` AND (rkr.request_number ILIKE $${paramIndex} OR uc.email ILIKE $${paramIndex} OR sa.name ILIKE $${paramIndex} OR pa.pg_admin_name ILIKE $${paramIndex} OR rkr.remarks ILIKE $${paramIndex})`;
             values.push(`%${search}%`);
             paramIndex++;
         }
@@ -102,11 +108,14 @@ const RationStockIssueModel = {
                 mtm.meal_type_name,
                 rkr.priority,
                 uc.email as requested_by_email,
+                COALESCE(sa.name, pa.pg_admin_name, uc.email) as requested_by_name,
                 rkr.status,
                 rkr.remarks
             FROM ration_kitchen_requests rkr
             LEFT JOIN meal_type_master mtm ON rkr.meal_type_id = mtm.id
             LEFT JOIN user_credentials uc ON rkr.requested_by = uc.id
+            LEFT JOIN super_admins sa ON uc.super_admin_id = sa.id
+            LEFT JOIN pg_admin pa ON uc.pg_admin_id = pa.id
             WHERE rkr.id = $1 AND rkr.institution_id = $2
         `;
         const result = await executor.query(query, [id, institutionId]);

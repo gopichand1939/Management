@@ -206,11 +206,14 @@ const KitchenRequestModel = {
                     rkr.remarks,
                     rkr.requested_by,
                     uc.email as requested_by_email,
+                    COALESCE(sa.name, pa.pg_admin_name, uc.email) as requested_by_name,
                     rkr.created_at,
                     (SELECT COUNT(*)::integer FROM ration_kitchen_request_items rkri WHERE rkri.request_id = rkr.id) as total_items
                 FROM ration_kitchen_requests rkr
                 LEFT JOIN meal_type_master mtm ON rkr.meal_type_id = mtm.id
                 LEFT JOIN user_credentials uc ON rkr.requested_by = uc.id
+                LEFT JOIN super_admins sa ON uc.super_admin_id = sa.id
+                LEFT JOIN pg_admin pa ON uc.pg_admin_id = pa.id
                 WHERE rkr.institution_id = $1
             `;
             const values = [institutionId];
@@ -223,7 +226,7 @@ const KitchenRequestModel = {
             }
 
             if (search) {
-                query += ` AND (rkr.request_number ILIKE $${paramIndex} OR uc.email ILIKE $${paramIndex} OR rkr.remarks ILIKE $${paramIndex})`;
+                query += ` AND (rkr.request_number ILIKE $${paramIndex} OR uc.email ILIKE $${paramIndex} OR sa.name ILIKE $${paramIndex} OR pa.pg_admin_name ILIKE $${paramIndex} OR rkr.remarks ILIKE $${paramIndex})`;
                 values.push(`%${search}%`);
                 paramIndex++;
             }
@@ -268,6 +271,8 @@ const KitchenRequestModel = {
                 SELECT COUNT(*)::integer as count
                 FROM ration_kitchen_requests rkr
                 LEFT JOIN user_credentials uc ON rkr.requested_by = uc.id
+                LEFT JOIN super_admins sa ON uc.super_admin_id = sa.id
+                LEFT JOIN pg_admin pa ON uc.pg_admin_id = pa.id
                 WHERE rkr.institution_id = $1
             `;
             const values = [institutionId];
@@ -280,7 +285,7 @@ const KitchenRequestModel = {
             }
 
             if (search) {
-                query += ` AND (rkr.request_number ILIKE $${paramIndex} OR uc.email ILIKE $${paramIndex} OR rkr.remarks ILIKE $${paramIndex})`;
+                query += ` AND (rkr.request_number ILIKE $${paramIndex} OR uc.email ILIKE $${paramIndex} OR sa.name ILIKE $${paramIndex} OR pa.pg_admin_name ILIKE $${paramIndex} OR rkr.remarks ILIKE $${paramIndex})`;
                 values.push(`%${search}%`);
                 paramIndex++;
             }
@@ -333,15 +338,21 @@ const KitchenRequestModel = {
                     rkr.remarks,
                     rkr.requested_by,
                     uc_req.email as requested_by_email,
+                    COALESCE(sa_req.name, pa_req.pg_admin_name, uc_req.email) as requested_by_name,
                     rkr.approved_by,
                     uc_app.email as approved_by_email,
+                    COALESCE(sa_app.name, pa_app.pg_admin_name, uc_app.email) as approved_by_name,
                     rkr.approval_date,
                     rkr.created_at,
                     rkr.updated_at
                 FROM ration_kitchen_requests rkr
                 LEFT JOIN meal_type_master mtm ON rkr.meal_type_id = mtm.id
                 LEFT JOIN user_credentials uc_req ON rkr.requested_by = uc_req.id
+                LEFT JOIN super_admins sa_req ON uc_req.super_admin_id = sa_req.id
+                LEFT JOIN pg_admin pa_req ON uc_req.pg_admin_id = pa_req.id
                 LEFT JOIN user_credentials uc_app ON rkr.approved_by = uc_app.id
+                LEFT JOIN super_admins sa_app ON uc_app.super_admin_id = sa_app.id
+                LEFT JOIN pg_admin pa_app ON uc_app.pg_admin_id = pa_app.id
                 WHERE rkr.id = $1 AND rkr.institution_id = $2
             `;
             const headerResult = await client.query(headerQuery, [id, institutionId]);

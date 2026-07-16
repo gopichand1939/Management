@@ -84,10 +84,14 @@ const ApprovedKitchenRequests = ({ selectedInstitutionId, setSelectedInstitution
   const formatDate = (value) => {
     if (!value) return "-";
     try {
-      return new Date(value).toLocaleDateString(undefined, {
+      return new Date(value).toLocaleString("en-IN", {
+        timeZone: "Asia/Kolkata",
         year: "numeric",
         month: "short",
         day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true
       });
     } catch (e) {
       return String(value);
@@ -97,7 +101,7 @@ const ApprovedKitchenRequests = ({ selectedInstitutionId, setSelectedInstitution
   const columns = [
     { key: "serial_number", label: "S.No" },
     { key: "request_number", label: "Request Number" },
-    { key: "request_date", label: "Request Date" },
+    { key: "created_at", label: "Created At" },
     { key: "required_date", label: "Required Date" },
     { key: "meal_type", label: "Meal Type" },
     { key: "total_items", label: "Total Items" },
@@ -112,10 +116,18 @@ const ApprovedKitchenRequests = ({ selectedInstitutionId, setSelectedInstitution
     return {
       ...req,
       serial_number: (currentPage - 1) * 10 + index + 1,
-      request_date: formatDate(req.request_date),
+      created_at: req.created_at ? new Date(req.created_at).toLocaleString("en-IN", {
+        timeZone: "Asia/Kolkata",
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true
+      }) : "-",
       required_date: formatDate(req.required_date),
       meal_type: req.meal_type_name || "-",
-      requested_by: req.requested_by_email || `User: ${req.requested_by}`,
+      requested_by: req.requested_by_name || req.requested_by_email || `User: ${req.requested_by}`,
       priority: (
         <span className={`inline-flex items-center rounded px-2.5 py-0.5 text-[10px] font-bold border capitalize ${
           req.priority === "critical"

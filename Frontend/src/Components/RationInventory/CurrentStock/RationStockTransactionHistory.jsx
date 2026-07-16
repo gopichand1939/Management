@@ -20,12 +20,14 @@ const formatCurrency = (value) => {
 const formatDate = (value) => {
   if (!value) return "-";
   try {
-    return new Date(value).toLocaleDateString(undefined, {
+    return new Date(value).toLocaleString("en-IN", {
+      timeZone: "Asia/Kolkata",
       year: "numeric",
       month: "short",
       day: "numeric",
       hour: "2-digit",
       minute: "2-digit",
+      hour12: true
     });
   } catch (e) {
     return String(value);

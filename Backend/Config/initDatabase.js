@@ -965,6 +965,18 @@ const statements = [
         )
     `,
     `
+        CREATE TABLE IF NOT EXISTS urmg_user_menu_restrictions (
+            restriction_id SERIAL PRIMARY KEY,
+            user_id INTEGER NOT NULL REFERENCES pg_admin(id) ON DELETE CASCADE,
+            menu_id INTEGER NOT NULL REFERENCES urmg_menus(menu_id) ON DELETE CASCADE,
+            action_id INTEGER REFERENCES urmg_actions(action_id) ON DELETE CASCADE,
+            is_allowed BOOLEAN NOT NULL DEFAULT FALSE,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE (user_id, menu_id, action_id)
+        )
+    `,
+    `
         DELETE FROM urmg_profile_menus_actions
         WHERE menu_id IN (5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 100, 101, 102, 103, 104, 105, 200, 201, 202, 203)
     `,

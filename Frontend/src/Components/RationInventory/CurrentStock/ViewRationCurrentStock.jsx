@@ -18,12 +18,14 @@ const formatCurrency = (value) => {
 const formatDate = (value) => {
   if (!value) return "-";
   try {
-    return new Date(value).toLocaleDateString(undefined, {
+    return new Date(value).toLocaleString("en-IN", {
+      timeZone: "Asia/Kolkata",
       year: "numeric",
       month: "short",
       day: "numeric",
       hour: "2-digit",
       minute: "2-digit",
+      hour12: true
     });
   } catch (e) {
     return String(value);
@@ -246,7 +248,7 @@ const ViewRationCurrentStock = () => {
                       </div>
                       <div className="flex justify-between">
                         <span className="text-slate-450">Date:</span>
-                        <span className="text-slate-800 font-bold">{new Date(last_purchase.purchase_date).toLocaleDateString()}</span>
+                        <span className="text-slate-800 font-bold">{new Date(last_purchase.purchase_date).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata" })}</span>
                       </div>
                       <div className="flex justify-between border-t pt-2.5 mt-2.5">
                         <span className="text-slate-450">Qty Received:</span>

@@ -47,6 +47,7 @@ import {
   TENANT_PAYMENT_CREATE,
   TOKEN_KEY,
   INSTITUTION_VIEW,
+  GET_INSTITUTION_LIST,
 } from "../../Utils/Constants";
 import {
   buildMetricCards,
@@ -262,6 +263,8 @@ const ActiveTenants = () => {
   const isPgAdmin = authUser?.role === "pg_admin";
 
   const [tenants, setTenants] = useState([]);
+  const [institutions, setInstitutions] = useState([]);
+  const [selectedInstitutionId, setSelectedInstitutionId] = useState("all");
   const [dashboardStats, setDashboardStats] = useState(null);
   const [collectionMonth, setCollectionMonth] = useState("all");
   const [searchText, setSearchText] = useState("");
@@ -385,14 +388,34 @@ const ActiveTenants = () => {
     }
   };
 
-  const fetchTenants = async () => {
-    setLoading(true);
-    setError("");
+  const fetchInstitutions = async () => {
     try {
-      const response = await fetch(TENANT_ACTIVE_LIST, {
+      const response = await fetch(GET_INSTITUTION_LIST, {
         method: "POST",
         headers: getAuthHeaders(),
         body: JSON.stringify({}),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setInstitutions(data.institutions || data.data || []);
+      }
+    } catch (err) {
+      console.error("Failed to load institutions:", err);
+    }
+  };
+
+  const fetchTenants = async (instId = selectedInstitutionId) => {
+    setLoading(true);
+    setError("");
+    try {
+      const payload = {};
+      if (instId && instId !== "all") {
+        payload.institution_id = Number(instId);
+      }
+      const response = await fetch(TENANT_ACTIVE_LIST, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(payload),
       });
 
       const data = await response.json();
@@ -407,12 +430,16 @@ const ActiveTenants = () => {
     }
   };
 
-  const fetchStats = async (month = collectionMonth) => {
+  const fetchStats = async (month = collectionMonth, instId = selectedInstitutionId) => {
     try {
+      const payload = { collection_month: month };
+      if (instId && instId !== "all") {
+        payload.institution_id = Number(instId);
+      }
       const response = await fetch(TENANT_STATS, {
         method: "POST",
         headers: getAuthHeaders(),
-        body: JSON.stringify({ collection_month: month }),
+        body: JSON.stringify(payload),
       });
       const data = await response.json();
       if (response.ok) {
@@ -479,12 +506,18 @@ const ActiveTenants = () => {
   };
 
   useEffect(() => {
-    fetchTenants();
-  }, []);
+    if (!isPgAdmin) {
+      fetchInstitutions();
+    }
+  }, [isPgAdmin]);
 
   useEffect(() => {
-    fetchStats(collectionMonth);
-  }, [collectionMonth]);
+    fetchTenants(selectedInstitutionId);
+  }, [selectedInstitutionId]);
+
+  useEffect(() => {
+    fetchStats(collectionMonth, selectedInstitutionId);
+  }, [collectionMonth, selectedInstitutionId]);
 
   const monthFilteredTenants = useMemo(() => {
     if (collectionMonth === "all") {
@@ -813,18 +846,41 @@ const ActiveTenants = () => {
         <div className="flex flex-col gap-3">
           <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
             <div className="text-left">
-              <span className="block text-[9px] font-black uppercase tracking-widest text-slate-400">Collection Period</span>
+              <span className="block text-[9px] font-black uppercase tracking-widest text-slate-400">Filters & Period</span>
               <span className="mt-1 block text-xs font-bold text-slate-600">Rent and deposits are reported separately for tenants who joined in the selected month.</span>
             </div>
-            <select
-              value={collectionMonth}
-              onChange={(event) => setCollectionMonth(event.target.value)}
-              className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 outline-none transition-all focus:border-orange-500/50 focus:ring-4 focus:ring-orange-500/10"
-              aria-label="Collection month"
-            >
-              <option value="all">All Months</option>
-              {collectionMonthOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-            </select>
+            <div className="flex flex-wrap items-center gap-3">
+              {!isPgAdmin && (
+                <div className="flex flex-col text-left">
+                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider mb-1">Institution</span>
+                  <select
+                    value={selectedInstitutionId}
+                    onChange={(e) => setSelectedInstitutionId(e.target.value)}
+                    className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 outline-none transition-all focus:border-orange-500/50 focus:ring-4 focus:ring-orange-500/10"
+                    aria-label="Filter by Institution"
+                  >
+                    <option value="all">All Institutions</option>
+                    {institutions.map((inst) => (
+                      <option key={inst.id} value={inst.id}>
+                        {inst.institution_name || inst.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              <div className="flex flex-col text-left">
+                <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider mb-1">Collection Month</span>
+                <select
+                  value={collectionMonth}
+                  onChange={(event) => setCollectionMonth(event.target.value)}
+                  className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 outline-none transition-all focus:border-orange-500/50 focus:ring-4 focus:ring-orange-500/10"
+                  aria-label="Collection month"
+                >
+                  <option value="all">All Months</option>
+                  {collectionMonthOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                </select>
+              </div>
+            </div>
           </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           {statItems.map((st, idx) => {

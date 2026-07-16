@@ -96,7 +96,7 @@ const collectPaymentReminder = async (req, res) => {
             referenceNumber: normalizeText(req.body.reference_number),
             notes: normalizeText(req.body.notes),
             createdBy: req.user?.id || null,
-            institutionId: isPgAdminRequest(req) ? normalizeInteger(req.pgAdmin?.institution_id) : null,
+            institutionId: resolveInstitutionId(req),
         });
 
         return res.status(201).json({

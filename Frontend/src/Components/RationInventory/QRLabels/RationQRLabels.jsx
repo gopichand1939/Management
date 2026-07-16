@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useSelector } from "react-redux";
-import { QRCodeCanvas } from "qrcode.react";
+import { QRCodeSVG } from "qrcode.react";
 import { 
   Printer, 
   Settings, 
@@ -716,7 +716,7 @@ const RationQRLabels = () => {
                     {/* The Grid Sheet container */}
                     <div
                       ref={printAreaRef}
-                      className="bg-white p-6 shadow-md print:shadow-none print:p-0 print:bg-white"
+                      className="bg-white p-6 shadow-md print:shadow-none print:p-0 print:bg-white printable-area"
                       style={{
                         display: "grid",
                         gridTemplateColumns: `repeat(${customCols}, minmax(0, 1fr))`,
@@ -730,59 +730,87 @@ const RationQRLabels = () => {
                       {printGridList.map((item, idx) => {
                         const qrCodeValue = item.barcode || item.item_code || item.sku_id || "";
                         
+                        // Count the active lines to dynamically adjust space allocation
+                        const activeLinesCount = [
+                          showItemName,
+                          showSkuId && item.sku_id,
+                          showItemCode && item.item_code,
+                          showBarcodeText
+                        ].filter(Boolean).length;
+                        
+                        // Allocate safe vertical space per line (font size ~ 10-12px + margins/lineHeight)
+                        const verticalPaddingAndMargins = (2 * labelPadding) + (activeLinesCount * 13) + 4;
+                        const maxQrHeight = labelHeight - verticalPaddingAndMargins;
+                        
+                        // Restrict QR code size to fit within the physical sticker box, with a safe minimum of 20px
+                        const actualQrSize = Math.max(20, Math.min(qrSize, maxQrHeight));
+                        
+                        // Helper to render a centered text line constrained to QR width with auto-adjusted font size
+                        const renderTextLine = (val) => {
+                          if (!val) return null;
+                          const textStr = String(val);
+                          const len = textStr.length || 1;
+                          const calculatedFontSize = Math.max(5, Math.min(13, Math.floor(actualQrSize / (len * 0.6))));
+                          const letterSpacing = len <= 6 ? "0.08em" : "0.02em";
+                          const marginBetweenLines = activeLinesCount > 2 ? "3px" : "5px";
+
+                          return (
+                            <div
+                              className="text-slate-900 font-mono"
+                              style={{
+                                width: `${actualQrSize}px`,
+                                marginTop: marginBetweenLines,
+                                fontSize: `${calculatedFontSize}px`,
+                                letterSpacing: letterSpacing,
+                                fontWeight: "700",
+                                textAlign: "center",
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                textOverflow: "clip",
+                                lineHeight: "1.1",
+                              }}
+                            >
+                              {textStr}
+                            </div>
+                          );
+                        };
+
                         return (
                           <div
                             key={`${item.id}-${idx}`}
-                            className="border border-slate-200 rounded flex items-center overflow-hidden print:border-slate-300"
+                            className="border border-slate-200 rounded flex flex-col items-center justify-center overflow-hidden bg-white print:border-slate-300"
                             style={{
                               width: `${labelWidth}px`,
                               height: `${labelHeight}px`,
                               padding: `${labelPadding}px`,
                               boxSizing: "border-box",
-                              backgroundColor: "#ffffff",
-                              gap: "8px",
                             }}
                           >
-                            {/* QR Code Canvas */}
-                            <div className="shrink-0 flex items-center justify-center bg-white p-1 rounded border border-slate-100 print:border-0 print:p-0">
-                              <QRCodeCanvas
+                            {/* QR Code SVG */}
+                            <div 
+                              className="flex items-center justify-center qr-code-container bg-white"
+                              style={{
+                                width: `${actualQrSize}px`,
+                                height: `${actualQrSize}px`,
+                              }}
+                            >
+                              <QRCodeSVG
                                 value={qrCodeValue}
-                                size={qrSize}
+                                size={256}
                                 bgColor="#ffffff"
                                 fgColor="#000000"
-                                level="L"
-                                includeMargin={false}
+                                level="H"
+                                includeMargin={true}
+                                className="qr-code-svg"
+                                style={{ width: "100%", height: "100%" }}
                               />
                             </div>
 
-                            {/* Label Text Details */}
-                            <div className="flex-1 flex flex-col justify-center min-w-0 text-left">
-                              {showItemName && (
-                                <div className="text-[11px] font-black leading-tight text-slate-900 truncate uppercase">
-                                  {item.item_name}
-                                </div>
-                              )}
-                              {showSkuId && item.sku_id && (
-                                <div className="text-[9px] font-bold text-slate-500 truncate leading-none mt-1">
-                                  SKU: <span className="font-mono text-slate-800">{item.sku_id}</span>
-                                </div>
-                              )}
-                              {item.barcode && (
-                                <div className="text-[9px] font-bold text-slate-500 truncate leading-none mt-0.5">
-                                  Barcode: <span className="font-mono text-slate-800">{item.barcode}</span>
-                                </div>
-                              )}
-                              {showItemCode && item.item_code && (
-                                <div className="text-[9px] font-bold text-slate-500 truncate leading-none mt-0.5">
-                                  Code: <span className="font-mono text-slate-800">{item.item_code}</span>
-                                </div>
-                              )}
-                              {showBarcodeText && (
-                                <div className="text-[8px] font-semibold text-slate-400 mt-1 font-mono truncate leading-none">
-                                  {qrCodeValue}
-                                </div>
-                              )}
-                            </div>
+                            {/* Dynamically toggleable centered info fields */}
+                            {showItemName && renderTextLine(item.item_name)}
+                            {showSkuId && item.sku_id && renderTextLine(item.sku_id)}
+                            {showItemCode && item.item_code && renderTextLine(item.item_code)}
+                            {showBarcodeText && renderTextLine(qrCodeValue)}
                           </div>
                         );
                       })}
@@ -801,44 +829,45 @@ const RationQRLabels = () => {
 
       {/* Global CSS style block for browser print output formatting */}
       <style>{`
+        /* Disable image smoothing to keep QR modules perfectly sharp */
+        .qr-code-svg {
+          image-rendering: -moz-crisp-edges;
+          image-rendering: -o-crisp-edges;
+          image-rendering: -webkit-optimize-contrast;
+          image-rendering: pixelated;
+          image-rendering: crisp-edges;
+          shape-rendering: crispEdges;
+        }
+        .qr-code-svg path {
+          shape-rendering: crispEdges;
+        }
+
         @media print {
+          /* Hide all page content by default */
+          body * {
+            visibility: hidden !important;
+          }
+          /* Restore visibility for the print sheet grid container and its children */
+          .printable-area, .printable-area * {
+            visibility: visible !important;
+          }
+          /* Position the print sheet grid container at the absolute top-left */
+          .printable-area {
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            display: grid !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            box-shadow: none !important;
+            border: none !important;
+          }
           body, html {
             background-color: #ffffff !important;
             color: #000000 !important;
             overflow: visible !important;
             height: auto !important;
             width: auto !important;
-          }
-          /* Hide all application chrome (sidebar, navbar, controls) */
-          aside, nav, header, button, .print\\:hidden, #root > div > div:first-child, .xl\\:col-span-4 {
-            display: none !important;
-          }
-          /* Fullscreen the print area container */
-          main {
-            padding: 0 !important;
-            margin: 0 !important;
-            background: #ffffff !important;
-            overflow: visible !important;
-          }
-          .flex, .grid {
-            display: block !important;
-          }
-          .print\\:block {
-            display: block !important;
-          }
-          .print\\:border-0 {
-            border: 0 !important;
-            border-width: 0 !important;
-          }
-          .print\\:p-0 {
-            padding: 0 !important;
-          }
-          /* Explicitly restore print grid container dimensions and layout columns */
-          div[ref="printAreaRef"], [style*="display: grid"] {
-            display: grid !important;
-            background-color: #ffffff !important;
-            page-break-inside: avoid;
-            margin: 0 auto !important;
           }
         }
       `}</style>

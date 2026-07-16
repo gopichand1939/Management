@@ -72,7 +72,7 @@ const createKitchenRequest = async (req, res) => {
         const result = await KitchenRequestModel.createKitchenRequest(
             requestData,
             items,
-            req.user?.id
+            req.user?.credential_id || req.user?.id
         );
 
         return sendResponse(res, 201, true, `Kitchen request created successfully as ${status}`, result);
@@ -125,7 +125,7 @@ const updateKitchenRequest = async (req, res) => {
             Number(id),
             requestData,
             items,
-            req.user?.id
+            req.user?.credential_id || req.user?.id
         );
 
         return sendResponse(res, 200, true, "Kitchen request updated successfully", { id });
@@ -254,7 +254,7 @@ const approveKitchenRequest = async (req, res) => {
             Number(id),
             institutionId,
             items,
-            req.user?.id
+            req.user?.credential_id || req.user?.id
         );
 
         return sendResponse(res, 200, true, "Kitchen request approved successfully");
@@ -280,7 +280,7 @@ const rejectKitchenRequest = async (req, res) => {
             Number(id),
             institutionId,
             remarks,
-            req.user?.id
+            req.user?.credential_id || req.user?.id
         );
 
         return sendResponse(res, 200, true, "Kitchen request rejected successfully");

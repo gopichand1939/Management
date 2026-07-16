@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSelector } from "react-redux";
 import {
   BadgeCheck,
   CreditCard,
@@ -20,7 +21,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import Error from "../Common/Error";
 import PageLoader from "../Common/PageLoader";
 import TenantShell from "./TenantShell";
-import { TENANT_PAYMENTS_LIST, TENANT_PAYMENT_VERIFY } from "../../Utils/Constants";
+import { TENANT_PAYMENTS_LIST, TENANT_PAYMENT_VERIFY, GET_INSTITUTION_LIST } from "../../Utils/Constants";
 import {
   buildMetricCards,
   formatCurrency,
@@ -30,7 +31,12 @@ import {
 } from "./tenantHelpers";
 
 const TenantPayments = () => {
+  const { authUser } = useSelector((state) => state.user);
+  const isPgAdmin = authUser?.role === "pg_admin";
+
   const [payments, setPayments] = useState([]);
+  const [institutions, setInstitutions] = useState([]);
+  const [selectedInstitutionId, setSelectedInstitutionId] = useState("all");
   const [searchText, setSearchText] = useState("");
   const [selectedStatusTab, setSelectedStatusTab] = useState("all");
   const [error, setError] = useState("");
@@ -40,15 +46,35 @@ const TenantPayments = () => {
   // Receipt modal proof state
   const [activeProofUrl, setActiveProofUrl] = useState(null);
 
-  const fetchPayments = async () => {
+  const fetchInstitutions = async () => {
+    try {
+      const response = await fetch(GET_INSTITUTION_LIST, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify({}),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setInstitutions(data.institutions || data.data || []);
+      }
+    } catch (err) {
+      console.error("Failed to load institutions:", err);
+    }
+  };
+
+  const fetchPayments = async (instId = selectedInstitutionId) => {
     setLoading(true);
     setError("");
 
     try {
+      const payload = {};
+      if (instId && instId !== "all") {
+        payload.institution_id = Number(instId);
+      }
       const response = await fetch(TENANT_PAYMENTS_LIST, {
         method: "POST",
         headers: getAuthHeaders(),
-        body: JSON.stringify({}),
+        body: JSON.stringify(payload),
       });
 
       const data = await response.json();
@@ -65,8 +91,14 @@ const TenantPayments = () => {
   };
 
   useEffect(() => {
-    fetchPayments();
-  }, []);
+    if (!isPgAdmin) {
+      fetchInstitutions();
+    }
+  }, [isPgAdmin]);
+
+  useEffect(() => {
+    fetchPayments(selectedInstitutionId);
+  }, [selectedInstitutionId]);
 
   // Inline Verification trigger
   const handleVerifyPayment = async (paymentId, tenantId) => {
@@ -208,15 +240,33 @@ const TenantPayments = () => {
             ))}
           </div>
 
-          <div className="flex w-full md:max-w-xs items-center gap-2 rounded-xl border border-slate-200/80 bg-slate-50 px-3 text-slate-400 focus-within:border-orange-500/50 focus-within:ring-4 focus-within:ring-orange-500/10 focus-within:bg-white focus-within:shadow-sm transition-all duration-200 shrink-0">
-            <Search size={14} />
-            <input
-              type="text"
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              placeholder="Search receipt, tenant, type..."
-              className="h-9 w-full border-0 bg-transparent text-xs font-semibold text-slate-850 outline-none placeholder:text-slate-455"
-            />
+          <div className="flex w-full md:w-auto items-center justify-end gap-3 min-w-0">
+            {!isPgAdmin && (
+              <select
+                value={selectedInstitutionId}
+                onChange={(e) => setSelectedInstitutionId(e.target.value)}
+                className="h-9 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 outline-none transition-all focus:border-orange-500/50 focus:ring-4 focus:ring-orange-500/10 shrink-0"
+                aria-label="Filter by Institution"
+              >
+                <option value="all">All Institutions</option>
+                {institutions.map((inst) => (
+                  <option key={inst.id} value={inst.id}>
+                    {inst.institution_name || inst.name}
+                  </option>
+                ))}
+              </select>
+            )}
+
+            <div className="flex w-full md:w-64 items-center gap-2 rounded-xl border border-slate-200/80 bg-slate-50 px-3 text-slate-400 focus-within:border-orange-500/50 focus-within:ring-4 focus-within:ring-orange-500/10 focus-within:bg-white focus-within:shadow-sm transition-all duration-200 shrink-0">
+              <Search size={14} />
+              <input
+                type="text"
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+                placeholder="Search receipt, tenant, type..."
+                className="h-9 w-full border-0 bg-transparent text-xs font-semibold text-slate-850 outline-none placeholder:text-slate-455"
+              />
+            </div>
           </div>
         </div>
 

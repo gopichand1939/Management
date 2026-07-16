@@ -27,10 +27,14 @@ import { RATION_PURCHASE_VIEW, TOKEN_KEY } from "../../../Utils/Constants";
 const formatDate = (value) => {
   if (!value) return "-";
   try {
-    return new Date(value).toLocaleDateString(undefined, {
+    return new Date(value).toLocaleString("en-IN", {
+      timeZone: "Asia/Kolkata",
       year: "numeric",
       month: "short",
       day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true
     });
   } catch (e) {
     return String(value);
@@ -247,9 +251,9 @@ const ViewRationPurchase = () => {
                             Metadata Logs
                           </h4>
                           <div className="text-xs font-semibold text-slate-650 flex flex-col gap-1">
-                            <span>Created At: {new Date(purchase.created_at).toLocaleString()}</span>
+                            <span>Created At: {new Date(purchase.created_at).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", hour12: true })}</span>
                             {purchase.updated_at && (
-                              <span>Updated At: {new Date(purchase.updated_at).toLocaleString()}</span>
+                              <span>Updated At: {new Date(purchase.updated_at).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", hour12: true })}</span>
                             )}
                           </div>
                         </div>
