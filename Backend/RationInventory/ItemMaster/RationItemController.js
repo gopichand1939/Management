@@ -564,6 +564,71 @@ const getRationItemByBarcode = async (req, res) => {
     }
 };
 
+const getRationItemQRCodes = async (req, res) => {
+    const institutionId = req.user?.institution_id || req.body.institution_id;
+
+    if (!institutionId) {
+        return res.status(401).json({
+            success: false,
+            message: "Unauthorized - Institution ID not found",
+        });
+    }
+
+    try {
+        const page = parseInt(req.body.page) || 1;
+        const limit = parseInt(req.body.limit) || 10;
+        const offset = (page - 1) * limit;
+
+        const { search = "", category_id = null, status = "" } = req.body;
+
+        const items = await RationItemModel.getRationItemList(
+            institutionId,
+            limit,
+            offset,
+            search,
+            category_id,
+            null,
+            status
+        );
+
+        const totalCount = await RationItemModel.getRationItemCount(
+            institutionId,
+            search,
+            category_id,
+            null,
+            status
+        );
+
+        const qrData = items.map(item => ({
+            id: item.id,
+            item_name: item.item_name,
+            item_code: item.item_code,
+            sku_id: item.sku_id,
+            barcode: item.barcode,
+            category_name: item.category_name,
+            qr_code: item.barcode || item.item_code || item.sku_id || ""
+        }));
+
+        return res.status(200).json({
+            success: true,
+            message: "Ration QR codes fetched successfully",
+            data: qrData,
+            pagination: {
+                total: totalCount,
+                page,
+                limit,
+                pages: Math.ceil(totalCount / limit),
+            },
+        });
+    } catch (error) {
+        console.error("Error fetching QR codes:", error);
+        return res.status(500).json({
+            success: false,
+            message: error.message || "Internal Server Error",
+        });
+    }
+};
+
 module.exports = {
     createRationItem,
     getRationItemList,
@@ -572,4 +637,5 @@ module.exports = {
     deleteRationItem,
     getNextRationBarcode,
     getRationItemByBarcode,
+    getRationItemQRCodes,
 };

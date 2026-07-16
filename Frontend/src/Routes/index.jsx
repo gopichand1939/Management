@@ -238,6 +238,9 @@ const ViewRationStockAudit = lazy(() => {
 const RationInventoryDashboard = lazy(() => {
   return import("../Components/RationInventory/InventoryDashboard/RationInventoryDashboard");
 });
+const RationQRLabels = lazy(() => {
+  return import("../Components/RationInventory/QRLabels/RationQRLabels");
+});
 
 
 
@@ -568,6 +571,10 @@ export const rationInventoryRoutes = [
   {
     path: "/ration-inventory/inventory-dashboard",
     element: withSuspense(<RationInventoryDashboard />),
+  },
+  {
+    path: "/ration-inventory/qr-labels",
+    element: withSuspense(<RationQRLabels />),
   },
 ];
 

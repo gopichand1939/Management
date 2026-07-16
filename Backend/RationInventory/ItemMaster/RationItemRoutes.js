@@ -9,6 +9,7 @@ const {
     deleteRationItem,
     getNextRationBarcode,
     getRationItemByBarcode,
+    getRationItemQRCodes,
 } = require("./RationItemController");
 
 const router = express.Router();
@@ -21,5 +22,6 @@ router.post("/edit", protectRationAccess, handleRationItemUpload, updateRationIt
 router.post("/delete", protectRationAccess, deleteRationItem);
 router.post("/next-barcode", protectRationAccess, getNextRationBarcode);
 router.post("/scan", protectRationAccess, getRationItemByBarcode);
+router.post("/get-qr-code", protectRationAccess, getRationItemQRCodes);
 
 module.exports = router;

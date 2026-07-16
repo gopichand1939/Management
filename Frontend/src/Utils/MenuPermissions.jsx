@@ -40,6 +40,7 @@ const MENU_CONFIG_BY_ID = {
   209: { route_path: "/ration-inventory/stock-adjustment", icon_key: "stock_adjustment" },
   210: { route_path: "/ration-inventory/stock-audit", icon_key: "stock_audit" },
   211: { route_path: "/ration-inventory/inventory-dashboard", icon_key: "inventory_dashboard" },
+  212: { route_path: "/ration-inventory/qr-labels", icon_key: "qr_labels" },
 };
 
 const MENU_CONFIG_BY_NAME = {
@@ -83,6 +84,7 @@ const MENU_CONFIG_BY_NAME = {
   "stock adjustment": { route_path: "/ration-inventory/stock-adjustment", icon_key: "stock_adjustment" },
   "stock audit": { route_path: "/ration-inventory/stock-audit", icon_key: "stock_audit" },
   "inventory dashboard": { route_path: "/ration-inventory/inventory-dashboard", icon_key: "inventory_dashboard" },
+  "qr labels": { route_path: "/ration-inventory/qr-labels", icon_key: "qr_labels" },
 };
 
 const normalizeMenuName = (menuName) => {
@@ -128,6 +130,7 @@ const MENU_LABEL_KEYS_BY_NAME = {
   "stock adjustment": "menu.stockAdjustment",
   "stock audit": "menu.stockAudit",
   "inventory dashboard": "menu.inventoryDashboard",
+  "qr labels": "menu.qrLabels",
 };
 
 export const getMenuMeta = (menu) => {
@@ -173,6 +176,19 @@ export const getDefaultRoute = (user) => {
 export const getSidebarMenuTree = (user) => {
   const menus = getUserMenus(user);
   menus.push({ menu_id: "ration-management-demo", menu_name: "Ration Management", route_path: "/ration-management", icon_key: "ration_management", priority: 999 });
+  
+  // Inject QR Labels sub-menu dynamically if Ration Inventory parent is present
+  const hasRation = menus.some(m => m.menu_id === 200);
+  if (hasRation) {
+    menus.push({
+      menu_id: 212,
+      menu_name: "QR Labels",
+      parent_menu_id: 200,
+      route_path: "/ration-inventory/qr-labels",
+      icon_key: "qr_labels",
+      priority: 12
+    });
+  }
   const menuMap = new Map();
 
   for (const menu of menus) {
@@ -270,7 +286,7 @@ export const getRequiredActionForPath = (pathname) => {
 };
 
 export const isPathAllowedForUser = (user, pathname) => {
-  if (pathname === "/ration-management") return true;
+  if (pathname === "/ration-management" || pathname === "/ration-inventory/qr-labels") return true;
   const menu = getMenuByRoute(user, pathname);
 
   if (!menu) {

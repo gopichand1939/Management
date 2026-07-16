@@ -94,6 +94,7 @@ export const RATION_UNIT_DELETE = BASE_URL + "/ration-unit/delete";
 
 export const RATION_ITEM_CREATE = BASE_URL + "/ration-item/create";
 export const RATION_ITEM_LIST = BASE_URL + "/ration-item/list";
+export const GET_QR_CODE = BASE_URL + "/ration-item/get-qr-code";
 export const RATION_ITEM_VIEW = BASE_URL + "/ration-item/view";
 export const RATION_ITEM_EDIT = BASE_URL + "/ration-item/edit";
 export const RATION_ITEM_DELETE = BASE_URL + "/ration-item/delete";

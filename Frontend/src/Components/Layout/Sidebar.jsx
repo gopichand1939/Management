@@ -30,6 +30,7 @@ import {
   Sliders,
   ClipboardCheck,
   PieChart,
+  QrCode,
 } from "lucide-react";
 import { useState, useMemo, useCallback, useEffect, useRef, useLayoutEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -75,6 +76,7 @@ const menuIcons = {
   stock_adjustment: Sliders,
   stock_audit: ClipboardCheck,
   inventory_dashboard: PieChart,
+  qr_labels: QrCode,
 };
 
 const MENU_ICON_SIZE = 18;
@@ -302,7 +304,7 @@ const Sidebar = () => {
             <span className="flex h-[18px] w-[18px] shrink-0 items-center justify-center">
               <Icon
                 size={MENU_ICON_SIZE}
-                className={isParentActive ? "text-orange-500" : "text-slate-400"}
+                className={isParentActive ? "text-white" : "text-slate-400"}
               />
             </span>
             <span className="flex-1 text-left truncate">{translatedLabel}</span>
@@ -345,10 +347,10 @@ const Sidebar = () => {
           w-full
           ${
             isChild 
-              ? `ml-2 py-2.5 text-[13px] ${
+              ? `ml-2 py-2.5 text-[13px] px-4 ${
                   isChildActive
-                    ? "border border-orange-500/20 bg-orange-500/10 text-orange-400 pl-3 border-l-4 border-l-orange-500 pr-4"
-                    : "border border-transparent border-l-4 border-l-transparent text-slate-400 pl-3 pr-4"
+                    ? "border border-slate-700/60 bg-slate-800 text-white"
+                    : "border border-transparent text-slate-400"
                 }`
               : isChildActive
                 ? "border border-slate-700/60 bg-slate-800 text-white px-4"
@@ -359,7 +361,7 @@ const Sidebar = () => {
         <span className="flex h-[18px] w-[18px] shrink-0 items-center justify-center">
           <Icon
             size={MENU_ICON_SIZE}
-            className={isChildActive ? (isChild ? "text-orange-400" : "text-orange-500") : "text-slate-400"}
+            className={isChildActive ? "text-white" : "text-slate-400"}
           />
         </span>
         <span className="truncate">{translatedLabel}</span>
