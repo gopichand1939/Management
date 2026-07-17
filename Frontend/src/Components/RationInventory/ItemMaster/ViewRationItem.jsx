@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { QRCodeSVG } from "qrcode.react";
-import { ArrowLeft, Tag, Hash, Building2, Scale, Percent, Landmark, ShieldAlert, AlignLeft, Calendar, Image as ImageIcon, Download, Printer } from "lucide-react";
+import { ArrowLeft, Tag, Hash, Building2, Scale, Percent, Landmark, ShieldAlert, AlignLeft, Calendar, Image as ImageIcon, Download, Printer, User } from "lucide-react";
 
 import PageLoader from "../../Common/PageLoader";
 import Error from "../../Common/Error";
@@ -200,6 +200,7 @@ const ViewRationItem = () => {
                         <ViewField label="Category" value={item.category_name} icon={Building2} />
                         <ViewField label="Unit of Measure" value={`${item.unit_name} (${item.unit_code})`} icon={Scale} />
                         <ViewField label="SKU ID" value={item.sku_id} icon={Hash} />
+                        <ViewField label="Created By" value={item.created_by_name || item.created_by_email || (item.created_by ? `User ID: ${item.created_by}` : "")} icon={User} />
                         <ViewField
                           label="Created At"
                           value={item.created_at ? new Date(item.created_at).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", hour12: true }) : ""}

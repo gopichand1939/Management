@@ -3,20 +3,30 @@ const db = require("../../Config/Database");
 const RationStockAdjustmentModel = {
     getNextAdjustmentNumber: async (institutionId, client) => {
         const executor = client || db;
+
+        // Find the maximum numeric suffix from existing stock adjustment numbers in this institution
+        const maxNumQuery = `
+            SELECT COALESCE(MAX(NULLIF(regexp_replace(adjustment_number, '[^0-9]', '', 'g'), '')::BIGINT), 0) AS max_num
+            FROM ration_stock_adjustments
+            WHERE institution_id = $1 AND adjustment_number ~* '^SA\\d+$'
+        `;
+        const maxNumResult = await executor.query(maxNumQuery, [institutionId]);
+        const maxNumVal = parseInt(maxNumResult.rows[0].max_num || 0, 10);
+
         const queryText = `
             INSERT INTO ration_stock_adjustment_sequences (
                 institution_id,
                 last_number,
                 updated_at
             )
-            VALUES ($1, 1, CURRENT_TIMESTAMP)
+            VALUES ($1, GREATEST($2 + 1, 1), CURRENT_TIMESTAMP)
             ON CONFLICT (institution_id)
             DO UPDATE SET
-                last_number = ration_stock_adjustment_sequences.last_number + 1,
+                last_number = GREATEST(ration_stock_adjustment_sequences.last_number + 1, EXCLUDED.last_number),
                 updated_at = CURRENT_TIMESTAMP
             RETURNING last_number;
         `;
-        const result = await executor.query(queryText, [institutionId]);
+        const result = await executor.query(queryText, [institutionId, maxNumVal]);
         const lastNumber = result.rows[0].last_number;
         return `SA${String(lastNumber).padStart(6, "0")}`;
     },

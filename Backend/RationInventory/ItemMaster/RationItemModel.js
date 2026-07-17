@@ -140,10 +140,18 @@ const RationItemModel = {
                 ri.created_by,
                 ri.updated_by,
                 ri.created_at,
-                ri.updated_at
+                ri.updated_at,
+                uc.email as created_by_email,
+                COALESCE(sa.name, pa.pg_admin_name, uc.email) as created_by_name
             FROM ration_items ri
             INNER JOIN ration_item_categories ric ON ri.category_id = ric.id
             INNER JOIN ration_units ru ON ri.unit_id = ru.id
+            LEFT JOIN user_credentials uc ON (
+                (uc.role = 'super_admin' AND uc.super_admin_id = ri.created_by) OR
+                (uc.role = 'pg_admin' AND uc.pg_admin_id = ri.created_by AND uc.institution_id = ri.institution_id)
+            )
+            LEFT JOIN super_admins sa ON (uc.role = 'super_admin' AND uc.super_admin_id = sa.id)
+            LEFT JOIN pg_admin pa ON (uc.role = 'pg_admin' AND uc.pg_admin_id = pa.id)
             WHERE ri.institution_id = $1
         `;
 
@@ -289,10 +297,18 @@ const RationItemModel = {
                 ri.created_by,
                 ri.updated_by,
                 ri.created_at,
-                ri.updated_at
+                ri.updated_at,
+                uc.email as created_by_email,
+                COALESCE(sa.name, pa.pg_admin_name, uc.email) as created_by_name
             FROM ration_items ri
             INNER JOIN ration_item_categories ric ON ri.category_id = ric.id
             INNER JOIN ration_units ru ON ri.unit_id = ru.id
+            LEFT JOIN user_credentials uc ON (
+                (uc.role = 'super_admin' AND uc.super_admin_id = ri.created_by) OR
+                (uc.role = 'pg_admin' AND uc.pg_admin_id = ri.created_by AND uc.institution_id = ri.institution_id)
+            )
+            LEFT JOIN super_admins sa ON (uc.role = 'super_admin' AND uc.super_admin_id = sa.id)
+            LEFT JOIN pg_admin pa ON (uc.role = 'pg_admin' AND uc.pg_admin_id = pa.id)
             WHERE ri.id = $1
             AND ri.institution_id = $2
         `;
@@ -507,10 +523,18 @@ const RationItemModel = {
                 ri.created_by,
                 ri.updated_by,
                 ri.created_at,
-                ri.updated_at
+                ri.updated_at,
+                uc.email as created_by_email,
+                COALESCE(sa.name, pa.pg_admin_name, uc.email) as created_by_name
             FROM ration_items ri
             INNER JOIN ration_item_categories ric ON ri.category_id = ric.id
             INNER JOIN ration_units ru ON ri.unit_id = ru.id
+            LEFT JOIN user_credentials uc ON (
+                (uc.role = 'super_admin' AND uc.super_admin_id = ri.created_by) OR
+                (uc.role = 'pg_admin' AND uc.pg_admin_id = ri.created_by AND uc.institution_id = ri.institution_id)
+            )
+            LEFT JOIN super_admins sa ON (uc.role = 'super_admin' AND uc.super_admin_id = sa.id)
+            LEFT JOIN pg_admin pa ON (uc.role = 'pg_admin' AND uc.pg_admin_id = pa.id)
             WHERE ri.barcode = $1
             AND ri.institution_id = $2
         `;
@@ -520,20 +544,30 @@ const RationItemModel = {
 
     getNextSkuId: async (institutionId, client) => {
         const executor = client || db;
+        
+        // Find the maximum numeric suffix from existing SKU IDs in this institution
+        const maxSkuQuery = `
+            SELECT COALESCE(MAX(NULLIF(regexp_replace(sku_id, '[^0-9]', '', 'g'), '')::BIGINT), 0) AS max_sku
+            FROM ration_items
+            WHERE institution_id = $1 AND sku_id ~* '^SKU\\d+$'
+        `;
+        const maxSkuResult = await executor.query(maxSkuQuery, [institutionId]);
+        const maxSkuNum = parseInt(maxSkuResult.rows[0].max_sku || 0, 10);
+
         const queryText = `
             INSERT INTO ration_sku_sequences (
                 institution_id,
                 last_number,
                 updated_at
             )
-            VALUES ($1, 1, CURRENT_TIMESTAMP)
+            VALUES ($1, GREATEST($2 + 1, 1), CURRENT_TIMESTAMP)
             ON CONFLICT (institution_id)
             DO UPDATE SET
-                last_number = ration_sku_sequences.last_number + 1,
+                last_number = GREATEST(ration_sku_sequences.last_number + 1, EXCLUDED.last_number),
                 updated_at = CURRENT_TIMESTAMP
             RETURNING last_number;
         `;
-        const result = await executor.query(queryText, [institutionId]);
+        const result = await executor.query(queryText, [institutionId, maxSkuNum]);
         const lastNumber = result.rows[0].last_number;
         return `SKU${String(lastNumber).padStart(6, "0")}`;
     },
@@ -564,7 +598,8 @@ const RationItemModel = {
                 createdBy,
                 client
             );
-            return item;
+            const fullItem = await RationItemModel.getRationItemById(item.id, institutionId, client);
+            return fullItem || item;
         });
     }
 };

@@ -3,6 +3,7 @@ import { Search, Camera, X, RefreshCw } from "lucide-react";
 import { Html5Qrcode } from "html5-qrcode";
 
 import Button from "../../Common/Button";
+import SearchBar from "../../Common/SearchBar";
 import InputField from "../../Common/InputField";
 import Error from "../../Common/Error";
 import PageLoader from "../../Common/PageLoader";

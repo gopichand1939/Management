@@ -405,10 +405,12 @@ const updateRationItem = async (req, res) => {
             updatedBy
         );
 
+        const fullUpdatedItem = await RationItemModel.getRationItemById(id, institutionId);
+
         return res.status(200).json({
             success: true,
             message: "Ration item updated successfully",
-            data: updatedItem,
+            data: fullUpdatedItem || updatedItem,
         });
     } catch (error) {
         console.error("Error updating ration item:", error);

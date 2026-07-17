@@ -4,20 +4,29 @@ const pool = db;
 const KitchenRequestModel = {
     getNextRequestNumber: async (institutionId, client = pool) => {
         try {
+            // Find the maximum numeric suffix from existing request numbers in this institution
+            const maxNumQuery = `
+                SELECT COALESCE(MAX(NULLIF(regexp_replace(request_number, '[^0-9]', '', 'g'), '')::BIGINT), 0) AS max_num
+                FROM ration_kitchen_requests
+                WHERE institution_id = $1 AND request_number ~* '^KR\\d+$'
+            `;
+            const maxNumResult = await client.query(maxNumQuery, [institutionId]);
+            const maxNumVal = parseInt(maxNumResult.rows[0].max_num || 0, 10);
+
             const query = `
                 INSERT INTO ration_kitchen_request_sequences (
                     institution_id,
                     last_number,
                     updated_at
                 )
-                VALUES ($1, 1, CURRENT_TIMESTAMP)
+                VALUES ($1, GREATEST($2 + 1, 1), CURRENT_TIMESTAMP)
                 ON CONFLICT (institution_id)
                 DO UPDATE SET
-                    last_number = ration_kitchen_request_sequences.last_number + 1,
+                    last_number = GREATEST(ration_kitchen_request_sequences.last_number + 1, EXCLUDED.last_number),
                     updated_at = CURRENT_TIMESTAMP
                 RETURNING last_number;
             `;
-            const result = await client.query(query, [institutionId]);
+            const result = await client.query(query, [institutionId, maxNumVal]);
             const lastNumber = result.rows[0].last_number;
             return `KR${String(lastNumber).padStart(6, "0")}`;
         } catch (error) {

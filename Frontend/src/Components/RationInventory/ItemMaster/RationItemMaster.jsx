@@ -43,6 +43,7 @@ const columns = [
   { key: "batch_tracking", label: "Batch Tracking" },
   { key: "expiry_tracking", label: "Expiry Tracking" },
   { key: "status", label: "Status" },
+  { key: "created_by", label: "Created By" },
   { key: "created_date", label: "Created Date" },
 ];
 
@@ -284,6 +285,7 @@ const RationItemMaster = () => {
       gst: `${item.gst_percentage || 0} %`,
       batch_tracking: item.batch_tracking ? "Yes" : "No",
       expiry_tracking: item.expiry_tracking ? "Yes" : "No",
+      created_by: item.created_by_name || item.created_by_email || (item.created_by ? `User ID: ${item.created_by}` : "-"),
       created_date: formatDate(item.created_at),
       status: <StatusBadge label={item.status || "active"} />,
     };

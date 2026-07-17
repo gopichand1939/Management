@@ -573,9 +573,10 @@ const RationQRLabels = () => {
                         onChange={(e) => setSelectedInstitutionId(e.target.value)}
                         className={selectClassName}
                       >
+                        <option value="">Select Institution</option>
                         {institutions.map((inst) => (
                           <option key={inst.id} value={inst.id}>
-                            {inst.name}
+                            {inst.institution_name}
                           </option>
                         ))}
                       </select>

@@ -4,20 +4,29 @@ const pool = db;
 const RationPurchaseModel = {
     getNextPurchaseNumber: async (institutionId, client = pool) => {
         try {
+            // Find the maximum numeric suffix from existing purchase numbers in this institution
+            const maxNumQuery = `
+                SELECT COALESCE(MAX(NULLIF(regexp_replace(purchase_number, '[^0-9]', '', 'g'), '')::BIGINT), 0) AS max_num
+                FROM ration_purchases
+                WHERE institution_id = $1 AND purchase_number ~* '^PUR\\d+$'
+            `;
+            const maxNumResult = await client.query(maxNumQuery, [institutionId]);
+            const maxNumVal = parseInt(maxNumResult.rows[0].max_num || 0, 10);
+
             const query = `
                 INSERT INTO ration_purchase_sequences (
                     institution_id,
                     last_number,
                     updated_at
                 )
-                VALUES ($1, 1, CURRENT_TIMESTAMP)
+                VALUES ($1, GREATEST($2 + 1, 1), CURRENT_TIMESTAMP)
                 ON CONFLICT (institution_id)
                 DO UPDATE SET
-                    last_number = ration_purchase_sequences.last_number + 1,
+                    last_number = GREATEST(ration_purchase_sequences.last_number + 1, EXCLUDED.last_number),
                     updated_at = CURRENT_TIMESTAMP
                 RETURNING last_number;
             `;
-            const result = await client.query(query, [institutionId]);
+            const result = await client.query(query, [institutionId, maxNumVal]);
             const lastNumber = result.rows[0].last_number;
             return `PUR${String(lastNumber).padStart(6, "0")}`;
         } catch (error) {
