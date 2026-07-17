@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-redux";
+import { useSelector } from "react-redux";
 import { useParams as useReactParams, useNavigate as useReactNavigate } from "react-router-dom";
 import { ClipboardList, ArrowLeft, Ban, Calendar, User, Info } from "lucide-react";
 import Button from "../../Common/Button";
@@ -9,11 +9,15 @@ import Sidebar from "../../Layout/Sidebar";
 import Navbar from "../../Layout/Navbar";
 import CancelRationStockIssue from "./CancelRationStockIssue";
 import { RATION_STOCK_ISSUE_VIEW, TOKEN_KEY } from "../../../Utils/Constants";
+import { hasMenuAction, MENU_ACTIONS } from "../../../Utils/MenuPermissions";
 
 const ViewRationStockIssue = () => {
   const { id } = useReactParams();
   const navigate = useReactNavigate();
   const { authUser } = useSelector((state) => state.user);
+
+  const routePath = "/ration-inventory/stock-issue";
+  const canDelete = hasMenuAction(authUser, routePath, MENU_ACTIONS.DELETE);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -128,7 +132,7 @@ const ViewRationStockIssue = () => {
               </div>
 
               <div className="flex items-center gap-3 ml-11 md:ml-0">
-                {issue.status === "completed" && (
+                {canDelete && issue.status === "completed" && (
                   <Button variant="secondary" onClick={() => setCancelOpen(true)} className="!border-red-200 !text-red-600 hover:!bg-red-50">
                     <Ban size={16} className="mr-2" />
                     Cancel Stock Issue

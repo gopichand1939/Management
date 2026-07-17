@@ -13,11 +13,15 @@ import {
   RATION_STOCK_ISSUE_LIST,
   TOKEN_KEY
 } from "../../../Utils/Constants";
+import { hasMenuAction, MENU_ACTIONS } from "../../../Utils/MenuPermissions";
 
 const RationStockIssueItemsTable = ({ selectedInstitutionId, setSelectedInstitutionId, institutions, loadingInstitutions }) => {
   const navigate = useNavigate();
   const { authUser } = useSelector((state) => state.user);
   const isSuperAdmin = authUser?.role === "super_admin" || authUser?.profile_id === 1;
+
+  const routePath = "/ration-inventory/stock-issue";
+  const canDelete = hasMenuAction(authUser, routePath, MENU_ACTIONS.DELETE);
 
   const [issueList, setIssueList] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -146,7 +150,7 @@ const RationStockIssueItemsTable = ({ selectedInstitutionId, setSelectedInstitut
                 icon: Eye,
                 onClick: () => navigate(`/ration-inventory/stock-issue/view/${issue.id}`),
               },
-              issue.status === "completed" && {
+              canDelete && issue.status === "completed" && {
                 label: "Cancel Issue",
                 icon: Ban,
                 onClick: () => handleCancelClick(issue.id),

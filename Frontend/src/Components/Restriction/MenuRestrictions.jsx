@@ -32,8 +32,7 @@ const MENU_TREE = [
     menu_id: 6,
     name: "Institution Management",
     children: [
-      { menu_id: 3, name: "Institution Master" },
-      { menu_id: 7, name: "Institution Availability" }
+      { menu_id: 3, name: "Institution Master" }
     ]
   },
   {
@@ -168,6 +167,10 @@ const MenuRestrictions = () => {
             acts[`${child.menu_id}-2`] = true; // Edit
             acts[`${child.menu_id}-4`] = true; // Delete
             acts[`${child.menu_id}-3`] = true; // View
+            if (child.menu_id === 207) {
+              acts[`${child.menu_id}-6`] = true; // Approve
+              acts[`${child.menu_id}-7`] = true; // Reject
+            }
           });
         });
 
@@ -285,6 +288,16 @@ const MenuRestrictions = () => {
             }
             if (delOk === false) {
               payload.push({ menu_id: child.menu_id, action_id: 4, is_allowed: false });
+            }
+            if (child.menu_id === 207) {
+              const approveOk = actionToggles[`${child.menu_id}-6`];
+              const rejectOk = actionToggles[`${child.menu_id}-7`];
+              if (approveOk === false) {
+                payload.push({ menu_id: child.menu_id, action_id: 6, is_allowed: false });
+              }
+              if (rejectOk === false) {
+                payload.push({ menu_id: child.menu_id, action_id: 7, is_allowed: false });
+              }
             }
           }
         });
@@ -532,6 +545,29 @@ const MenuRestrictions = () => {
                                                   />
                                                   <span className="text-[10px] font-bold text-slate-500 uppercase">Delete</span>
                                                 </label>
+
+                                                {child.menu_id === 207 && (
+                                                   <>
+                                                     <label className="flex items-center gap-1.5 cursor-pointer">
+                                                       <input
+                                                         type="checkbox"
+                                                         checked={actionToggles[`${child.menu_id}-6`] !== false}
+                                                         onChange={() => toggleAction(child.menu_id, 6)}
+                                                         className="rounded text-orange-500 focus:ring-0 focus:ring-offset-0 w-3.5 h-3.5 cursor-pointer border-slate-300"
+                                                       />
+                                                       <span className="text-[10px] font-bold text-slate-500 uppercase">Approve</span>
+                                                     </label>
+                                                     <label className="flex items-center gap-1.5 cursor-pointer">
+                                                       <input
+                                                         type="checkbox"
+                                                         checked={actionToggles[`${child.menu_id}-7`] !== false}
+                                                         onChange={() => toggleAction(child.menu_id, 7)}
+                                                         className="rounded text-orange-500 focus:ring-0 focus:ring-offset-0 w-3.5 h-3.5 cursor-pointer border-slate-300"
+                                                       />
+                                                       <span className="text-[10px] font-bold text-slate-500 uppercase">Reject</span>
+                                                     </label>
+                                                   </>
+                                                 )}
                                               </div>
                                             )}
                                           </div>

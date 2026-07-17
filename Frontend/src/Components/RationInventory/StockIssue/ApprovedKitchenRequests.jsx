@@ -13,11 +13,15 @@ import {
   GET_INSTITUTION_LIST,
   TOKEN_KEY
 } from "../../../Utils/Constants";
+import { hasMenuAction, MENU_ACTIONS } from "../../../Utils/MenuPermissions";
 
 const ApprovedKitchenRequests = ({ selectedInstitutionId, setSelectedInstitutionId, institutions, loadingInstitutions }) => {
   const navigate = useNavigate();
   const { authUser } = useSelector((state) => state.user);
   const isSuperAdmin = authUser?.role === "super_admin" || authUser?.profile_id === 1;
+
+  const routePath = "/ration-inventory/stock-issue";
+  const canCreate = hasMenuAction(authUser, routePath, MENU_ACTIONS.CREATE);
 
   const [requestsList, setRequestsList] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -146,7 +150,7 @@ const ApprovedKitchenRequests = ({ selectedInstitutionId, setSelectedInstitution
         <div className="flex items-center justify-center">
           <ActionPopOver
             actions={[
-              {
+              canCreate && {
                 label: "Issue Stock",
                 icon: Play,
                 onClick: () => navigate(`/ration-inventory/stock-issue/create/${req.id}`),
@@ -156,7 +160,7 @@ const ApprovedKitchenRequests = ({ selectedInstitutionId, setSelectedInstitution
                 icon: Eye,
                 onClick: () => navigate(`/ration-inventory/kitchen-request/view/${req.id}`),
               }
-            ]}
+            ].filter(Boolean)}
           />
         </div>
       )

@@ -19,7 +19,6 @@
   "menu": {
     "activeTenants": "Active Tenants",
     "dashboard": "Dashboard",
-    "institutionAvailability": "PG Availability",
     "institutionManagement": "InstitutionManagement",
     "institutionMaster": "PG Master",
     "pgAdmin": "PG Admin",

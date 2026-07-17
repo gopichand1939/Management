@@ -55,6 +55,8 @@ const ViewKitchenRequest = () => {
   const routePath = "/ration-inventory/kitchen-request";
   const canEdit = hasMenuAction(authUser, routePath, MENU_ACTIONS.EDIT);
   const canDelete = hasMenuAction(authUser, routePath, MENU_ACTIONS.DELETE);
+  const canApprove = hasMenuAction(authUser, routePath, MENU_ACTIONS.APPROVE);
+  const canReject = hasMenuAction(authUser, routePath, MENU_ACTIONS.REJECT);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -196,22 +198,26 @@ const ViewKitchenRequest = () => {
               {/* Approval Buttons */}
               {header.status === "pending" && (
                 <>
-                  <Button
-                    variant="secondary"
-                    icon={XCircle}
-                    onClick={() => setShowReject(true)}
-                    className="!text-red-500 hover:!bg-red-50"
-                  >
-                    Reject
-                  </Button>
-                  <Button
-                    variant="orange"
-                    icon={CheckCircle2}
-                    onClick={() => setShowApprove(true)}
-                    className="!bg-emerald-600 hover:!bg-emerald-700"
-                  >
-                    Approve
-                  </Button>
+                  {canReject && (
+                    <Button
+                      variant="secondary"
+                      icon={XCircle}
+                      onClick={() => setShowReject(true)}
+                      className="!text-red-500 hover:!bg-red-50"
+                    >
+                      Reject
+                    </Button>
+                  )}
+                  {canApprove && (
+                    <Button
+                      variant="orange"
+                      icon={CheckCircle2}
+                      onClick={() => setShowApprove(true)}
+                      className="!bg-emerald-600 hover:!bg-emerald-700"
+                    >
+                      Approve
+                    </Button>
+                  )}
                 </>
               )}
             </div>

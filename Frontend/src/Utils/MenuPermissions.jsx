@@ -4,6 +4,8 @@ export const MENU_ACTIONS = {
   VIEW: "view",
   DELETE: "delete",
   LIST: "list",
+  APPROVE: "approve",
+  REJECT: "reject",
 };
 
 const MENU_CONFIG_BY_ID = {
@@ -13,7 +15,6 @@ const MENU_CONFIG_BY_ID = {
   4: { route_path: "/pg-admins", icon_key: "pg_admin" },
   5: { route_path: null, icon_key: "user_management" },
   6: { route_path: null, icon_key: "institutions" },
-  7: { route_path: null, icon_key: "institutions" },
   8: { route_path: null, icon_key: "tenant_management" },
   9: { route_path: "/tenant/onboarding", icon_key: "tenant_onboarding" },
   10: { route_path: "/tenant/active", icon_key: "tenant_management" },
@@ -51,7 +52,6 @@ const MENU_CONFIG_BY_NAME = {
   institutionmanagement: { route_path: null, icon_key: "institutions" },
   "institution management": { route_path: null, icon_key: "institutions" },
   "institution master": { route_path: "/institutions", icon_key: "institutions" },
-  "institution availability": { route_path: null, icon_key: "institutions" },
   "pg admin": { route_path: "/pg-admins", icon_key: "pg_admin" },
   tenantmanagement: { route_path: null, icon_key: "tenant_management" },
   "tenant management": { route_path: null, icon_key: "tenant_management" },
@@ -96,7 +96,6 @@ const MENU_LABEL_KEYS_BY_NAME = {
   institutionmanagement: "menu.institutionManagement",
   "institution management": "menu.institutionManagement",
   "institution master": "menu.institutionMaster",
-  "institution availability": "menu.institutionAvailability",
   "pg admin": "menu.pgAdmin",
   "super admin": "menu.superAdmin",
   tenantmanagement: "menu.tenantManagement",

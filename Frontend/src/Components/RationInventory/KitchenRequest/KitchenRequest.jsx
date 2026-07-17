@@ -51,6 +51,8 @@ const KitchenRequest = () => {
   const canEdit = hasMenuAction(authUser, routePath, MENU_ACTIONS.EDIT);
   const canView = hasMenuAction(authUser, routePath, MENU_ACTIONS.VIEW);
   const canDelete = hasMenuAction(authUser, routePath, MENU_ACTIONS.DELETE);
+  const canApprove = hasMenuAction(authUser, routePath, MENU_ACTIONS.APPROVE);
+  const canReject = hasMenuAction(authUser, routePath, MENU_ACTIONS.REJECT);
 
   const isSuperAdmin = authUser?.role === "super_admin" || !authUser?.institution_id;
   
@@ -328,13 +330,13 @@ const KitchenRequest = () => {
                 onClick: () => setDeleteId(req.id),
                 className: "text-red-650 hover:bg-red-50"
               },
-              (req.status === "pending") && {
+              canApprove && (req.status === "pending") && {
                 label: "Approve Request",
                 icon: CheckCircle2,
                 onClick: () => setApproveRequest(req),
                 className: "text-emerald-600 hover:bg-emerald-50"
               },
-              (req.status === "pending") && {
+              canReject && (req.status === "pending") && {
                 label: "Reject Request",
                 icon: XCircle,
                 onClick: () => setRejectId(req.id),
