@@ -6,7 +6,7 @@ const { findSuperAdminById } = require("../SuperAdmin/SuperAdminModel");
 const { findPgAdminById } = require("../PGAdmin/PGAdminModel");
 const { getMenusByRole } = require("../Menu/MenuModel");
 
-const createToken = (credential) => {
+const createToken = (credential, activityLogId = null) => {
     const payload = {
         id: credential.role === "pg_admin"
             ? credential.pg_admin_id
@@ -15,6 +15,7 @@ const createToken = (credential) => {
         role: credential.role,
         institution_id: credential.institution_id,
         credential_id: credential.id,
+        activity_log_id: activityLogId,
     };
 
     return jwt.sign(payload, process.env.JWT_SECRET, {
@@ -111,10 +112,35 @@ const login = async (req, res) => {
             };
         }
 
+        // Log user login activity details in the background (POST payload inputs)
+        const { latitude, longitude, device_info, platform } = req.body;
+        const ipAddress = req.headers["x-forwarded-for"] || req.socket.remoteAddress || "";
+        const { insertActivityLog } = require("../UserActivity/UserActivityModel");
+
+        let activityLogId = null;
+        try {
+            const logResult = await insertActivityLog({
+                credentialId: credential.id,
+                email: credential.email,
+                role: credential.role,
+                institutionId: credential.institution_id || null,
+                latitude: latitude ? parseFloat(latitude) : null,
+                longitude: longitude ? parseFloat(longitude) : null,
+                deviceInfo: device_info || "Unknown Device",
+                platform: platform || "Web",
+                ipAddress: ipAddress
+            });
+            if (logResult && logResult.id) {
+                activityLogId = logResult.id;
+            }
+        } catch (err) {
+            console.error("Error logging user activity:", err);
+        }
+
         return res.status(200).json({
             success: true,
             message: "Login successful",
-            token: createToken(credential),
+            token: createToken(credential, activityLogId),
             user,
         });
     } catch (error) {

@@ -167,5 +167,6 @@ export const RATION_INVENTORY_DASHBOARD_EXPIRY_ALERTS = BASE_URL + "/ration-inve
 export const GET_RESTRICTION_ADMINS = BASE_URL + "/restriction/pg-admins";
 export const GET_RESTRICTION_RULES = BASE_URL + "/restriction/rules";
 
-
-
+export const USER_ACTIVITY_LIST = BASE_URL + "/user-activity/list";
+export const USER_ACTIVITY_LOGOUT = BASE_URL + "/user-activity/logout";
+export const USER_ACTIVITY_TERMINATE = BASE_URL + "/user-activity/terminate";

@@ -1,7 +1,7 @@
 const jwt = require("jsonwebtoken");
 
 const protectAuth = (allowedRoles = []) => {
-    return (req, res, next) => {
+    return async (req, res, next) => {
         const authHeader = req.headers.authorization;
 
         if (!authHeader) {
@@ -31,6 +31,21 @@ const protectAuth = (allowedRoles = []) => {
                     success: false,
                     message: "Access denied",
                 });
+            }
+
+            // Remote session termination check
+            if (user.activity_log_id) {
+                const pool = require("../Config/Database");
+                const sessionRes = await pool.query(
+                    "SELECT logout_time FROM user_activity_logs WHERE id = $1",
+                    [user.activity_log_id]
+                );
+                if (sessionRes.rows.length > 0 && sessionRes.rows[0].logout_time !== null) {
+                    return res.status(401).json({
+                        success: false,
+                        message: "Session terminated from admin panel"
+                    });
+                }
             }
 
             req.user = user;

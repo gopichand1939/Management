@@ -31,6 +31,7 @@ const rationStockAdjustmentRoutes = require("./RationInventory/StockAdjustment/R
 const rationStockAuditRoutes = require("./RationInventory/StockAudit/RationStockAuditRoutes");
 const rationInventoryDashboardRoutes = require("./RationInventory/InventoryDashboard/RationInventoryDashboardRoutes");
 const restrictionRoutes = require("./Restriction/RestrictionRoutes");
+const userActivityRoutes = require("./UserActivity/UserActivityRoutes");
 
 
 
@@ -146,6 +147,7 @@ app.use("/api/ration-stock-adjustment", rationStockAdjustmentRoutes);
 app.use("/api/ration-stock-audit", rationStockAuditRoutes);
 app.use("/api/ration-inventory-dashboard", rationInventoryDashboardRoutes);
 app.use("/api/restriction", restrictionRoutes);
+app.use("/api/user-activity", userActivityRoutes);
 
 app.post("/", (req, res) => {
     res.send("Backend is running");

@@ -31,6 +31,7 @@ import {
   ClipboardCheck,
   PieChart,
   QrCode,
+  Activity,
 } from "lucide-react";
 import { useState, useMemo, useCallback, useEffect, useRef, useLayoutEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -38,6 +39,7 @@ import { NavLink, useLocation, useNavigate } from "react-router-dom";
 
 import { logoutUser, setSidebarOpen } from "../../Redux/User/UserSlice";
 import { useTranslation } from "../../Services/I18n/I18nService";
+import { TOKEN_KEY, USER_ACTIVITY_LOGOUT } from "../../Utils/Constants";
 import {
   getMenuLabelKey,
   getMenuMeta,
@@ -77,6 +79,7 @@ const menuIcons = {
   stock_audit: ClipboardCheck,
   inventory_dashboard: PieChart,
   qr_labels: QrCode,
+  user_activity: Activity,
 };
 
 const MENU_ICON_SIZE = 18;
@@ -257,7 +260,21 @@ const Sidebar = () => {
     });
   }, [navigate, dispatch]);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      const token = localStorage.getItem(TOKEN_KEY);
+      if (token) {
+        await fetch(USER_ACTIVITY_LOGOUT, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
+          }
+        });
+      }
+    } catch (err) {
+      console.warn("Logout activity logging failed:", err);
+    }
     dispatch(logoutUser());
     navigate("/login");
   };

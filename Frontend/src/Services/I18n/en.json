@@ -23,6 +23,7 @@
     "institutionMaster": "PG Master",
     "pgAdmin": "PG Admin",
     "superAdmin": "Super Admin",
+    "userActivity": "User Activity",
     "tenantManagement": "TenantManagement",
     "tenantOnboarding": "Tenant Onboarding",
     "vacantBeds": "Vacant Beds",

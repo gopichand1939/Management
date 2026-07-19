@@ -1288,6 +1288,26 @@ const statements = [
             status = EXCLUDED.status,
             inst_id = EXCLUDED.inst_id
     `,
+    `
+        CREATE TABLE IF NOT EXISTS user_activity_logs (
+            id SERIAL PRIMARY KEY,
+            credential_id INTEGER REFERENCES user_credentials(id) ON DELETE SET NULL,
+            email VARCHAR(150) NOT NULL,
+            role VARCHAR(50) NOT NULL,
+            institution_id INTEGER REFERENCES institutions(id) ON DELETE CASCADE,
+            latitude NUMERIC(10, 7),
+            longitude NUMERIC(10, 7),
+            device_info VARCHAR(255),
+            platform VARCHAR(50) NOT NULL DEFAULT 'Web',
+            ip_address VARCHAR(45),
+            login_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            logout_time TIMESTAMP
+        )
+    `,
+    `
+        ALTER TABLE user_activity_logs
+        ADD COLUMN IF NOT EXISTS logout_time TIMESTAMP
+    `,
 ];
 
 const initDatabase = async () => {

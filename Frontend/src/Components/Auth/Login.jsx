@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Lock, ArrowRight, User, Eye, EyeOff } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useDispatch } from "react-redux";
@@ -30,11 +30,110 @@ const Login = () => {
     handleChange,
   } = useLogin();
 
+  // Proactively request location permission on mount to avoid race condition during login submit
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        () => {},
+        (err) => console.warn("Proactive geolocation prompt status:", err.message),
+        { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }
+      );
+    }
+  }, []);
+
   const handleSubmit = async (event) => {
     event.preventDefault();
 
     dispatch(setUserLoading(true));
     dispatch(setUserError(""));
+
+    let locationData = { latitude: null, longitude: null };
+
+    // Request device location via Geolocation API
+    try {
+      locationData = await new Promise((resolve) => {
+        if (!navigator.geolocation) {
+          return resolve({ latitude: null, longitude: null });
+        }
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            resolve({
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude,
+            });
+          },
+          async (error) => {
+            console.warn("Geolocation query error or denied. Falling back to IP Geolocation:", error.message);
+            try {
+              const ipResponse = await fetch("https://ipapi.co/json/");
+              const ipData = await ipResponse.json();
+              resolve({
+                latitude: ipData.latitude || null,
+                longitude: ipData.longitude || null,
+              });
+            } catch (fallbackError) {
+              console.warn("IP Geolocation lookup fallback failed:", fallbackError);
+              resolve({ latitude: null, longitude: null });
+            }
+          },
+          { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }
+        );
+      });
+    } catch (e) {
+      console.warn("Geolocation fetch error:", e);
+    }
+
+    // Determine platform
+    const platform = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) ? "App" : "Web";
+
+    // Extract basic browser, operating system, and hardware model details
+    const getBrowserAndOS = () => {
+      const ua = navigator.userAgent;
+      let browser = "Unknown Browser";
+      let os = "Unknown OS";
+      let hardware = "";
+
+      if (ua.includes("Firefox")) browser = "Firefox";
+      else if (ua.includes("SamsungBrowser")) browser = "Samsung Browser";
+      else if (ua.includes("Opera") || ua.includes("OPR")) browser = "Opera";
+      else if (ua.includes("Trident")) browser = "Internet Explorer";
+      else if (ua.includes("Edge") || ua.includes("Edg")) browser = "Edge";
+      else if (ua.includes("Chrome")) browser = "Chrome";
+      else if (ua.includes("Safari")) browser = "Safari";
+
+      if (ua.includes("Windows NT")) os = "Windows";
+      else if (ua.includes("Mac OS X")) os = "macOS";
+      else if (ua.includes("Android")) {
+        os = "Android";
+        // Parse Android device model
+        const androidMatch = ua.match(/Android\s+\d+;\s+([^;)]+)/i);
+        if (androidMatch && androidMatch[1]) {
+          const model = androidMatch[1].trim();
+          if (!model.includes("Build") && !model.includes("Version")) {
+            hardware = ` (${model})`;
+          }
+        }
+      }
+      else if (ua.includes("iPhone")) {
+        os = "iOS";
+        hardware = " (iPhone)";
+      }
+      else if (ua.includes("iPad")) {
+        os = "iOS";
+        hardware = " (iPad)";
+      }
+      else if (ua.includes("Linux")) os = "Linux";
+
+      return `${browser} on ${os}${hardware}`;
+    };
+
+    const loginPayload = {
+      ...formData,
+      latitude: locationData.latitude,
+      longitude: locationData.longitude,
+      device_info: getBrowserAndOS(),
+      platform: platform,
+    };
 
     try {
       const response = await fetch(USER_LOGIN, {
@@ -42,7 +141,7 @@ const Login = () => {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(loginPayload),
       });
 
       const data = await response.json();

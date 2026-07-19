@@ -242,6 +242,9 @@ const RationInventoryDashboard = lazy(() => {
 const RationQRLabels = lazy(() => {
   return import("../Components/RationInventory/QRLabels/RationQRLabels");
 });
+const UserActivity = lazy(() => {
+  return import("../Components/UserActivity/UserActivity");
+});
 
 
 
@@ -587,6 +590,10 @@ export const applicationRoutes = [
   {
     path: "/dashboard",
     element: withSuspense(<Dashboard />),
+  },
+  {
+    path: "/user-activity",
+    element: withSuspense(<UserActivity />),
   },
 
   ...institutionRoutes,

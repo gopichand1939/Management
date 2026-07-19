@@ -42,6 +42,7 @@ const MENU_CONFIG_BY_ID = {
   210: { route_path: "/ration-inventory/stock-audit", icon_key: "stock_audit" },
   211: { route_path: "/ration-inventory/inventory-dashboard", icon_key: "inventory_dashboard" },
   212: { route_path: "/ration-inventory/qr-labels", icon_key: "qr_labels" },
+  213: { route_path: "/user-activity", icon_key: "user_activity" },
 };
 
 const MENU_CONFIG_BY_NAME = {
@@ -85,6 +86,7 @@ const MENU_CONFIG_BY_NAME = {
   "stock audit": { route_path: "/ration-inventory/stock-audit", icon_key: "stock_audit" },
   "inventory dashboard": { route_path: "/ration-inventory/inventory-dashboard", icon_key: "inventory_dashboard" },
   "qr labels": { route_path: "/ration-inventory/qr-labels", icon_key: "qr_labels" },
+  "user activity": { route_path: "/user-activity", icon_key: "user_activity" },
 };
 
 const normalizeMenuName = (menuName) => {
@@ -130,6 +132,7 @@ const MENU_LABEL_KEYS_BY_NAME = {
   "stock audit": "menu.stockAudit",
   "inventory dashboard": "menu.inventoryDashboard",
   "qr labels": "menu.qrLabels",
+  "user activity": "menu.userActivity",
 };
 
 export const getMenuMeta = (menu) => {
