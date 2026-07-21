@@ -231,14 +231,41 @@ const RationStockIssueForm = ({
                       {item.batch_tracking ? (
                         <div className="flex flex-col gap-1">
                           <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Batch Number *</label>
-                          <input
-                            type="text"
-                            placeholder="Batch No"
-                            value={item.batch_number || ""}
-                            onChange={(e) => handleItemFieldChange(idx, "batch_number", e.target.value)}
-                            className="w-36 rounded-lg border border-slate-200 px-2 py-1 text-xs focus:outline-none bg-white"
-                            required
-                          />
+                          {item.batches && item.batches.length > 0 ? (
+                            <select
+                              value={item.batch_number || ""}
+                              onChange={(e) => {
+                                const selectedBatch = item.batches.find(b => b.batch_number === e.target.value);
+                                handleItemFieldChange(idx, "batch_number", e.target.value);
+                                if (selectedBatch) {
+                                  if (item.expiry_tracking) {
+                                    handleItemFieldChange(idx, "expiry_date", selectedBatch.expiry_date);
+                                  }
+                                } else {
+                                  if (item.expiry_tracking) {
+                                    handleItemFieldChange(idx, "expiry_date", "");
+                                  }
+                                }
+                              }}
+                              className="w-40 rounded-lg border border-slate-200 px-2 py-1 text-xs focus:outline-none bg-white font-semibold text-slate-700 shadow-sm cursor-pointer"
+                              required
+                            >
+                              <option value="">Select Batch</option>
+                              {item.batches.map((batch) => (
+                                <option key={batch.id} value={batch.batch_number}>
+                                  {batch.batch_number} ({parseFloat(batch.remaining_quantity).toFixed(0)} left)
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            <input
+                              type="text"
+                              placeholder="No active stock"
+                              className="w-40 rounded-lg border border-red-200 px-2 py-1 text-xs focus:outline-none bg-red-50/20 text-red-600 font-bold"
+                              required
+                              disabled
+                            />
+                          )}
                         </div>
                       ) : null}
 
@@ -249,8 +276,9 @@ const RationStockIssueForm = ({
                             type="date"
                             value={item.expiry_date || ""}
                             onChange={(e) => handleItemFieldChange(idx, "expiry_date", e.target.value)}
-                            className="w-36 rounded-lg border border-slate-200 px-2 py-1 text-xs focus:outline-none bg-white"
+                            className="w-40 rounded-lg border border-slate-200 px-2 py-1 text-xs focus:outline-none bg-slate-50 text-slate-500 font-semibold cursor-not-allowed"
                             required
+                            readOnly
                           />
                         </div>
                       ) : null}

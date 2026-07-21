@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, forwardRef, useImperativeHandle } from "react";
 import { Search, Camera, X, RefreshCw } from "lucide-react";
-import { Html5Qrcode } from "html5-qrcode";
+import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
 
 import Button from "../../Common/Button";
 import SearchBar from "../../Common/SearchBar";
@@ -190,7 +190,19 @@ const RationItemScanner = forwardRef(({ onItemSelected, institutionId }, ref) =>
         });
       };
 
-      const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+      const config = {
+        fps: 25,
+        qrbox: { width: 280, height: 160 },
+        formatsToSupport: [
+          Html5QrcodeSupportedFormats.QR_CODE,
+          Html5QrcodeSupportedFormats.EAN_13,
+          Html5QrcodeSupportedFormats.EAN_8,
+          Html5QrcodeSupportedFormats.UPC_A,
+          Html5QrcodeSupportedFormats.UPC_E,
+          Html5QrcodeSupportedFormats.CODE_128,
+          Html5QrcodeSupportedFormats.CODE_39
+        ]
+      };
 
       await html5QrCodeInstance.start(
         { facingMode: "environment" },

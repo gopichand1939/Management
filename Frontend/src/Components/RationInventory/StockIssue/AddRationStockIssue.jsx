@@ -93,14 +93,17 @@ const AddRationStockIssue = () => {
           kitchen_request_id: header.id
         }));
 
-        // Map items and initialize issue_quantity to empty or remaining if appropriate
-        const mappedItems = dbItems.map((item) => ({
-          ...item,
-          issue_quantity: "",
-          batch_number: "",
-          expiry_date: "",
-          remarks: ""
-        }));
+        // Map items and initialize issue_quantity and FIFO batch defaults
+        const mappedItems = dbItems.map((item) => {
+          const firstBatch = item.batches && item.batches.length > 0 ? item.batches[0] : null;
+          return {
+            ...item,
+            issue_quantity: "",
+            batch_number: firstBatch ? firstBatch.batch_number : "",
+            expiry_date: firstBatch ? firstBatch.expiry_date : "",
+            remarks: ""
+          };
+        });
 
         setItems(mappedItems);
 

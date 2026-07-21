@@ -136,15 +136,21 @@ const EditRationPurchase = () => {
     setError("");
 
     if (!formData.purchase_date) {
-      setError("Purchase date is required");
+      const msg = "Purchase Date is required";
+      setError(msg);
+      setToast({ message: msg, type: "error" });
       return;
     }
     if (!formData.supplier_id) {
-      setError("Supplier is required");
+      const msg = "Supplier is required";
+      setError(msg);
+      setToast({ message: msg, type: "error" });
       return;
     }
     if (items.length === 0) {
-      setError("At least one purchase item is required");
+      const msg = "At least one purchase item is required";
+      setError(msg);
+      setToast({ message: msg, type: "error" });
       return;
     }
 
@@ -262,7 +268,7 @@ const EditRationPurchase = () => {
       </div>
 
       {toast && (
-        <div className={`fixed bottom-6 right-6 z-[9999] flex w-[360px] items-center gap-3.5 rounded-2xl border bg-white/95 p-4.5 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.15)] backdrop-blur-md ${
+        <div className={`fixed top-24 right-6 z-[9999] flex w-[360px] items-center gap-3.5 rounded-2xl border bg-white/95 p-4.5 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.15)] backdrop-blur-md ${
           toast.type === "success"
             ? "border-emerald-100 border-l-4 border-l-emerald-500"
             : "border-red-100 border-l-4 border-l-red-500"

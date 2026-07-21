@@ -316,7 +316,7 @@ const AddRationItem = () => {
 
       setToast({ message: "Ration item created successfully", type: "success" });
       setTimeout(() => {
-        const routePath = isSuperAdmin ? "/superadmin/ration-inventory/item-master" : "/ration-inventory/item-master";
+        const routePath = "/ration-inventory/item-master";
         navigate(routePath);
       }, 1500);
     } catch (err) {
@@ -327,7 +327,7 @@ const AddRationItem = () => {
     }
   };
 
-  const routePath = isSuperAdmin ? "/superadmin/ration-inventory/item-master" : "/ration-inventory/item-master";
+  const routePath = "/ration-inventory/item-master";
 
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50">

@@ -45,6 +45,7 @@ const RationPurchaseForm = ({
   const [suppliers, setSuppliers] = useState([]);
   const [loadingSuppliers, setLoadingSuppliers] = useState(false);
   const [activeItem, setActiveItem] = useState(null);
+  const [isPaidEdited, setIsPaidEdited] = useState(isEdit);
 
   // Active Item Form Fields
   const [itemFields, setItemFields] = useState({
@@ -114,15 +115,31 @@ const RationPurchaseForm = ({
   const handleItemSelected = (item) => {
     setItemError("");
     setActiveItem(item);
+
+    // Compute local date suggestions to avoid UTC timezone mismatches
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, "0");
+    const dd = String(today.getDate()).padStart(2, "0");
+    const todayStr = `${yyyy}-${mm}-${dd}`;
+    const suggestedBatch = `BAT-${yyyy}${mm}${dd}`;
+
+    const expDate = new Date();
+    expDate.setFullYear(expDate.getFullYear() + 1);
+    const expYyyy = expDate.getFullYear();
+    const expMm = String(expDate.getMonth() + 1).padStart(2, "0");
+    const expDd = String(expDate.getDate()).padStart(2, "0");
+    const oneYearLaterStr = `${expYyyy}-${expMm}-${expDd}`;
+
     setItemFields({
       quantity: "",
       free_quantity: "",
       unit_price: item.default_purchase_price ? String(item.default_purchase_price) : "",
       discount_percentage: "0",
       gst_percentage: item.gst_percentage ? String(item.gst_percentage) : "0",
-      batch_number: "",
-      manufacturing_date: "",
-      expiry_date: "",
+      batch_number: item.batch_tracking ? suggestedBatch : "",
+      manufacturing_date: item.expiry_tracking ? todayStr : "",
+      expiry_date: item.expiry_tracking ? oneYearLaterStr : "",
     });
   };
 
@@ -286,6 +303,22 @@ const RationPurchaseForm = ({
   };
 
   const totals = calculateTotals();
+
+  // Auto-sync paid_amount with grandTotal unless user has manually edited it
+  useEffect(() => {
+    if (!isPaidEdited) {
+      const calculatedTotals = calculateTotals();
+      setFormData((prev) => ({
+        ...prev,
+        paid_amount: String(calculatedTotals.grandTotal),
+      }));
+    }
+  }, [items, formData.other_charges, isPaidEdited]);
+
+  const handlePaidAmountChange = (e) => {
+    setIsPaidEdited(true);
+    handleHeaderChange(e);
+  };
 
   const handleFormSubmit = (e, status) => {
     e.preventDefault();
@@ -571,7 +604,7 @@ const RationPurchaseForm = ({
             value={formData.paid_amount || ""}
             placeholder="0.00"
             icon={DollarSign}
-            onChange={handleHeaderChange}
+            onChange={handlePaidAmountChange}
             disabled={disabled}
           />
         </div>

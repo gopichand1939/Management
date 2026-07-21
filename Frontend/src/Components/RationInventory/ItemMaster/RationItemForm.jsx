@@ -1,6 +1,7 @@
-import { useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { QRCodeSVG } from "qrcode.react";
-import { AlignLeft, Hash, Tag, Building2, Scale, Percent, Landmark, ShieldAlert, Image, Plus, RefreshCw, Download, Printer } from "lucide-react";
+import { AlignLeft, Hash, Tag, Building2, Scale, Percent, Landmark, ShieldAlert, Image, Plus, RefreshCw, Download, Printer, Info, Camera, X } from "lucide-react";
+import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
 
 import Button from "../../Common/Button";
 import InputField from "../../Common/InputField";
@@ -30,6 +31,85 @@ const RationItemForm = ({
   isEdit = false,
 }) => {
   const fileInputRef = useRef(null);
+
+  const [cameraModalOpen, setCameraModalOpen] = useState(false);
+  const [html5Qrcode, setHtml5Qrcode] = useState(null);
+  const [cameraError, setCameraError] = useState("");
+
+  const startCamera = async () => {
+    setCameraError("");
+    try {
+      const html5QrCodeInstance = new Html5Qrcode("item-form-camera-container");
+      setHtml5Qrcode(html5QrCodeInstance);
+
+      const qrCodeSuccessCallback = (decodedText) => {
+        html5QrCodeInstance.stop().then(() => {
+          setCameraModalOpen(false);
+          setHtml5Qrcode(null);
+          onChange({
+            target: {
+              name: "barcode",
+              value: decodedText.trim()
+            }
+          });
+        }).catch((err) => {
+          console.error("Error stopping camera", err);
+          setCameraModalOpen(false);
+          setHtml5Qrcode(null);
+          onChange({
+            target: {
+              name: "barcode",
+              value: decodedText.trim()
+            }
+          });
+        });
+      };
+
+      const config = {
+        fps: 25,
+        qrbox: { width: 280, height: 160 },
+        formatsToSupport: [
+          Html5QrcodeSupportedFormats.QR_CODE,
+          Html5QrcodeSupportedFormats.EAN_13,
+          Html5QrcodeSupportedFormats.EAN_8,
+          Html5QrcodeSupportedFormats.UPC_A,
+          Html5QrcodeSupportedFormats.UPC_E,
+          Html5QrcodeSupportedFormats.CODE_128,
+          Html5QrcodeSupportedFormats.CODE_39
+        ]
+      };
+
+      await html5QrCodeInstance.start(
+        { facingMode: "environment" },
+        config,
+        qrCodeSuccessCallback
+      );
+    } catch (err) {
+      console.error("Camera scan error:", err);
+      setCameraError("Camera permission denied or camera not found. Try entering the barcode manually.");
+    }
+  };
+
+  const stopCamera = async () => {
+    if (html5Qrcode) {
+      try {
+        await html5Qrcode.stop();
+      } catch (err) {
+        console.error("Stop camera error:", err);
+      }
+      setHtml5Qrcode(null);
+    }
+    setCameraModalOpen(false);
+  };
+
+  useEffect(() => {
+    if (cameraModalOpen) {
+      const timer = setTimeout(() => {
+        startCamera();
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [cameraModalOpen]);
 
   const handleImageClick = () => {
     if (fileInputRef.current) {
@@ -136,10 +216,11 @@ const RationItemForm = ({
     : formData.image_url;
 
   return (
-    <form
-      className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6 text-left"
-      onSubmit={onSubmit}
-    >
+    <>
+      <form
+        className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6 text-left"
+        onSubmit={onSubmit}
+      >
       <div className="flex flex-col gap-6">
         {/* Basic Information */}
         <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm flex flex-col gap-4">
@@ -508,82 +589,161 @@ const RationItemForm = ({
               disabled={disabled}
             />
 
+            <div className="text-[11px] text-slate-500 font-medium leading-relaxed bg-slate-50 border border-slate-100/80 rounded-xl p-3 flex items-start gap-2.5 shadow-inner">
+              <Info size={14} className="text-orange-500 shrink-0 mt-0.5" />
+              <span>
+                <strong>How to use barcodes:</strong> If this item has a manufacturer barcode printed on its package (e.g. Oil/Milk packets), focus the input field and scan it. If it is an unbranded or loose item (like loose sugar), click <strong>Auto-generate</strong> to create a custom QR sticker.
+              </span>
+            </div>
+
             {!isEdit && (
-              <Button
-                type="button"
-                variant="secondary"
-                icon={Plus}
-                onClick={onAutoGenerateBarcode}
-                disabled={disabled}
-                className="w-full flex items-center justify-center"
-              >
-                Auto-generate
-              </Button>
+              <div className="flex gap-3">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  icon={Plus}
+                  onClick={onAutoGenerateBarcode}
+                  disabled={disabled}
+                  className="flex-1 flex items-center justify-center"
+                >
+                  Auto-generate
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  icon={Camera}
+                  onClick={() => setCameraModalOpen(true)}
+                  disabled={disabled}
+                  className="flex-1 flex items-center justify-center"
+                >
+                  Scan Barcode
+                </Button>
+              </div>
             )}
           </div>
 
-          <div className="flex flex-col items-center justify-center p-4 border border-slate-100 rounded-xl bg-slate-50/50">
-            <div id="ration-item-qr-label-container" className="bg-white p-4 border border-slate-200 rounded-xl flex flex-col items-center text-center w-full max-w-[200px]">
-              <span className="text-xs font-bold text-slate-800 truncate w-full max-w-[180px] mb-2">
-                {formData.item_name || "Ration Item"}
-              </span>
-              <div className="bg-white p-1.5 border border-slate-100 rounded-lg">
-                <QRCodeSVG
-                  id="ration-item-qr-svg"
-                  value={formData.barcode ? `${formData.barcode}` : "NONE"}
-                  size={256}
-                  level="H"
-                  includeMargin={true}
-                  className="qr-code-svg"
-                  style={{
-                    width: "120px",
-                    height: "120px",
-                    imageRendering: "pixelated",
-                    shapeRendering: "crispEdges"
-                  }}
-                />
+          {formData.barcode && /^\d+$/.test(formData.barcode.trim()) ? (
+            <div className="flex flex-col items-center justify-center p-6 border border-slate-200/60 rounded-xl bg-emerald-50/20 text-center gap-3 w-full">
+              <div className="h-10 w-10 rounded-full bg-emerald-50 text-emerald-500 flex items-center justify-center shadow-sm">
+                <Info size={18} />
               </div>
-              <span className="text-[10px] font-mono text-slate-500 mt-2 font-bold select-all">
-                {formData.barcode || "-"}
-              </span>
-              {formData.sku_id && (
-                <span className="text-[9px] font-semibold text-slate-400 mt-0.5 truncate w-full">
-                  SKU: {formData.sku_id}
+              <div className="flex flex-col gap-1">
+                <span className="text-xs font-black text-slate-800">Manufacturer Barcode</span>
+                <span className="text-[10px] text-slate-500 font-semibold leading-relaxed max-w-[220px]">
+                  This item uses the printed barcode on the packaging. <strong>No label printing is required.</strong>
                 </span>
-              )}
-              {selectedUnit && (
-                <span className="text-[9px] font-semibold text-slate-400 truncate w-full">
-                  Unit: {selectedUnit.unit_code}
-                </span>
-              )}
+              </div>
+              <div className="text-[10px] font-mono font-bold text-slate-700 bg-white border border-slate-100 rounded-lg px-3.5 py-1.5 shadow-sm select-all">
+                {formData.barcode}
+              </div>
             </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center p-4 border border-slate-100 rounded-xl bg-slate-50/50 w-full">
+              <div id="ration-item-qr-label-container" className="bg-white p-4 border border-slate-200 rounded-xl flex flex-col items-center text-center w-full max-w-[200px]">
+                <span className="text-xs font-bold text-slate-800 truncate w-full max-w-[180px] mb-2">
+                  {formData.item_name || "Ration Item"}
+                </span>
+                <div className="bg-white p-1.5 border border-slate-100 rounded-lg">
+                  <QRCodeSVG
+                    id="ration-item-qr-svg"
+                    value={formData.barcode ? `${formData.barcode}` : "NONE"}
+                    size={256}
+                    level="H"
+                    includeMargin={true}
+                    className="qr-code-svg"
+                    style={{
+                      width: "120px",
+                      height: "120px",
+                      imageRendering: "pixelated",
+                      shapeRendering: "crispEdges"
+                    }}
+                  />
+                </div>
+                <span className="text-[10px] font-mono text-slate-500 mt-2 font-bold select-all">
+                  {formData.barcode || "-"}
+                </span>
+                {formData.sku_id && (
+                  <span className="text-[9px] font-semibold text-slate-400 mt-0.5 truncate w-full">
+                    SKU: {formData.sku_id}
+                  </span>
+                )}
+                {selectedUnit && (
+                  <span className="text-[9px] font-semibold text-slate-400 truncate w-full">
+                    Unit: {selectedUnit.unit_code}
+                  </span>
+                )}
+              </div>
 
-            <div className="flex gap-2 w-full mt-4">
-              <Button
-                type="button"
-                variant="secondary"
-                icon={Download}
-                onClick={downloadQR}
-                disabled={disabled || !formData.barcode}
-                className="flex-1 text-[10px] py-1.5 h-8 flex items-center justify-center gap-1 shadow-sm cursor-pointer"
-              >
-                Download
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                icon={Printer}
-                onClick={printQR}
-                disabled={disabled || !formData.barcode}
-                className="flex-1 text-[10px] py-1.5 h-8 flex items-center justify-center gap-1 shadow-sm cursor-pointer"
-              >
-                Print
-              </Button>
+              <div className="flex gap-2 w-full mt-4">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  icon={Download}
+                  onClick={downloadQR}
+                  disabled={disabled || !formData.barcode}
+                  className="flex-1 text-[10px] py-1.5 h-8 flex items-center justify-center gap-1 shadow-sm cursor-pointer"
+                >
+                  Download
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  icon={Printer}
+                  onClick={printQR}
+                  disabled={disabled || !formData.barcode}
+                  className="flex-1 text-[10px] py-1.5 h-8 flex items-center justify-center gap-1 shadow-sm cursor-pointer"
+                >
+                  Print
+                </Button>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </form>
+
+    {cameraModalOpen && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 px-4">
+        <div className="w-full max-w-md rounded-2xl border border-slate-100 bg-white p-6 shadow-xl flex flex-col items-center gap-4 text-center">
+          <div className="flex items-center justify-between w-full border-b pb-3 text-left">
+            <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider flex items-center gap-2">
+              <Camera size={16} className="text-orange-500" />
+              Scan Package Barcode
+            </h3>
+            <button
+              type="button"
+              onClick={stopCamera}
+              className="text-slate-400 hover:text-slate-650 transition cursor-pointer"
+            >
+              <X size={16} />
+            </button>
+          </div>
+
+          {cameraError ? (
+            <div className="text-xs font-semibold text-red-600 bg-red-50/50 rounded-xl p-4 w-full">
+              {cameraError}
+            </div>
+          ) : (
+            <div className="relative w-full max-w-[320px] aspect-square rounded-xl overflow-hidden border border-slate-100 bg-slate-50 flex items-center justify-center">
+              <div id="item-form-camera-container" className="w-full h-full object-cover"></div>
+              <div className="absolute inset-4 border border-dashed border-orange-500/50 rounded-lg pointer-events-none flex items-center justify-center">
+                <span className="text-[10px] font-bold text-orange-500 bg-white px-2 py-0.5 rounded shadow-sm">Align Barcode</span>
+              </div>
+            </div>
+          )}
+
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={stopCamera}
+            className="w-full flex items-center justify-center"
+          >
+            Cancel
+          </Button>
+        </div>
+      </div>
+    )}
+  </>
   );
 };
 

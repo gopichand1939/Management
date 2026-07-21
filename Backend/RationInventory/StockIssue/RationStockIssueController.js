@@ -78,9 +78,20 @@ const getApprovedKitchenRequestById = async (req, res) => {
 
         const items = await RationStockIssueModel.getApprovedRequestItems(Number(id), institutionId);
 
+        // Fetch active batches with remaining stock for each item
+        const itemsWithBatches = await Promise.all(
+            items.map(async (item) => {
+                const batches = await RationStockIssueModel.getItemActiveBatches(item.item_id, institutionId);
+                return {
+                    ...item,
+                    batches: batches || []
+                };
+            })
+        );
+
         return sendResponse(res, 200, true, "Approved kitchen request details fetched successfully", {
             header,
-            items
+            items: itemsWithBatches
         });
     } catch (error) {
         console.error("Error fetching approved kitchen request details:", error);

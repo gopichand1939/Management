@@ -167,6 +167,23 @@ const RationStockIssueModel = {
         return result.rows;
     },
 
+    getItemActiveBatches: async (itemId, institutionId, client) => {
+        const executor = client || db;
+        const query = `
+            SELECT 
+                id, 
+                batch_number, 
+                to_char(manufacturing_date, 'YYYY-MM-DD') as manufacturing_date, 
+                to_char(expiry_date, 'YYYY-MM-DD') as expiry_date, 
+                remaining_quantity::numeric as remaining_quantity
+            FROM ration_item_batches
+            WHERE item_id = $1 AND institution_id = $2 AND remaining_quantity > 0 AND status = 'active'
+            ORDER BY expiry_date ASC;
+        `;
+        const result = await executor.query(query, [itemId, institutionId]);
+        return result.rows;
+    },
+
     getCurrentStockForItem: async (itemId, institutionId, client) => {
         const executor = client || db;
         const query = `
