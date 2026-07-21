@@ -101,7 +101,7 @@ const statements = [
             status VARCHAR(30) NOT NULL DEFAULT 'active',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
-    `, 
+    `,
     `
         CREATE TABLE IF NOT EXISTS rooms (
             id SERIAL PRIMARY KEY,
@@ -299,6 +299,10 @@ const statements = [
     `
         ALTER TABLE daily_expenses_spend
         ADD COLUMN IF NOT EXISTS bill_file JSONB
+    `,
+    `
+        ALTER TABLE daily_expenses_spend
+        ADD COLUMN IF NOT EXISTS notes TEXT
     `,
     `
         CREATE INDEX IF NOT EXISTS daily_expenses_spend_institution_date_idx
@@ -1072,6 +1076,7 @@ const statements = [
             (3, 2, 2, 1, 1),
             (3, 3, 3, 1, 1),
             (3, 4, 4, 1, 1),
+            (3, 5, 5, 1, 1),
             (4, 1, 1, 1, 1),
             (4, 2, 2, 1, 1),
             (4, 3, 3, 1, 1),

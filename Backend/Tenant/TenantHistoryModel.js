@@ -291,12 +291,18 @@ const getTenantHistoryById = async (tenantId) => {
         return sum + Number(payment.paid_amount || payment.amount || 0);
     }, 0);
 
-    const totalPendingDueAmount = dues.reduce((sum, due) => {
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+
+    const overdueDues = dues.filter((due) => {
+        const dueDate = new Date(due.due_date || due.due_month);
+        return dueDate <= today;
+    });
+
+    const totalPendingDueAmount = overdueDues.reduce((sum, due) => {
         return sum + Number(due.pending_amount || 0);
     }, 0);
-    const displayPendingDueAmount = validFutureDues.reduce((sum, due) => {
-        return sum + Number(due.pending_amount || 0);
-    }, 0);
+    const displayPendingDueAmount = totalPendingDueAmount;
 
     return {
         tenant,

@@ -20,14 +20,19 @@ const resolveInstitutionId = (req) => {
 const listPaymentReminders = async (req, res) => {
     try {
         const institutionId = resolveInstitutionId(req);
-        const windowDays = normalizeInteger(req.body.window_days) || 30;
+        const windowDays = normalizeInteger(req.body.window_days) || 35;
+        const page = parseInt(req.body.page, 10) || 1;
+        const limit = parseInt(req.body.limit, 10) || 20;
+        const offset = (page - 1) * limit;
 
-        const [reminders, summary] = await Promise.all([
+        const [{ reminders, total }, summary] = await Promise.all([
             getPaymentReminders({
                 institutionId,
                 search: normalizeText(req.body.search) || "",
                 status: normalizeText(req.body.status) || "all",
                 windowDays,
+                limit,
+                offset,
             }),
             getPaymentReminderSummary(institutionId, windowDays),
         ]);
@@ -37,6 +42,12 @@ const listPaymentReminders = async (req, res) => {
             message: "Payment reminders fetched successfully",
             reminders,
             summary,
+            pagination: {
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit)
+            }
         });
     } catch (error) {
         console.error("Payment reminder fetch failed:", error);

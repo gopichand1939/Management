@@ -45,6 +45,7 @@ import {
   defaultTenantForm,
   formatCurrency,
   formatDisplayDate,
+  getAssetUrl,
   getAuthHeaders,
   groupVacantBeds,
   tenantOnboardingSteps,
@@ -208,6 +209,8 @@ const EditTenant = () => {
             emergency_contact_name: currentTenant.emergency_contact_name || "",
             emergency_contact_phone: currentTenant.emergency_contact_phone || "",
           },
+          profile_photo_url: currentTenant.profile_photo?.file_url || currentTenant.profile_photo?.url || (typeof currentTenant.profile_photo === "string" ? currentTenant.profile_photo : ""),
+          profile_photo_object: currentTenant.profile_photo || null,
           profile_photo_file: null,
           documents: [
             {
@@ -215,14 +218,18 @@ const EditTenant = () => {
               document_type: "aadhaar",
               document_number: (currentTenant.documents || []).find(d => d.document_type === "aadhaar")?.document_number || "",
               file: null,
-              document_url: (currentTenant.documents || []).find(d => d.document_type === "aadhaar")?.file_url || "",
+              document_url: (currentTenant.documents || []).find(d => d.document_type === "aadhaar")?.file_url || (currentTenant.documents || []).find(d => d.document_type === "aadhaar")?.document_url || "",
+              file_name: (currentTenant.documents || []).find(d => d.document_type === "aadhaar")?.file_name || "",
+              mime_type: (currentTenant.documents || []).find(d => d.document_type === "aadhaar")?.mime_type || "",
             },
             {
               document_name: "PAN",
               document_type: "pan",
               document_number: (currentTenant.documents || []).find(d => d.document_type === "pan")?.document_number || "",
               file: null,
-              document_url: (currentTenant.documents || []).find(d => d.document_type === "pan")?.file_url || "",
+              document_url: (currentTenant.documents || []).find(d => d.document_type === "pan")?.file_url || (currentTenant.documents || []).find(d => d.document_type === "pan")?.document_url || "",
+              file_name: (currentTenant.documents || []).find(d => d.document_type === "pan")?.file_name || "",
+              mime_type: (currentTenant.documents || []).find(d => d.document_type === "pan")?.mime_type || "",
             },
             ...((currentTenant.documents || [])
               .filter(d => d.document_type !== "aadhaar" && d.document_type !== "pan")
@@ -231,7 +238,9 @@ const EditTenant = () => {
                 document_type: d.document_type,
                 document_number: d.document_number || "",
                 file: null,
-                document_url: d.file_url || "",
+                document_url: d.file_url || d.document_url || "",
+                file_name: d.file_name || "",
+                mime_type: d.mime_type || "",
               }))
             )
           ],
@@ -943,12 +952,7 @@ const EditTenant = () => {
     const previewUrl =
       formData.profile_photo_file
         ? getFilePreview(formData.profile_photo_file)
-        : defaultTenantForm.profile_photo_file; // wait, let's pre-populate preview with existing if there is one!
-        
-    // Retrieve actual image url from backend
-    const existingPhotoUrl = selectedInstitutionHierarchy
-      ? (selectedInstitutionHierarchy.profile_photo?.file_url || selectedInstitutionHierarchy.profile_photo)
-      : null;
+        : getAssetUrl(formData.profile_photo_url);
 
     return (
       <div className="flex flex-col gap-6 text-left">
@@ -1221,7 +1225,7 @@ const EditTenant = () => {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           {formData.documents.map((doc, index) => {
-            const previewUrl = doc.file ? getFilePreview(doc.file) : doc.document_url;
+            const previewUrl = doc.file ? getFilePreview(doc.file) : getAssetUrl(doc.document_url);
             return (
               <div
                 key={index}
@@ -1317,7 +1321,7 @@ const EditTenant = () => {
   const renderPaymentUpload = () => {
     const proofPreviewUrl = formData.payment.payment_proof_file 
       ? getFilePreview(formData.payment.payment_proof_file) 
-      : formData.payment.payment_proof_url;
+      : getAssetUrl(formData.payment.payment_proof_url);
 
     return (
       <div className="flex flex-col gap-6 text-left">

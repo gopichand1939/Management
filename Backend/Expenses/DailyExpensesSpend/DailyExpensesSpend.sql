@@ -20,6 +20,9 @@ ADD COLUMN IF NOT EXISTS expense_time TIME;
 ALTER TABLE daily_expenses_spend
 ADD COLUMN IF NOT EXISTS bill_file JSONB;
 
+ALTER TABLE daily_expenses_spend
+ADD COLUMN IF NOT EXISTS notes TEXT;
+
 CREATE INDEX IF NOT EXISTS daily_expenses_spend_institution_date_idx
 ON daily_expenses_spend(institution_id, expense_date DESC, expense_time DESC)
 WHERE is_deleted = false;

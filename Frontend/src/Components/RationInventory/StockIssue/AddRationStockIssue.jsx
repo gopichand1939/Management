@@ -96,9 +96,12 @@ const AddRationStockIssue = () => {
         // Map items and initialize issue_quantity and FIFO batch defaults
         const mappedItems = dbItems.map((item) => {
           const firstBatch = item.batches && item.batches.length > 0 ? item.batches[0] : null;
+          const remaining = parseFloat(item.remaining_quantity || 0);
+          const stock = parseFloat(item.current_stock || 0);
+          const defaultQty = Math.min(remaining, stock);
           return {
             ...item,
-            issue_quantity: "",
+            issue_quantity: defaultQty > 0 ? String(defaultQty) : "",
             batch_number: firstBatch ? firstBatch.batch_number : "",
             expiry_date: firstBatch ? firstBatch.expiry_date : "",
             remarks: ""
@@ -172,11 +175,11 @@ const AddRationStockIssue = () => {
       const stock = parseFloat(originalItem.current_stock || 0);
 
       if (issueItem.issue_quantity > remaining) {
-        setError(`Issue quantity for ${originalItem.item_name} cannot exceed remaining approved quantity (${remaining}).`);
+        setError(`You are trying to issue ${issueItem.issue_quantity} ${originalItem.unit || "units"} of "${originalItem.item_name}", but the remaining approved limit is only ${remaining} ${originalItem.unit || "units"}. Please reduce the quantity.`);
         return;
       }
       if (issueItem.issue_quantity > stock) {
-        setError(`Issue quantity for ${originalItem.item_name} cannot exceed current stock (${stock}).`);
+        setError(`Currently, you only have ${stock} ${originalItem.unit || "units"} of "${originalItem.item_name}" in stock. You cannot issue ${issueItem.issue_quantity} ${originalItem.unit || "units"} because the stock is not sufficient.`);
         return;
       }
       if (originalItem.batch_tracking && (!issueItem.batch_number || !issueItem.batch_number.trim())) {

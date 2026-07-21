@@ -29,6 +29,7 @@ const columns = [
   { key: "expense_title", label: "Expense Title" },
   { key: "category", label: "Category" },
   { key: "amount", label: "Amount" },
+  { key: "notes", label: "Notes" },
   { key: "expense_date", label: "Date" },
   { key: "expense_time", label: "Time" },
   { key: "bill_file", label: "Bill" },
@@ -209,6 +210,7 @@ const DailyExpensesSpend = () => {
       return (
         dailyExpense.expense_title?.toLowerCase().includes(term) ||
         dailyExpense.category?.toLowerCase().includes(term) ||
+        dailyExpense.notes?.toLowerCase().includes(term) ||
         String(dailyExpense.amount || "").includes(term) ||
         String(dailyExpense.expense_date || "").toLowerCase().includes(term) ||
         String(dailyExpense.expense_time || "").toLowerCase().includes(term)
@@ -221,6 +223,7 @@ const DailyExpensesSpend = () => {
       ...dailyExpense,
       serial_number: index + 1,
       amount: formatAmount(dailyExpense.amount),
+      notes: dailyExpense.notes || "—",
       expense_date: formatDate(dailyExpense.expense_date),
       expense_time: formatTime(dailyExpense.expense_time),
       bill_file: renderBillFile(dailyExpense.bill_file, setPreviewBill),

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import {
   BellRing,
@@ -11,6 +11,9 @@ import {
   ShieldAlert,
   UserRound,
   X,
+  Search,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 
 import Error from "../../Common/Error";
@@ -21,6 +24,7 @@ import {
   PAYMENT_REMINDER_COLLECT,
   PAYMENT_REMINDER_LIST,
   GET_INSTITUTION_LIST,
+  TENANT_VIEW,
 } from "../../../Utils/Constants";
 import {
   buildMetricCards,
@@ -78,8 +82,23 @@ const getReminderTone = (bucket) => {
 };
 
 const getDueCopy = (reminder) => {
-  const daysToDue = Number(reminder.days_to_due || 0);
-  const agingDays = Number(reminder.aging_days || 0);
+  let daysToDue = reminder.days_to_due !== undefined ? Number(reminder.days_to_due) : null;
+  let agingDays = reminder.aging_days !== undefined ? Number(reminder.aging_days) : null;
+
+  if (daysToDue === null && reminder.due_date) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const dueDate = new Date(reminder.due_date);
+    dueDate.setHours(0, 0, 0, 0);
+    const diffTime = dueDate.getTime() - today.getTime();
+    daysToDue = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    agingDays = daysToDue < 0 ? Math.abs(daysToDue) : 0;
+  }
+
+  if (daysToDue === null) {
+    daysToDue = 0;
+    agingDays = 0;
+  }
 
   if (daysToDue < 0) {
     return `${agingDays} day${agingDays === 1 ? "" : "s"} overdue`;
@@ -116,6 +135,8 @@ const PaymentReminders = () => {
   const [reminders, setReminders] = useState([]);
   const [institutions, setInstitutions] = useState([]);
   const [selectedInstitutionId, setSelectedInstitutionId] = useState("all");
+  const [searchText, setSearchText] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState("all");
   const [summary, setSummary] = useState({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -125,6 +146,12 @@ const PaymentReminders = () => {
   const [paymentMode, setPaymentMode] = useState("cash");
   const [referenceNumber, setReferenceNumber] = useState("");
   const [savingCollection, setSavingCollection] = useState(false);
+
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [limit, setLimit] = useState(7);
 
   const fetchInstitutions = async () => {
     try {
@@ -148,9 +175,11 @@ const PaymentReminders = () => {
 
     try {
       const payload = {
-        search: "",
-        status: "all",
-        window_days: 30,
+        search: searchText,
+        status: selectedStatus,
+        window_days: 35,
+        page: currentPage,
+        limit,
       };
       if (instId && instId !== "all") {
         payload.institution_id = Number(instId);
@@ -169,6 +198,13 @@ const PaymentReminders = () => {
 
       setReminders(data.reminders || []);
       setSummary(data.summary || {});
+      if (data.pagination) {
+        setTotalPages(data.pagination.totalPages || 1);
+        setTotalCount(data.pagination.total || 0);
+      } else {
+        setTotalPages(1);
+        setTotalCount((data.reminders || []).length);
+      }
     } catch (apiError) {
       setError(apiError.message || "Payment reminders fetch failed");
     } finally {
@@ -182,10 +218,18 @@ const PaymentReminders = () => {
     }
   }, [isPgAdmin]);
 
+  // Debounced input search trigger
   useEffect(() => {
-    const timeoutId = window.setTimeout(() => fetchReminders(selectedInstitutionId), 250);
+    const timeoutId = window.setTimeout(() => {
+      fetchReminders(selectedInstitutionId);
+    }, 300);
     return () => window.clearTimeout(timeoutId);
-  }, [selectedInstitutionId]);
+  }, [selectedInstitutionId, searchText, selectedStatus, currentPage, limit]);
+
+  // Reset page when filters modify
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedInstitutionId, searchText, selectedStatus, limit]);
 
   const metricCards = buildMetricCards([
     {
@@ -254,7 +298,8 @@ const PaymentReminders = () => {
     }
   };
 
-  const openCollectionModal = (reminder) => {
+  const openCollectionModal = async (reminder) => {
+    // 1. Instantly populate with clicked reminder
     const tenantDues = reminders
       .filter((item) => Number(item.tenant_id) === Number(reminder.tenant_id))
       .sort((firstDue, secondDue) => {
@@ -269,6 +314,34 @@ const PaymentReminders = () => {
     setPaymentMode("cash");
     setReferenceNumber("");
     setError("");
+
+    // 2. Fetch full tenant dues history (including future dues up to 7 months)
+    try {
+      const response = await fetch(TENANT_VIEW, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ id: reminder.tenant_id }),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.tenant) {
+          const allDues = data.tenant.dues || [];
+          const pendingDues = allDues
+            .filter((d) => Number(d.pending_amount) > 0)
+            .sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
+
+          setActiveCollection((prev) => {
+            if (!prev || Number(prev.tenant.tenant_id) !== Number(reminder.tenant_id)) return prev;
+            return {
+              ...prev,
+              dues: pendingDues,
+            };
+          });
+        }
+      }
+    } catch (err) {
+      console.error("Failed to load full tenant dues list:", err);
+    }
   };
 
   const closeCollectionModal = () => {
@@ -337,31 +410,82 @@ const PaymentReminders = () => {
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-2">
           <div className="text-left">
-            <h1 className="text-lg font-black tracking-tight text-slate-850">
-              Payment Reminders
+            <h1 className="text-lg font-black tracking-tight text-slate-855">
+              Payment Reminders Desk
             </h1>
             <p className="mt-0.5 text-[10px] font-bold text-slate-400">
               Aging queue for rent due now or within the next 30 days.
             </p>
           </div>
-          {!isPgAdmin && (
-            <div className="flex flex-col text-left shrink-0">
-              <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider mb-1">Institution</span>
+        </div>
+
+        {/* Compact Filters bar in one line */}
+        <div className="flex items-center gap-3 bg-white p-3 rounded-2xl border border-slate-150 shadow-[0_8px_20px_-14px_rgba(15,23,42,0.18)]">
+          <div className="flex flex-1 items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 text-slate-400 focus-within:border-orange-500/50 focus-within:ring-4 focus-within:ring-orange-500/10 focus-within:bg-white focus-within:shadow-sm transition-all duration-200">
+            <Search size={14} />
+            <input
+              type="text"
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              placeholder="Search resident name, phone, admission..."
+              className="h-9 w-full border-0 bg-transparent text-xs font-semibold text-slate-800 outline-none placeholder:text-slate-450"
+            />
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            {!isPgAdmin && (
               <select
                 value={selectedInstitutionId}
                 onChange={(e) => setSelectedInstitutionId(e.target.value)}
-                className="h-9 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 outline-none transition-all focus:border-orange-500/50 focus:ring-4 focus:ring-orange-500/10"
+                className="h-9 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 outline-none focus:border-orange-500/50 focus:ring-4 focus:ring-orange-500/10 transition-all"
                 aria-label="Filter by Institution"
               >
-                <option value="all">All Institutions</option>
+                <option value="all">All Buildings</option>
                 {institutions.map((inst) => (
-                  <option key={inst.id} value={inst.id}>
-                    {inst.institution_name || inst.name}
-                  </option>
+                  <option key={inst.id} value={inst.id}>{inst.institution_name || inst.name}</option>
                 ))}
               </select>
-            </div>
-          )}
+            )}
+
+            <select
+              value={selectedStatus}
+              onChange={(e) => setSelectedStatus(e.target.value)}
+              className="h-9 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 outline-none focus:border-orange-500/50 focus:ring-4 focus:ring-orange-500/10 transition-all"
+              aria-label="Filter by Status"
+            >
+              <option value="all">All Cycles</option>
+              <option value="overdue">Overdue</option>
+              <option value="today">Due Today</option>
+              <option value="upcoming">Upcoming</option>
+            </select>
+
+            <select
+              value={limit}
+              onChange={(e) => setLimit(Number(e.target.value))}
+              className="h-9 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 outline-none focus:border-orange-500/50 focus:ring-4 focus:ring-orange-500/10 transition-all"
+              aria-label="Rows per page"
+            >
+              <option value={7}>7 rows</option>
+              <option value={10}>10 rows</option>
+              <option value={25}>25 rows</option>
+              <option value={50}>50 rows</option>
+              <option value={100}>100 rows</option>
+            </select>
+
+            <button
+              type="button"
+              onClick={() => {
+                setSearchText("");
+                setSelectedStatus("all");
+                setSelectedInstitutionId("all");
+                setLimit(7);
+                setCurrentPage(1);
+              }}
+              className="h-9 rounded-xl border border-slate-200 bg-white px-3 text-xs font-black uppercase tracking-wider text-slate-550 hover:text-red-500 hover:border-red-200 transition cursor-pointer"
+            >
+              Reset
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
@@ -412,7 +536,7 @@ const PaymentReminders = () => {
                   Tenant Aging Due Table
                 </h2>
                 <p className="mt-1 text-[11px] font-semibold text-slate-400">
-                  Sorted by nearest due date first.
+                  Showing active tenants with unpaid pending dues within the cycle window (fully paid accounts are excluded). Sorted by nearest due date first.
                 </p>
               </div>
               <span className="rounded-xl border border-slate-150 bg-slate-50 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-slate-500">
@@ -532,6 +656,68 @@ const PaymentReminders = () => {
                   })}
                 </tbody>
               </table>
+            </div>
+
+            {/* Notion-style Pagination Footer */}
+            <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50/50 px-5 py-3">
+              <span className="text-[11px] font-bold text-slate-400">
+                Showing {reminders.length > 0 ? (currentPage - 1) * limit + 1 : 0} to{" "}
+                {Math.min(currentPage * limit, totalCount)} of {totalCount} reminders
+              </span>
+
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  disabled={currentPage === 1 || loading}
+                  onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 transition cursor-pointer"
+                  aria-label="Previous Page"
+                >
+                  <ChevronLeft size={14} />
+                </button>
+
+                <div className="flex gap-1">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1)
+                    .filter((pageNo) => {
+                      return (
+                        pageNo === 1 ||
+                        pageNo === totalPages ||
+                        Math.abs(pageNo - currentPage) <= 1
+                      );
+                    })
+                    .map((pageNo, idx, arr) => {
+                      const showEllipsis = idx > 0 && pageNo - arr[idx - 1] > 1;
+                      return (
+                        <React.Fragment key={pageNo}>
+                          {showEllipsis && (
+                            <span className="px-2 text-xs font-bold text-slate-400 flex items-center">...</span>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => setCurrentPage(pageNo)}
+                            className={`h-8 min-w-[32px] rounded-lg border px-2 text-xs font-black transition cursor-pointer ${
+                              currentPage === pageNo
+                                ? "bg-orange-500 border-orange-500 text-white shadow-sm"
+                                : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                            }`}
+                          >
+                            {pageNo}
+                          </button>
+                        </React.Fragment>
+                      );
+                    })}
+                </div>
+
+                <button
+                  type="button"
+                  disabled={currentPage === totalPages || loading}
+                  onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 transition cursor-pointer"
+                  aria-label="Next Page"
+                >
+                  <ChevronRight size={14} />
+                </button>
+              </div>
             </div>
           </div>
         )}

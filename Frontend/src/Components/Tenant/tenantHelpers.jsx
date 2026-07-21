@@ -356,6 +356,8 @@ export const buildCreateFormData = (formData) => {
     document_type: document.document_type,
     document_number: document.document_number,
     document_url: document.document_url || document.file_url || "",
+    file_name: document.file_name || null,
+    mime_type: document.mime_type || null,
     original_file_name: document.file ? document.file.name : null,
   }));
 
@@ -363,6 +365,8 @@ export const buildCreateFormData = (formData) => {
 
   if (formData.profile_photo_file) {
     multipartData.append("profile_photo", formData.profile_photo_file);
+  } else if (formData.profile_photo_object) {
+    multipartData.append("profile_photo", JSON.stringify(formData.profile_photo_object));
   }
 
   if (formData.payment.payment_proof_file) {

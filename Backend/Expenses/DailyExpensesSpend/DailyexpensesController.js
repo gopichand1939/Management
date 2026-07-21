@@ -125,6 +125,7 @@ const normalizeDailyExpensePayload = (req, userId, institutionId, existingBillFi
         expense_date: normalizeDate(body.expense_date || body.date),
         expense_time: normalizeTime(body.expense_time || body.time),
         bill_file: buildUploadedFileObject(req.file) || existingBillFile,
+        notes: normalizeText(body.notes || body.note),
         created_by: userId,
         updated_by: userId,
     };

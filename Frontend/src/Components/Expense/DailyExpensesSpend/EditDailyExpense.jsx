@@ -34,6 +34,7 @@ const EditDailyExpense = () => {
     expense_time: "",
     bill_file: null,
     bill_file_file: null,
+    notes: "",
   });
 
   useEffect(() => {
@@ -99,6 +100,7 @@ const EditDailyExpense = () => {
           expense_time: dailyExpense.expense_time || "",
           bill_file: dailyExpense.bill_file || null,
           bill_file_file: null,
+          notes: dailyExpense.notes || "",
         });
       } catch (apiError) {
         setError(apiError.message);

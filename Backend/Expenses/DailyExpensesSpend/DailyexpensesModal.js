@@ -12,9 +12,10 @@ const createDailyExpense = async (data) => {
                 expense_time,
                 bill_file,
                 is_deleted,
+                notes,
                 created_by
             )
-            VALUES ($1,$2,$3,$4,$5,$6,$7::jsonb,false,$8)
+            VALUES ($1,$2,$3,$4,$5,$6,$7::jsonb,false,$8,$9)
             RETURNING *
         `;
 
@@ -26,6 +27,7 @@ const createDailyExpense = async (data) => {
             data.expense_date,
             data.expense_time,
             JSON.stringify(data.bill_file || null),
+            data.notes || null,
             data.created_by,
         ];
 
@@ -95,6 +97,7 @@ const updateDailyExpense = async (data) => {
             data.expense_date,
             data.expense_time,
             JSON.stringify(data.bill_file || null),
+            data.notes || null,
             data.updated_by,
             data.id,
         ];
@@ -117,7 +120,8 @@ const updateDailyExpense = async (data) => {
                 expense_date = $4,
                 expense_time = $5,
                 bill_file = $6::jsonb,
-                updated_by = $7,
+                notes = $7,
+                updated_by = $8,
                 updated_at = CURRENT_TIMESTAMP
             WHERE ${whereConditions.join(" AND ")}
             RETURNING *

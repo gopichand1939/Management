@@ -152,7 +152,7 @@ const RationStockIssueForm = ({
                 <th className="px-4 py-3 text-right text-[10px] font-bold text-slate-400 uppercase w-24">Req Qty</th>
                 <th className="px-4 py-3 text-right text-[10px] font-bold text-slate-400 uppercase w-24">Appr Qty</th>
                 <th className="px-4 py-3 text-right text-[10px] font-bold text-slate-400 uppercase w-24">Issued</th>
-                <th className="px-4 py-3 text-right text-[10px] font-bold text-slate-400 uppercase w-28 text-orange-500">Remaining</th>
+                <th className="px-4 py-3 text-right text-[10px] font-bold text-slate-400 uppercase w-28 text-orange-500">Bal to Issue</th>
                 <th className="px-4 py-3 text-right text-[10px] font-bold text-slate-400 uppercase w-28 text-blue-500">Stock</th>
                 <th className="px-4 py-3 text-left text-[10px] font-bold text-slate-400 uppercase w-32">Issue Qty *</th>
                 <th className="px-4 py-3 text-left text-[10px] font-bold text-slate-400 uppercase w-40">Tracking Details</th>
@@ -208,22 +208,42 @@ const RationStockIssueForm = ({
 
                     {/* Issue Qty Input */}
                     <td className="px-4 py-3.5">
-                      <input
-                        type="number"
-                        step="0.001"
-                        min="0"
-                        max={Math.min(remaining, stock)}
-                        placeholder="Qty"
-                        value={item.issue_quantity ?? ""}
-                        onChange={(e) => handleItemFieldChange(idx, "issue_quantity", e.target.value)}
-                        className={`w-28 rounded-xl border px-3 py-2 text-xs font-bold focus:outline-none transition ${
-                          isHighlighted
-                            ? "border-orange-400 focus:ring-2 focus:ring-orange-500/10 focus:border-orange-500"
-                            : "border-slate-200 focus:ring-2 focus:ring-orange-500/10 focus:border-orange-500"
-                        }`}
-                        required
-                        id={`issue-qty-input-${idx}`}
-                      />
+                      {(() => {
+                        const enteredQty = parseFloat(item.issue_quantity || 0);
+                        const isExceedingStock = enteredQty > stock;
+                        const isExceedingRemaining = enteredQty > remaining;
+                        return (
+                          <div className="flex flex-col gap-1">
+                            <input
+                              type="number"
+                              step="0.001"
+                              min="0"
+                              placeholder="Qty"
+                              value={item.issue_quantity ?? ""}
+                              onChange={(e) => handleItemFieldChange(idx, "issue_quantity", e.target.value)}
+                              className={`w-28 rounded-xl border px-3 py-2 text-xs font-bold focus:outline-none transition ${
+                                isExceedingStock || isExceedingRemaining
+                                  ? "border-red-400 focus:ring-2 focus:ring-red-500/10 focus:border-red-500 text-red-600 bg-red-50/10"
+                                  : isHighlighted
+                                  ? "border-orange-400 focus:ring-2 focus:ring-orange-500/10 focus:border-orange-500"
+                                  : "border-slate-200 focus:ring-2 focus:ring-orange-500/10 focus:border-orange-500"
+                              }`}
+                              required
+                              id={`issue-qty-input-${idx}`}
+                            />
+                            {isExceedingStock && (
+                              <span className="text-[9px] text-red-600 font-bold leading-tight w-28 block">
+                                Only {stock.toFixed(2)} {item.unit || "units"} in stock
+                              </span>
+                            )}
+                            {!isExceedingStock && isExceedingRemaining && (
+                              <span className="text-[9px] text-red-600 font-bold leading-tight w-28 block">
+                                Max limit is {remaining.toFixed(2)} {item.unit || "units"}
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </td>
 
                     {/* Tracking details (batch/expiry) */}

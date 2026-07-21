@@ -36,8 +36,8 @@ const ensurePaymentReminderSchema = async () => {
     `);
 };
 
-const syncPaymentReminderDueWindow = async (institutionId = null, windowDays = 30) => {
-    const values = [normalizeInteger(windowDays) || 30];
+const syncPaymentReminderDueWindow = async (institutionId = null, windowDays = 35) => {
+    const values = [normalizeInteger(windowDays) || 35];
     const institutionFilter = [];
 
     if (institutionId) {
@@ -130,7 +130,7 @@ const syncPaymentReminderDueWindow = async (institutionId = null, windowDays = 3
               SELECT 1
               FROM tenant_monthly_dues existing_due
               WHERE existing_due.tenant_id = due_rows.tenant_id
-                AND existing_due.due_month = due_rows.due_date
+                AND TO_CHAR(existing_due.due_month, 'YYYY-MM') = TO_CHAR(due_rows.due_date, 'YYYY-MM')
           )
     `, values);
 };
@@ -139,7 +139,9 @@ const getPaymentReminders = async ({
     institutionId = null,
     search = "",
     status = "all",
-    windowDays = 30,
+    windowDays = 35,
+    limit = null,
+    offset = 0,
 }) => {
     await ensurePaymentReminderSchema();
     await syncPaymentReminderDueWindow(institutionId, windowDays);
@@ -151,7 +153,7 @@ const getPaymentReminders = async ({
         "tenant_monthly_dues.pending_amount > 0",
     ];
 
-    const normalizedWindowDays = normalizeInteger(windowDays) || 30;
+    const normalizedWindowDays = normalizeInteger(windowDays) || 35;
 
     values.push(normalizedWindowDays);
     whereConditions.push(`
@@ -190,7 +192,25 @@ const getPaymentReminders = async ({
         `);
     }
 
-    const result = await pool.query(`
+    const countQuery = `
+        SELECT COUNT(*) AS total
+        FROM tenant_monthly_dues
+        INNER JOIN tenants
+            ON tenants.id = tenant_monthly_dues.tenant_id
+        INNER JOIN institutions
+            ON institutions.id = tenant_monthly_dues.institution_id
+        LEFT JOIN floors
+            ON floors.id = tenants.floor_id
+        LEFT JOIN rooms
+            ON rooms.id = tenants.room_id
+        LEFT JOIN beds
+            ON beds.id = tenants.bed_id
+        WHERE ${whereConditions.join(" AND ")}
+    `;
+    const countResult = await pool.query(countQuery, values);
+    const total = parseInt(countResult.rows[0].total, 10) || 0;
+
+    let mainQuery = `
         WITH reminder_base AS (
             SELECT
                 tenant_monthly_dues.*,
@@ -248,12 +268,23 @@ const getPaymentReminders = async ({
             reminder_base.due_date ASC,
             reminder_base.pending_amount DESC,
             reminder_base.full_name ASC
-    `, values);
+    `;
 
-    return result.rows;
+    if (limit !== null) {
+        values.push(limit);
+        mainQuery += ` LIMIT $${values.length}`;
+        values.push(offset);
+        mainQuery += ` OFFSET $${values.length}`;
+    }
+
+    const result = await pool.query(mainQuery, values);
+    return {
+        reminders: result.rows,
+        total
+    };
 };
 
-const getPaymentReminderSummary = async (institutionId = null, windowDays = 30) => {
+const getPaymentReminderSummary = async (institutionId = null, windowDays = 35) => {
     await ensurePaymentReminderSchema();
 
     const values = [];
@@ -263,7 +294,7 @@ const getPaymentReminderSummary = async (institutionId = null, windowDays = 30) 
         "tenant_monthly_dues.pending_amount > 0",
     ];
 
-    values.push(normalizeInteger(windowDays) || 30);
+    values.push(normalizeInteger(windowDays) || 35);
     whereConditions.push(`
         tenant_monthly_dues.due_date <= CURRENT_DATE + ($${values.length}::int * INTERVAL '1 day')
     `);
@@ -352,19 +383,19 @@ const collectPaymentReminderDues = async ({
     return await db.transaction(async (client) => {
         try {
 
-        const values = [normalizedDueIds];
-        const whereConditions = [
-            "tenant_monthly_dues.id = ANY($1)",
-            "tenant_monthly_dues.pending_amount > 0",
-            "tenants.deleted_at IS NULL",
-        ];
+            const values = [normalizedDueIds];
+            const whereConditions = [
+                "tenant_monthly_dues.id = ANY($1)",
+                "tenant_monthly_dues.pending_amount > 0",
+                "tenants.deleted_at IS NULL",
+            ];
 
-        if (institutionId) {
-            values.push(institutionId);
-            whereConditions.push(`tenant_monthly_dues.institution_id = $${values.length}`);
-        }
+            if (institutionId) {
+                values.push(institutionId);
+                whereConditions.push(`tenant_monthly_dues.institution_id = $${values.length}`);
+            }
 
-        const duesResult = await client.query(`
+            const duesResult = await client.query(`
             SELECT
                 tenant_monthly_dues.*,
                 tenants.full_name
@@ -376,46 +407,46 @@ const collectPaymentReminderDues = async ({
             FOR UPDATE OF tenant_monthly_dues
         `, values);
 
-        if (!duesResult.rows.length) {
-            throw Object.assign(new Error("No pending due records found"), {
-                code: "NO_PENDING_DUES",
+            if (!duesResult.rows.length) {
+                throw Object.assign(new Error("No pending due records found"), {
+                    code: "NO_PENDING_DUES",
+                });
+            }
+
+            const firstDue = duesResult.rows[0];
+            const hasMixedTenant = duesResult.rows.some((due) => {
+                return Number(due.tenant_id) !== Number(firstDue.tenant_id);
             });
-        }
 
-        const firstDue = duesResult.rows[0];
-        const hasMixedTenant = duesResult.rows.some((due) => {
-            return Number(due.tenant_id) !== Number(firstDue.tenant_id);
-        });
+            if (hasMixedTenant) {
+                throw Object.assign(new Error("Collection can only be recorded for one tenant at a time"), {
+                    code: "MIXED_TENANT_DUES",
+                });
+            }
 
-        if (hasMixedTenant) {
-            throw Object.assign(new Error("Collection can only be recorded for one tenant at a time"), {
-                code: "MIXED_TENANT_DUES",
-            });
-        }
+            const totalAmount = duesResult.rows.reduce((sum, due) => {
+                return sum + Number(due.pending_amount || 0);
+            }, 0);
 
-        const totalAmount = duesResult.rows.reduce((sum, due) => {
-            return sum + Number(due.pending_amount || 0);
-        }, 0);
+            const payment = await createTenantPayment({
+                tenant_id: firstDue.tenant_id,
+                institution_id: firstDue.institution_id,
+                amount: totalAmount,
+                payment_type: "rent",
+                payment_mode: paymentMode || "cash",
+                payment_date: paymentDate || new Date().toISOString().split("T")[0],
+                reference_number: referenceNumber || null,
+                verification_status: "verified",
+                notes: notes || `Rent collected for ${duesResult.rows.length} due cycle(s)`,
+                status: "completed",
+                paid_amount: totalAmount,
+                due_amount: 0,
+                created_by: createdBy || null,
+                verified_by: createdBy || null,
+            }, client);
 
-        const payment = await createTenantPayment({
-            tenant_id: firstDue.tenant_id,
-            institution_id: firstDue.institution_id,
-            amount: totalAmount,
-            payment_type: "rent",
-            payment_mode: paymentMode || "cash",
-            payment_date: paymentDate || new Date().toISOString().split("T")[0],
-            reference_number: referenceNumber || null,
-            verification_status: "verified",
-            notes: notes || `Rent collected for ${duesResult.rows.length} due cycle(s)`,
-            status: "completed",
-            paid_amount: totalAmount,
-            due_amount: 0,
-            created_by: createdBy || null,
-            verified_by: createdBy || null,
-        }, client);
-
-        for (const due of duesResult.rows) {
-            await client.query(`
+            for (const due of duesResult.rows) {
+                await client.query(`
                 INSERT INTO payment_reminder_actions (
                     monthly_due_id,
                     tenant_id,
@@ -425,21 +456,21 @@ const collectPaymentReminderDues = async ({
                 )
                 VALUES ($1, $2, 'collected', $3, $4)
             `, [
-                due.id,
-                due.tenant_id,
-                `Collected ${Number(due.pending_amount || 0)} against due ${due.due_date}`,
-                createdBy || null,
-            ]);
-        }
+                    due.id,
+                    due.tenant_id,
+                    `Collected ${Number(due.pending_amount || 0)} against due ${due.due_date}`,
+                    createdBy || null,
+                ]);
+            }
 
-        return {
-            payment,
-            collected_dues: duesResult.rows,
-            total_amount: totalAmount,
-        };
-    } catch (error) {
-        throw error;
-    }
+            return {
+                payment,
+                collected_dues: duesResult.rows,
+                total_amount: totalAmount,
+            };
+        } catch (error) {
+            throw error;
+        }
     });
 };
 

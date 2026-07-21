@@ -42,7 +42,7 @@ const resolveInstitutionId = (req, body) => {
 const normalizeDocuments = (documents, files = {}) => {
     const parsedDocuments = Array.isArray(documents) ? documents : [];
     const uploadedDocuments = files.document_files || [];
-    
+
     // Gather all uploaded files to search by name
     const allUploadedFiles = [];
     if (files.document_files) allUploadedFiles.push(...files.document_files);
@@ -322,7 +322,7 @@ const mapTenantError = (error) => {
     if (error.table) locations.push(`Table: ${error.table}`);
     if (error.column) locations.push(`Column: ${error.column}`);
     if (error.constraint) locations.push(`Constraint: ${error.constraint}`);
-    
+
     if (locations.length > 0) {
         detailMessage += ` [${locations.join(", ")}]`;
     }
@@ -369,20 +369,33 @@ const addTenant = async (req, res) => {
 
 const listActiveTenants = async (req, res) => {
     try {
+        const page = parseInt(req.body.page, 10) || 1;
+        const limit = parseInt(req.body.limit, 10) || 20;
+        const offset = (page - 1) * limit;
+
         const statuses = Array.isArray(req.body.statuses)
             ? req.body.statuses.filter((status) => TENANT_STATUSES.includes(status))
             : undefined;
 
-        const tenants = await getActiveTenants(
-            isPgAdminRequest(req) ? req.pgAdmin.institution_id : normalizeInteger(req.body.institution_id),
-            normalizeText(req.body.search) || "",
-            statuses && statuses.length ? statuses : undefined
-        );
+        const { tenants, totalCount } = await getActiveTenants({
+            institutionId: isPgAdminRequest(req) ? req.pgAdmin.institution_id : normalizeInteger(req.body.institution_id),
+            search: normalizeText(req.body.search) || "",
+            statuses: statuses && statuses.length ? statuses : undefined,
+            collectionMonth: normalizeText(req.body.collectionMonth),
+            limit,
+            offset
+        });
 
         return res.status(200).json({
             success: true,
             message: "Active tenants fetched successfully",
             tenants,
+            pagination: {
+                total: totalCount,
+                page,
+                limit,
+                totalPages: Math.ceil(totalCount / limit)
+            }
         });
     } catch (error) {
         return res.status(500).json({
@@ -394,15 +407,30 @@ const listActiveTenants = async (req, res) => {
 
 const listVacantBeds = async (req, res) => {
     try {
-        const beds = await getVacantBeds(
-            isPgAdminRequest(req) ? req.pgAdmin.institution_id : normalizeInteger(req.body.institution_id),
-            normalizeText(req.body.search) || ""
-        );
+        const page = parseInt(req.body.page, 10) || 1;
+        const limit = parseInt(req.body.limit, 10) || 100;
+        const offset = (page - 1) * limit;
+
+        const { beds, totalCount } = await getVacantBeds({
+            institutionId: isPgAdminRequest(req) ? req.pgAdmin.institution_id : normalizeInteger(req.body.institution_id),
+            search: normalizeText(req.body.search) || "",
+            status: normalizeText(req.body.status) || "all",
+            roomType: normalizeText(req.body.roomType) || "all",
+            floorId: normalizeText(req.body.floorId) || "all",
+            limit,
+            offset
+        });
 
         return res.status(200).json({
             success: true,
             message: "Vacant beds fetched successfully",
             beds,
+            pagination: {
+                total: totalCount,
+                page,
+                limit,
+                totalPages: Math.ceil(totalCount / limit)
+            }
         });
     } catch (error) {
         return res.status(500).json({
@@ -414,16 +442,44 @@ const listVacantBeds = async (req, res) => {
 
 const listTenantPayments = async (req, res) => {
     try {
-        const payments = await getTenantPayments(
-            isPgAdminRequest(req) ? req.pgAdmin.institution_id : normalizeInteger(req.body.institution_id),
-            normalizeText(req.body.search) || "",
-            normalizeInteger(req.body.tenant_id)
-        );
+        const page = parseInt(req.body.page, 10) || 1;
+        const limit = parseInt(req.body.limit, 10) || 20;
+        const offset = (page - 1) * limit;
+
+        const result = await getTenantPayments({
+            institutionId: isPgAdminRequest(req) ? req.pgAdmin.institution_id : normalizeInteger(req.body.institution_id),
+            search: normalizeText(req.body.search) || "",
+            tenantId: normalizeInteger(req.body.tenant_id),
+            page,
+            limit,
+            offset,
+            receiptNo: normalizeText(req.body.receiptNo),
+            admissionNo: normalizeText(req.body.admissionNo),
+            phone: normalizeText(req.body.phone),
+            room: normalizeText(req.body.room),
+            floorId: req.body.floorId,
+            collectionMonth: req.body.collectionMonth,
+            paymentType: req.body.paymentType,
+            paymentMode: req.body.paymentMode,
+            status: req.body.status,
+            verificationStatus: req.body.verificationStatus,
+            startDate: req.body.startDate,
+            endDate: req.body.endDate,
+            minAmount: req.body.minAmount,
+            maxAmount: req.body.maxAmount
+        });
 
         return res.status(200).json({
             success: true,
             message: "Tenant payments fetched successfully",
-            payments,
+            payments: result.payments,
+            stats: result.stats,
+            pagination: {
+                total: result.totalCount,
+                page,
+                limit,
+                totalPages: Math.ceil(result.totalCount / limit)
+            }
         });
     } catch (error) {
         return res.status(500).json({
@@ -535,6 +591,11 @@ const editTenant = async (req, res) => {
             ...normalizeTenantPayload(req),
             id: tenantId,
         };
+
+        // Retain existing profile photo if a new one is not uploaded/provided
+        if (!data.profile_photo && existingTenant.profile_photo) {
+            data.profile_photo = existingTenant.profile_photo;
+        }
         const validationMessage = validateTenantPayload(data);
 
         if (validationMessage) {

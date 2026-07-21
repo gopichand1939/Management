@@ -195,6 +195,19 @@ const getNextDueDate = (tenant) => {
     return pendingDue.due_date;
   }
 
+  // If there are no unpaid dues, check if we have any dues generated at all
+  if (tenant?.dues && tenant.dues.length > 0) {
+    const sortedDues = [...tenant.dues].sort(
+      (a, b) => new Date(b.due_month || b.due_date).getTime() - new Date(a.due_month || a.due_date).getTime()
+    );
+    const latestDue = sortedDues[0];
+    if (latestDue && latestDue.due_date) {
+      const date = new Date(latestDue.due_date);
+      date.setMonth(date.getMonth() + 1);
+      return date;
+    }
+  }
+
   if (!tenant?.check_in_date) {
     return null;
   }
@@ -271,6 +284,11 @@ const ActiveTenants = () => {
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
 
   // Active Actions overlay dropdown
   const [activeActionsTenantId, setActiveActionsTenantId] = useState(null);
@@ -408,7 +426,15 @@ const ActiveTenants = () => {
     setLoading(true);
     setError("");
     try {
-      const payload = {};
+      const payload = {
+        page: currentPage,
+        limit: 12, // display 12 residents per page
+        search: searchText,
+        statuses: selectedStatus === "all"
+          ? ["active", "pending_verification", "notice_period", "blocked"]
+          : [selectedStatus],
+        collectionMonth: collectionMonth
+      };
       if (instId && instId !== "all") {
         payload.institution_id = Number(instId);
       }
@@ -423,6 +449,13 @@ const ActiveTenants = () => {
         throw new Error(data.message || "Active tenants fetch failed");
       }
       setTenants(data.tenants || []);
+      if (data.pagination) {
+        setTotalPages(data.pagination.totalPages || 1);
+        setTotalCount(data.pagination.total || 0);
+      } else {
+        setTotalPages(1);
+        setTotalCount((data.tenants || []).length);
+      }
     } catch (apiError) {
       setError(apiError.message || "Active tenants fetch failed");
     } finally {
@@ -511,51 +544,26 @@ const ActiveTenants = () => {
     }
   }, [isPgAdmin]);
 
+  // Fetch tenants on dependencies changes (with 300ms debounce for search query input typing)
   useEffect(() => {
-    fetchTenants(selectedInstitutionId);
-  }, [selectedInstitutionId]);
+    const timer = setTimeout(() => {
+      fetchTenants(selectedInstitutionId);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [selectedInstitutionId, searchText, selectedStatus, collectionMonth, currentPage]);
 
   useEffect(() => {
     fetchStats(collectionMonth, selectedInstitutionId);
   }, [collectionMonth, selectedInstitutionId]);
 
-  const monthFilteredTenants = useMemo(() => {
-    if (collectionMonth === "all") {
-      return tenants;
-    }
+  // Reset page to 1 when filters or query terms change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedInstitutionId, searchText, selectedStatus, collectionMonth]);
 
-    return tenants.filter((tenant) => {
-      if (!tenant.check_in_date) {
-        return false;
-      }
-
-      const checkInDate = new Date(tenant.check_in_date);
-      if (Number.isNaN(checkInDate.getTime())) {
-        return false;
-      }
-
-      const tenantMonth = `${checkInDate.getFullYear()}-${String(checkInDate.getMonth() + 1).padStart(2, "0")}`;
-      return tenantMonth === collectionMonth;
-    });
-  }, [collectionMonth, tenants]);
-
-  const filteredTenants = useMemo(() => {
-    const term = searchText.toLowerCase();
-    return monthFilteredTenants.filter((tenant) => {
-      const matchesSearch =
-        tenant.full_name?.toLowerCase().includes(term) ||
-        tenant.phone?.toLowerCase().includes(term) ||
-        tenant.institution_name?.toLowerCase().includes(term) ||
-        tenant.room_number?.toLowerCase().includes(term) ||
-        tenant.bed_number?.toLowerCase().includes(term) ||
-        tenant.admission_number?.toLowerCase().includes(term);
-
-      const matchesStatus =
-        selectedStatus === "all" || tenant.status === selectedStatus;
-
-      return matchesSearch && matchesStatus;
-    });
-  }, [searchText, monthFilteredTenants, selectedStatus]);
+  const monthFilteredTenants = tenants;
+  const filteredTenants = tenants;
 
   // Handle Transfer submit
   const handleTransferSubmit = async () => {
@@ -757,9 +765,17 @@ const ActiveTenants = () => {
   }, [selectedTransferFloor]);
 
   // Computed display stats
-  const activeTenantsCount = monthFilteredTenants.filter(t => t.status === "active").length;
-  const pendingTenantsCount = monthFilteredTenants.filter(t => t.status === "pending_verification").length;
-  const totalOccupiedBeds = monthFilteredTenants.length;
+  const activeTenantsCount = dashboardStats?.active_tenants !== undefined
+    ? Number(dashboardStats.active_tenants)
+    : monthFilteredTenants.filter(t => t.status === "active").length;
+
+  const pendingTenantsCount = dashboardStats?.pending_verification_tenants !== undefined
+    ? Number(dashboardStats.pending_verification_tenants)
+    : monthFilteredTenants.filter(t => t.status === "pending_verification").length;
+
+  const totalOccupiedBeds = dashboardStats?.occupied_beds !== undefined
+    ? Number(dashboardStats.occupied_beds)
+    : monthFilteredTenants.length;
   const collectionMonthOptions = useMemo(() => {
     const formatter = new Intl.DateTimeFormat("en-IN", { month: "long", year: "numeric" });
     const today = new Date();
@@ -954,203 +970,234 @@ const ActiveTenants = () => {
           </div>
         ) : (
           /* Cards Grid Layout */
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 text-left">
-            {filteredTenants.map((ten) => (
-              (() => {
-                const hasJoiningPayment = Boolean(ten.joining_payment_id) &&
-                  String(ten.joining_payment_status || "").toLowerCase() === "completed";
-                const hasPendingVerification = hasJoiningPayment &&
-                  String(ten.joining_payment_verification_status || "").toLowerCase() === "pending";
-                const hasVerifiedAdmissionPayment = hasJoiningPayment &&
-                  String(ten.joining_payment_verification_status || "").toLowerCase() === "verified";
-                const canCollectPayment = !hasJoiningPayment;
-                const nextDueDate = getNextDueDate(ten);
+          <div className="flex flex-col gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 text-left">
+              {filteredTenants.map((ten) => (
+                (() => {
+                  const hasJoiningPayment = Boolean(ten.joining_payment_id) &&
+                    String(ten.joining_payment_status || "").toLowerCase() === "completed";
+                  const hasPendingVerification = hasJoiningPayment &&
+                    String(ten.joining_payment_verification_status || "").toLowerCase() === "pending";
+                  const hasVerifiedAdmissionPayment = hasJoiningPayment &&
+                    String(ten.joining_payment_verification_status || "").toLowerCase() === "verified";
+                  const canCollectPayment = !hasJoiningPayment;
+                  const nextDueDate = getNextDueDate(ten);
 
-                return (
-              <motion.div
-                key={ten.id}
-                whileHover={{ y: -4, shadow: "0 25px 50px -12px rgba(255, 107, 0, 0.05)" }}
-                className="rounded-[32px] border border-slate-150 bg-white p-5 hover:border-orange-500/25 transition-all duration-300 flex flex-col justify-between relative overflow-hidden group shadow-[0_12px_30px_-10px_rgba(15,23,42,0.03)] min-h-[200px]"
-              >
-                {/* Top gradient border */}
-                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-orange-500 to-red-500" />
-
-                <button
-                  type="button"
-                  onClick={() => openTenantProfileModal(ten.id)}
-                  className="w-full text-left"
+                  return (
+                <motion.div
+                  key={ten.id}
+                  whileHover={{ y: -4, shadow: "0 25px 50px -12px rgba(255, 107, 0, 0.05)" }}
+                  className="rounded-[32px] border border-slate-150 bg-white p-5 hover:border-orange-500/25 transition-all duration-300 flex flex-col justify-between relative overflow-hidden group shadow-[0_12px_30px_-10px_rgba(15,23,42,0.03)] min-h-[200px]"
                 >
-                  {/* Top profile banner */}
-                  <div className="flex items-start justify-between gap-3 mt-1.5">
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-xl bg-orange-50 border border-orange-100/50 text-orange-500 flex items-center justify-center font-bold text-sm shrink-0 overflow-hidden shadow-inner">
-                        {getProfilePhotoUrl(ten.profile_photo) ? (
-                          <img src={getProfilePhotoUrl(ten.profile_photo)} alt={ten.full_name} className="h-full w-full object-cover" />
-                        ) : (
-                          <UserRound size={16} />
-                        )}
-                      </div>
-                      <div>
-                        <h3 className="text-sm font-black text-slate-850 leading-tight truncate max-w-[140px]" title={ten.full_name}>
-                          {ten.full_name}
-                        </h3>
-                        <p className="text-[9px] text-slate-400 font-black uppercase tracking-wider mt-0.5">
-                          {ten.admission_number || "NO ADMISSION ID"}
-                        </p>
-                      </div>
-                    </div>
+                  {/* Top gradient border */}
+                  <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-orange-500 to-red-500" />
 
-                    <span className={`px-2 py-0.5 rounded border text-[8px] font-black uppercase tracking-wider ${getStatusBadgeClassName(ten.status)}`}>
-                      {ten.status}
-                    </span>
-                  </div>
-
-                  {/* Bed Allocation markers */}
-                  <div className="mt-4 bg-slate-50/50 border border-slate-100/80 p-3 rounded-2xl flex flex-col gap-1.5 text-xs font-semibold text-slate-550">
-                    <div className="flex items-center gap-1.5">
-                      <Building2 size={13} className="text-slate-400 shrink-0" />
-                      <span className="truncate text-slate-650">{ten.institution_name}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <Compass size={13} className="text-slate-400 shrink-0" />
-                      <span className="text-slate-650">{ten.floor_name || "Ground"} • Room {ten.room_number} ({ten.bed_number})</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 mt-1 border-t border-slate-100 pt-2 text-[10px] text-slate-400 uppercase tracking-widest justify-between font-black">
-                      <span>Check-in</span>
-                      <span className="text-slate-600 font-bold">{formatDisplayDate(ten.check_in_date)}</span>
-                    </div>
-                  </div>
-
-                  {hasJoiningPayment && (
-                    <div className="mt-3 flex items-center justify-between gap-3 rounded-2xl border border-emerald-100 bg-emerald-50/70 px-3 py-2">
-                      <div className="min-w-0">
-                        <p className="text-[9px] font-black uppercase tracking-widest text-emerald-600">
-                          Joining Payment Logged
-                        </p>
-                        <p className="mt-1 text-xs font-bold text-emerald-900">
-                          {formatCurrency(getJoiningRentOnlyAmount(ten))}
-                        </p>
+                  <button
+                    type="button"
+                    onClick={() => openTenantProfileModal(ten.id)}
+                    className="w-full text-left"
+                  >
+                    {/* Top profile banner */}
+                    <div className="flex items-start justify-between gap-3 mt-1.5">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-xl bg-orange-50 border border-orange-100/50 text-orange-500 flex items-center justify-center font-bold text-sm shrink-0 overflow-hidden shadow-inner">
+                          {getProfilePhotoUrl(ten.profile_photo) ? (
+                            <img src={getProfilePhotoUrl(ten.profile_photo)} alt={ten.full_name} className="h-full w-full object-cover" />
+                          ) : (
+                            <UserRound size={16} />
+                          )}
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-black text-slate-855 leading-tight truncate max-w-[140px]" title={ten.full_name}>
+                            {ten.full_name}
+                          </h3>
+                          <p className="text-[9px] text-slate-400 font-black uppercase tracking-wider mt-0.5">
+                            {ten.admission_number || "NO ADMISSION ID"}
+                          </p>
+                        </div>
                       </div>
-                      <span
-                        className={`shrink-0 rounded-full border px-2 py-1 text-[9px] font-black uppercase tracking-wider ${getStatusBadgeClassName(
-                          ten.joining_payment_verification_status || "pending"
-                        )}`}
-                      >
-                        {ten.joining_payment_verification_status || "pending"}
+
+                      <span className={`px-2 py-0.5 rounded border text-[8px] font-black uppercase tracking-wider ${getStatusBadgeClassName(ten.status)}`}>
+                        {ten.status}
                       </span>
                     </div>
-                  )}
-                </button>
 
-                {/* Footer action logs button */}
-                <div className="mt-4 border-t border-slate-100 pt-3 flex items-center justify-between">
-                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-1">
-                    <Phone size={10} />
-                    {ten.phone || "No phone"}
-                  </span>
+                    {/* Bed Allocation markers */}
+                    <div className="mt-4 bg-slate-50/50 border border-slate-100/80 p-3 rounded-2xl flex flex-col gap-1.5 text-xs font-semibold text-slate-550">
+                      <div className="flex items-center gap-1.5">
+                        <Building2 size={13} className="text-slate-400 shrink-0" />
+                        <span className="truncate text-slate-650">{ten.institution_name}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <Compass size={13} className="text-slate-400 shrink-0" />
+                        <span className="text-slate-650">{ten.floor_name || "Ground"} • Room {ten.room_number} ({ten.bed_number})</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 mt-1 border-t border-slate-100 pt-2 text-[10px] text-slate-400 uppercase tracking-widest justify-between font-black">
+                        <span>Check-in</span>
+                        <span className="text-slate-600 font-bold">{formatDisplayDate(ten.check_in_date)}</span>
+                      </div>
+                    </div>
 
-                  <div className="flex items-center gap-1.5 relative">
-                    <button
-                      type="button"
-                      onClick={() => openTenantProfileModal(ten.id)}
-                      className="inline-flex items-center justify-center px-2.5 py-1 rounded-lg border border-slate-150 bg-white text-[10px] font-black uppercase tracking-wider text-slate-500 hover:text-orange-500 hover:border-orange-200 shadow-sm transition-all"
-                    >
-                      File
-                    </button>
+                    {hasJoiningPayment && (
+                      <div className="mt-3 flex items-center justify-between gap-3 rounded-2xl border border-emerald-100 bg-emerald-50/70 px-3 py-2">
+                        <div className="min-w-0">
+                          <p className="text-[9px] font-black uppercase tracking-widest text-emerald-600">
+                            Joining Payment Logged
+                          </p>
+                          <p className="mt-1 text-xs font-bold text-emerald-900">
+                            {formatCurrency(getJoiningRentOnlyAmount(ten))}
+                          </p>
+                        </div>
+                        <span
+                          className={`shrink-0 rounded-full border px-2 py-1 text-[9px] font-black uppercase tracking-wider ${getStatusBadgeClassName(
+                            ten.joining_payment_verification_status || "pending"
+                          )}`}
+                        >
+                          {ten.joining_payment_verification_status || "pending"}
+                        </span>
+                      </div>
+                    )}
+                  </button>
 
-                    <button
-                      type="button"
-                      onClick={() => setActiveActionsTenantId(activeActionsTenantId === ten.id ? null : ten.id)}
-                      className="p-1 rounded-lg border border-slate-100 bg-white text-slate-400 hover:text-slate-700 shadow-sm"
-                    >
-                      <MoreVertical size={14} />
-                    </button>
+                  {/* Footer action logs button */}
+                  <div className="mt-4 border-t border-slate-100 pt-3 flex items-center justify-between">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-1">
+                      <Phone size={10} />
+                      {ten.phone || "No phone"}
+                    </span>
 
-                    {/* Popover Action Menu */}
-                    <AnimatePresence>
-                      {activeActionsTenantId === ten.id && (
-                        <>
-                          <div className="fixed inset-0 z-10" onClick={() => setActiveActionsTenantId(null)} />
-                          <motion.div
-                            initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                            className="absolute right-0 bottom-full mb-2 z-20 w-44 rounded-2xl border border-slate-150 bg-white p-1.5 shadow-xl text-xs font-semibold text-slate-700 flex flex-col gap-0.5"
-                          >
-                            <button
-                              type="button"
-                              onClick={() => {
-                                fetchVacantBedsForTransfer();
-                                setTransferTenant(ten);
-                                setTransferForm(f => ({ ...f, floor_id: String(ten.floor_id) }));
-                                setActiveActionsTenantId(null);
-                              }}
-                              className="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50 flex items-center gap-2 text-slate-650"
+                    <div className="flex items-center gap-1.5 relative">
+                      <button
+                        type="button"
+                        onClick={() => openTenantProfileModal(ten.id)}
+                        className="inline-flex items-center justify-center px-2.5 py-1 rounded-lg border border-slate-150 bg-white text-[10px] font-black uppercase tracking-wider text-slate-500 hover:text-orange-500 hover:border-orange-200 shadow-sm transition-all"
+                      >
+                        File
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setActiveActionsTenantId(activeActionsTenantId === ten.id ? null : ten.id)}
+                        className="p-1 rounded-lg border border-slate-100 bg-white text-slate-400 hover:text-slate-700 shadow-sm"
+                      >
+                        <MoreVertical size={14} />
+                      </button>
+
+                      {/* Popover Action Menu */}
+                      <AnimatePresence>
+                        {activeActionsTenantId === ten.id && (
+                          <>
+                            <div className="fixed inset-0 z-10" onClick={() => setActiveActionsTenantId(null)} />
+                            <motion.div
+                              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                              animate={{ opacity: 1, scale: 1, y: 0 }}
+                              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                              className="absolute right-0 bottom-full mb-2 z-20 w-44 rounded-2xl border border-slate-150 bg-white p-1.5 shadow-xl text-xs font-semibold text-slate-700 flex flex-col gap-0.5"
                             >
-                              <ArrowLeftRight size={13} className="text-slate-400" />
-                              <span>Transfer Bed</span>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setActiveActionsTenantId(null);
-                                navigate(`/tenant/edit/${ten.id}`);
-                              }}
-                              className="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50 flex items-center gap-2 text-slate-650"
-                            >
-                              <Edit2 size={13} className="text-slate-400" />
-                              <span>Edit Details</span>
-                            </button>
-                            {hasPendingVerification ? (
-                              <button
-                                type="button"
-                                onClick={() => verifyTenantPaymentStatus(ten)}
-                                className="w-full text-left px-3 py-2 rounded-lg hover:bg-emerald-50 flex items-center gap-2 text-emerald-700"
-                              >
-                                <ShieldCheck size={13} className="text-emerald-500" />
-                                <span>Verify Collected Payment</span>
-                              </button>
-                            ) : hasVerifiedAdmissionPayment ? (
-                              <div className="rounded-lg border border-sky-100 bg-sky-50/80 px-3 py-2 text-[10px] font-black uppercase tracking-wider text-sky-700">
-                                {nextDueDate
-                                  ? `Next Due ${formatDisplayDate(nextDueDate)}`
-                                  : "Onboarding Payment Settled"}
-                              </div>
-                            ) : canCollectPayment ? (
                               <button
                                 type="button"
                                 onClick={() => {
-                                  setPaymentTenant(ten);
+                                  fetchVacantBedsForTransfer();
+                                  setTransferTenant(ten);
+                                  setTransferForm(f => ({ ...f, floor_id: String(ten.floor_id) }));
                                   setActiveActionsTenantId(null);
                                 }}
-                                className="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50 flex items-center gap-2 text-slate-650"
+                                className="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50 flex items-center gap-2 text-slate-655"
                               >
-                                <Wallet size={13} className="text-slate-400" />
-                                <span>Collect Payment</span>
+                                <ArrowLeftRight size={13} className="text-slate-400" />
+                                <span>Transfer Bed</span>
                               </button>
-                            ) : null}
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setVacateTenant(ten);
-                                setVacateForm(f => ({ ...f, refundable_amount: Number(ten.deposit_paid || 0) }));
-                                setActiveActionsTenantId(null);
-                              }}
-                              className="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50 flex items-center gap-2 text-rose-600 hover:bg-rose-50/50"
-                            >
-                              <LogOut size={13} className="text-rose-400" />
-                              <span>Check Out (Vacate)</span>
-                            </button>
-                          </motion.div>
-                        </>
-                      )}
-                    </AnimatePresence>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setActiveActionsTenantId(null);
+                                  navigate(`/tenant/edit/${ten.id}`);
+                                }}
+                                className="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50 flex items-center gap-2 text-slate-655"
+                              >
+                                <Edit2 size={13} className="text-slate-400" />
+                                <span>Edit Details</span>
+                              </button>
+                              {hasPendingVerification ? (
+                                <button
+                                  type="button"
+                                  onClick={() => verifyTenantPaymentStatus(ten)}
+                                  className="w-full text-left px-3 py-2 rounded-lg hover:bg-emerald-50 flex items-center gap-2 text-emerald-700"
+                                >
+                                  <ShieldCheck size={13} className="text-emerald-500" />
+                                  <span>Verify Collected Payment</span>
+                                </button>
+                              ) : hasVerifiedAdmissionPayment ? (
+                                <div className="rounded-lg border border-sky-100 bg-sky-50/80 px-3 py-2 text-[10px] font-black uppercase tracking-wider text-sky-700">
+                                  {nextDueDate
+                                    ? `Next Due ${formatDisplayDate(nextDueDate)}`
+                                    : "Onboarding Payment Settled"}
+                                </div>
+                              ) : canCollectPayment ? (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setPaymentTenant(ten);
+                                    setActiveActionsTenantId(null);
+                                  }}
+                                  className="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50 flex items-center gap-2 text-slate-655"
+                                >
+                                  <Wallet size={13} className="text-slate-400" />
+                                  <span>Collect Payment</span>
+                                </button>
+                              ) : null}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setVacateTenant(ten);
+                                  setVacateForm(f => ({ ...f, refundable_amount: Number(ten.deposit_paid || 0) }));
+                                  setActiveActionsTenantId(null);
+                                }}
+                                className="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50 flex items-center gap-2 text-rose-600 hover:bg-rose-50/50"
+                              >
+                                <LogOut size={13} className="text-rose-400" />
+                                <span>Check Out (Vacate)</span>
+                              </button>
+                            </motion.div>
+                          </>
+                        )}
+                      </AnimatePresence>
+                    </div>
                   </div>
+                </motion.div>
+                  );
+                })()
+              ))}
+            </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between border-t border-slate-100 pt-4 text-left">
+                <span className="text-xs text-slate-500 font-bold">
+                  Showing page <span className="font-black text-slate-800">{currentPage}</span> of{" "}
+                  <span className="font-black text-slate-800">{totalPages}</span> ({totalCount} total residents)
+                </span>
+
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                    className="cursor-pointer inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-xs font-black text-slate-600 shadow-sm transition hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Previous
+                  </button>
+                  <button
+                    type="button"
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+                    className="cursor-pointer inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-xs font-black text-slate-600 shadow-sm transition hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Next
+                  </button>
                 </div>
-              </motion.div>
-                );
-              })()
-            ))}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -1355,22 +1402,29 @@ const ActiveTenants = () => {
                         <div className="mt-4 grid gap-3">
                           {(selectedTenantProfile.payments || []).length === 0 ? (
                             <p className="text-sm font-semibold text-slate-500">No payments logged.</p>
-                          ) : (
-                            selectedTenantProfile.payments.map((payment) => (
-                              <div key={payment.id} className="rounded-2xl border border-slate-100 bg-slate-50/70 p-3">
+                          ) : (() => {
+                            const sortedPayments = [...(selectedTenantProfile.payments || [])].sort((a, b) =>
+                              new Date(a.payment_date).getTime() - new Date(b.payment_date).getTime()
+                            );
+                            const firstPayment = sortedPayments.find((p) =>
+                              ["admission", "deposit", "rent"].includes(String(p.payment_type || "").toLowerCase())
+                            ) || sortedPayments[0];
+
+                            return (
+                              <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-3">
                                 <div className="flex items-center justify-between gap-3">
                                   <div>
-                                    <p className="text-sm font-black text-slate-800">{formatCurrency(payment.amount)}</p>
+                                    <p className="text-sm font-black text-slate-800">{formatCurrency(firstPayment.amount)}</p>
                                     <p className="mt-1 text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                                      {payment.payment_type || "payment"} • {payment.payment_mode || "mode"} • {formatDisplayDate(payment.payment_date)}
+                                      {firstPayment.payment_type || "payment"} • {firstPayment.payment_mode || "mode"} • {formatDisplayDate(firstPayment.payment_date)}
                                     </p>
-                                    <p className="mt-2 text-xs font-semibold text-slate-600">Ref: {payment.reference_number || "-"}</p>
+                                    <p className="mt-2 text-xs font-semibold text-slate-600">Ref: {firstPayment.reference_number || "-"}</p>
                                   </div>
-                                  <span className={`rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-wider ${getStatusBadgeClassName(payment.verification_status || payment.status || "pending")}`}>
-                                    {payment.verification_status || payment.status || "pending"}
+                                  <span className={`rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-wider ${getStatusBadgeClassName(firstPayment.verification_status || firstPayment.status || "pending")}`}>
+                                    {firstPayment.verification_status || firstPayment.status || "pending"}
                                   </span>
                                 </div>
-                                {payment.payment_proof_url && (
+                                {firstPayment.payment_proof_url && (
                                   <div className="mt-3 flex items-center justify-between rounded-2xl border border-orange-100 bg-orange-50/50 px-3 py-2">
                                     <div>
                                       <p className="text-[10px] font-black uppercase tracking-widest text-orange-500">
@@ -1383,9 +1437,9 @@ const ActiveTenants = () => {
                                     <button
                                       type="button"
                                       onClick={() => setPreviewAsset({
-                                        title: `${payment.payment_type || "Payment"} Proof`,
-                                        url: getAssetUrl(payment.payment_proof_url),
-                                        kind: getPreviewKind(payment.payment_proof_url),
+                                        title: `${firstPayment.payment_type || "Payment"} Proof`,
+                                        url: getAssetUrl(firstPayment.payment_proof_url),
+                                        kind: getPreviewKind(firstPayment.payment_proof_url),
                                       })}
                                       className="rounded-xl border border-orange-200 bg-white px-3 py-2 text-[10px] font-black uppercase tracking-wider text-orange-600 transition hover:border-orange-300"
                                     >
@@ -1394,35 +1448,93 @@ const ActiveTenants = () => {
                                   </div>
                                 )}
                               </div>
-                            ))
-                          )}
+                            );
+                          })()}
                         </div>
                       </div>
 
                       <div className="rounded-[28px] border border-slate-150 bg-white p-5 shadow-sm">
-                        <h5 className="text-sm font-black text-slate-800">Activity Timeline</h5>
-                        <div className="mt-4 grid gap-3">
-                          {(selectedTenantProfile.activity_logs || []).length === 0 ? (
-                            <p className="text-sm font-semibold text-slate-500">No activity logs recorded.</p>
+                        <h5 className="text-sm font-black text-slate-800">Monthly Billing & Dues</h5>
+                        <div className="mt-4 grid gap-3 max-h-[260px] overflow-y-auto pr-1">
+                          {(selectedTenantProfile.dues || []).length === 0 ? (
+                            <p className="text-sm font-semibold text-slate-500">No monthly dues record generated yet.</p>
                           ) : (
-                            selectedTenantProfile.activity_logs.slice(0, 1).map((log) => {
-                              const activityDetails = getActivityDetails(log);
+                            selectedTenantProfile.dues.map((due) => {
+                              const monthName = (() => {
+                                if (!due.due_month) return "-";
+                                const date = new Date(due.due_month);
+                                if (Number.isNaN(date.getTime())) return due.due_month;
+                                return date.toLocaleDateString("en-IN", { month: "long", year: "numeric" });
+                              })();
+
+                              const formattedDueDate = (() => {
+                                if (!due.due_date) return null;
+                                const date = new Date(due.due_date);
+                                if (Number.isNaN(date.getTime())) return null;
+                                return date.toLocaleDateString("en-IN", {
+                                  day: "2-digit",
+                                  month: "short",
+                                  year: "numeric",
+                                });
+                              })();
+
+                              const isPaid = String(due.status || "").toLowerCase() === "paid";
+                              const isPartial = String(due.status || "").toLowerCase() === "partial";
+                              const statusColor = 
+                                isPaid ? "bg-emerald-50 text-emerald-700 border-emerald-100/50" :
+                                isPartial ? "bg-amber-50 text-amber-700 border-amber-100/50" :
+                                "bg-rose-50 text-rose-700 border-rose-100/50";
 
                               return (
-                                <div key={log.id} className="rounded-2xl border border-slate-100 bg-slate-50/70 p-3">
-                                  <p className="text-sm font-black text-slate-800">{formatLabel(log.action || "activity")}</p>
-                                  <p className="mt-1 text-[11px] font-bold uppercase tracking-wider text-slate-400">{formatDisplayDate(log.created_at)}</p>
-                                  <div className="mt-3 grid gap-2">
-                                    {activityDetails.map((item) => (
-                                      <div key={`${log.id}-${item.label}`} className="flex items-start justify-between gap-3 rounded-xl border border-slate-100 bg-white px-3 py-2">
-                                        <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
-                                          {item.label}
-                                        </span>
-                                        <span className="max-w-[58%] text-right text-xs font-bold text-slate-700 break-words">
-                                          {item.value}
-                                        </span>
-                                      </div>
-                                    ))}
+                                <div key={due.id} className="rounded-2xl border border-slate-100 bg-slate-50/70 p-3 text-left">
+                                  <div className="flex items-center justify-between gap-3">
+                                    <div>
+                                      <p className="text-sm font-black text-slate-800">
+                                        {monthName}
+                                        {formattedDueDate && (
+                                          <span className="ml-1.5 text-[11px] font-semibold text-slate-400">
+                                            (Due: {formattedDueDate})
+                                          </span>
+                                        )}
+                                      </p>
+                                      <p className="mt-1 text-[11px] font-bold uppercase tracking-wider text-slate-455">
+                                        Rent: {formatCurrency(due.total_rent)} • Paid: {formatCurrency(due.paid_amount)}
+                                      </p>
+                                      {Number(due.pending_amount) > 0 && (
+                                        <p className="mt-1.5 text-xs font-black text-rose-600">
+                                          Pending Due: {formatCurrency(due.pending_amount)}
+                                        </p>
+                                      )}
+                                    </div>
+                                    <div className="flex flex-col gap-2 items-end">
+                                      <span className={`rounded-full border px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider ${statusColor}`}>
+                                        {due.status || "pending"}
+                                      </span>
+                                      
+                                      {Number(due.pending_amount) > 0 && (
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            // Close profile modal and open payment drawer!
+                                            setSelectedTenantProfileId(null);
+                                            setPaymentTenant(selectedTenantProfile);
+                                            setPaymentForm({
+                                              amount: String(due.pending_amount),
+                                              payment_type: "rent",
+                                              payment_mode: "upi",
+                                              payment_date: getTodayDate(),
+                                              reference_number: "",
+                                              notes: `Rent collected for ${monthName}`,
+                                              status: "completed",
+                                              payment_proof_file: null,
+                                            });
+                                          }}
+                                          className="rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-[9px] font-black uppercase tracking-wider text-slate-600 hover:border-orange-200 hover:text-orange-500 transition cursor-pointer"
+                                        >
+                                          Collect
+                                        </button>
+                                      )}
+                                    </div>
                                   </div>
                                 </div>
                               );

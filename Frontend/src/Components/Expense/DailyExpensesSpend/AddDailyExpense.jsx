@@ -21,6 +21,7 @@ const defaultFormData = {
   expense_date: "",
   expense_time: "",
   bill_file_file: null,
+  notes: "",
 };
 
 const getTodayDateValue = () => {

@@ -312,6 +312,18 @@ const DailyExpenseForm = ({
           </div>
         </div>
 
+        <div className="md:col-span-2">
+          <InputField
+            label="Notes"
+            name="notes"
+            value={formData.notes || ""}
+            placeholder="Details of where it was spent, store/vendor name, purpose..."
+            icon={FileText}
+            onChange={onChange}
+            disabled={disabled}
+          />
+        </div>
+
         <div className="grid gap-1.5 md:col-span-2">
           <label
             htmlFor="bill_file"

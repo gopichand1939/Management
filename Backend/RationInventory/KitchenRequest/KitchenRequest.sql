@@ -64,7 +64,9 @@ VALUES
     (207, 2, 2, 1, 1),
     (207, 3, 3, 1, 1),
     (207, 4, 4, 1, 1),
-    (207, 5, 5, 1, 1)
+    (207, 5, 5, 1, 1),
+    (207, 6, 6, 1, 1),
+    (207, 7, 7, 1, 1)
 ON CONFLICT (menu_id, action_id) DO UPDATE SET
     priority = EXCLUDED.priority,
     status = EXCLUDED.status,
@@ -78,11 +80,15 @@ VALUES
     (1, 207, 3, 2, 1, 1),
     (1, 207, 4, 2, 1, 1),
     (1, 207, 5, 2, 1, 1),
+    (1, 207, 6, 2, 1, 1),
+    (1, 207, 7, 2, 1, 1),
     (2, 207, 1, 2, 1, 1),
     (2, 207, 2, 2, 1, 1),
     (2, 207, 3, 2, 1, 1),
     (2, 207, 4, 2, 1, 1),
-    (2, 207, 5, 2, 1, 1)
+    (2, 207, 5, 2, 1, 1),
+    (2, 207, 6, 2, 1, 1),
+    (2, 207, 7, 2, 1, 1)
 ON CONFLICT (profile_id, menu_id, action_id) DO UPDATE SET
     is_configuration_only = EXCLUDED.is_configuration_only,
     status = EXCLUDED.status,
