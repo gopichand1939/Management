@@ -10,11 +10,11 @@ import {
 const appRouter = createBrowserRouter([
   {
     path: "/",
-    element: <Navigate to="/login" replace />,
+    element: loginRoute,
   },
   {
     path: "/login",
-    element: loginRoute,
+    element: <Navigate to="/" replace />,
   },
   {
     path: "/register",

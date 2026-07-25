@@ -146,7 +146,7 @@ const Register = () => {
         </Button>
 
         <Link
-          to="/login"
+          to="/"
           className={`
             text-sm
             text-blue-400

@@ -165,7 +165,7 @@ const startServer = async () => {
     }
 
     console.time("startup.listen");
-    const server = app.listen(port, () => {
+    const server = app.listen(port, "0.0.0.0", () => {
         console.timeEnd("startup.listen");
         console.timeEnd("startup.total");
         console.log(`Server running on port ${port}`);

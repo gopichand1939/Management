@@ -276,7 +276,7 @@ const Sidebar = () => {
       console.warn("Logout activity logging failed:", err);
     }
     dispatch(logoutUser());
-    navigate("/login");
+    navigate("/");
   };
 
   const renderMenuItem = (menu, isChild = false) => {

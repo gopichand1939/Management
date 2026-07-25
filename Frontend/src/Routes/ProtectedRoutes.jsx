@@ -11,7 +11,7 @@ const ProtectedRoutes = () => {
   const { authUser, token } = useSelector((state) => state.user);
 
   if (!token) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/" replace />;
   }
 
   if (authUser && !isPathAllowedForUser(authUser, location.pathname)) {

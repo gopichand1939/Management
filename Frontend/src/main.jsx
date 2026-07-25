@@ -15,7 +15,7 @@ window.fetch = async (...args) => {
     if (response.status === 401) {
       localStorage.removeItem("admin_token");
       localStorage.removeItem("admin_auth_user");
-      window.location.href = "/login";
+      window.location.href = "/";
     }
     return response;
   } catch (error) {
