@@ -7,7 +7,7 @@ const path = require("path");
 require("dotenv").config({ quiet: true });
 
 const initDatabase = require("./Config/initDatabase");
-const { contextStorage, shutdownPool } = require("./Config/Database");
+const { contextStorage, getDatabaseIdentity, shutdownPool } = require("./Config/Database");
 const authRoutes = require("./Auth/AuthRoutes");
 const superAdminRoutes = require("./SuperAdmin/SuperAdminRoutes");
 const institutionRoutes = require("./Institution/InstitutionRoutes");
@@ -123,6 +123,23 @@ app.use("/api/tenant", rateLimit({
         message: "Too many tenant requests, please try again later",
     },
 }));
+
+app.get("/api/debug/db-info", async (req, res) => {
+    if (process.env.ENABLE_DB_DEBUG !== "true") {
+        return res.status(404).json({ success: false, message: "Not found" });
+    }
+
+    try {
+        const dbInfo = await getDatabaseIdentity();
+        res.json({ success: true, data: dbInfo });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Database debug info failed",
+            error: error.message,
+        });
+    }
+});
 
 app.use("/api/auth", authRoutes);
 app.use("/api/super-admin", superAdminRoutes);

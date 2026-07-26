@@ -189,6 +189,44 @@ const healthCheck = async () => {
     }
 };
 
+const getDatabaseIdentity = async () => {
+    const databaseUrl = process.env.DATABASE_URL || "";
+    let configuredHost = "";
+    let configuredDatabase = "";
+
+    try {
+        const parsedUrl = new URL(databaseUrl);
+        configuredHost = parsedUrl.hostname;
+        configuredDatabase = parsedUrl.pathname.replace(/^\//, "");
+    } catch (error) {
+        configuredHost = databaseUrl ? "unparseable" : "";
+    }
+
+    const identityResult = await pool.query(`
+        SELECT
+            current_database() AS current_database,
+            current_user AS current_user,
+            inet_server_addr()::text AS server_address
+    `);
+
+    const countsResult = await pool.query(`
+        SELECT 'institutions' AS table_name, COUNT(*)::int AS row_count FROM institutions
+        UNION ALL
+        SELECT 'pg_admin', COUNT(*)::int FROM pg_admin
+        UNION ALL
+        SELECT 'tenants', COUNT(*)::int FROM tenants
+        UNION ALL
+        SELECT 'super_admins', COUNT(*)::int FROM super_admins
+    `);
+
+    return {
+        configuredHost,
+        configuredDatabase,
+        connected: identityResult.rows[0],
+        counts: countsResult.rows,
+    };
+};
+
 /**
  * Shutdown pool gracefully
  */
@@ -206,6 +244,7 @@ module.exports = {
     query,
     transaction,
     healthCheck,
+    getDatabaseIdentity,
     shutdownPool,
     contextStorage
 };
