@@ -26,7 +26,7 @@ import Navbar from "../../Components/Layout/Navbar";
 import Sidebar from "../../Components/Layout/Sidebar";
 import AuthSuperAdmin from "../../Components/SuperAdmin/AuthSuperAdmin";
 import useFetchUserData from "../../Hooks/useFetchUserData";
-import { TOKEN_KEY, DASHBOARD_OVERVIEW } from "../../Utils/Constants";
+import { BASE_URL, TOKEN_KEY, DASHBOARD_OVERVIEW } from "../../Utils/Constants";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -57,6 +57,20 @@ const Dashboard = () => {
       });
 
       const data = await response.json();
+      console.log("[Dashboard API]", {
+        baseUrl: BASE_URL,
+        endpoint: DASHBOARD_OVERVIEW,
+        dashboard: data.dashboard
+          ? {
+              total_tenants: data.dashboard.total_tenants,
+              active_tenants: data.dashboard.active_tenants,
+              vacated_tenants: data.dashboard.vacated_tenants,
+              total_beds: data.dashboard.total_beds,
+              occupied_beds: data.dashboard.occupied_beds,
+              vacant_beds: data.dashboard.vacant_beds,
+            }
+          : null,
+      });
       if (data.success) {
         setDashboardData(data.dashboard);
       } else {

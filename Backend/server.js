@@ -7,7 +7,7 @@ const path = require("path");
 require("dotenv").config({ quiet: true });
 
 const initDatabase = require("./Config/initDatabase");
-const { contextStorage, getDatabaseIdentity, shutdownPool } = require("./Config/Database");
+const { contextStorage, getDatabaseIdentity, getMaskedDatabaseUrl, shutdownPool } = require("./Config/Database");
 const authRoutes = require("./Auth/AuthRoutes");
 const superAdminRoutes = require("./SuperAdmin/SuperAdminRoutes");
 const institutionRoutes = require("./Institution/InstitutionRoutes");
@@ -185,6 +185,7 @@ const startServer = async () => {
     const server = app.listen(port, "0.0.0.0", () => {
         console.timeEnd("startup.listen");
         console.timeEnd("startup.total");
+        console.log(`Database connected: ${getMaskedDatabaseUrl()}`);
         console.log(`Server running on port ${port}`);
     });
 

@@ -172,6 +172,17 @@ const getDashboardOverview = async (req, res) => {
             })),
         };
 
+        console.log("[Dashboard Overview]", {
+            role: req.user?.role,
+            institutionId,
+            total_tenants: dashboard.total_tenants,
+            active_tenants: dashboard.active_tenants,
+            vacated_tenants: dashboard.vacated_tenants,
+            total_beds: dashboard.total_beds,
+            occupied_beds: dashboard.occupied_beds,
+            vacant_beds: dashboard.vacant_beds,
+        });
+
         return res.status(200).json({
             success: true,
             message: "Dashboard analytics fetched successfully",

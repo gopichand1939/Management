@@ -41,6 +41,25 @@ if (process.env.DATABASE_URL && (process.env.DATABASE_URL.includes("sslmode=") |
 
 const pool = new Pool(poolConfig);
 
+const getMaskedDatabaseUrl = () => {
+    const databaseUrl = process.env.DATABASE_URL || "";
+
+    if (!databaseUrl) {
+        return "DATABASE_URL is not set";
+    }
+
+    try {
+        const parsedUrl = new URL(databaseUrl);
+        const username = parsedUrl.username || "";
+        const maskedUser = username ? `${username.slice(0, 3)}***` : "";
+        const databaseName = parsedUrl.pathname.replace(/^\//, "");
+
+        return `${parsedUrl.protocol}//${maskedUser}:***@${parsedUrl.host}/${databaseName}`;
+    } catch (error) {
+        return "DATABASE_URL is set but could not be parsed";
+    }
+};
+
 // Pool error listener
 pool.on("error", (err) => {
     console.error("Unexpected error on idle database client:", err.message);
@@ -245,6 +264,7 @@ module.exports = {
     transaction,
     healthCheck,
     getDatabaseIdentity,
+    getMaskedDatabaseUrl,
     shutdownPool,
     contextStorage
 };
