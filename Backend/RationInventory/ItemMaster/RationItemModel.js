@@ -147,8 +147,13 @@ const RationItemModel = {
             INNER JOIN ration_item_categories ric ON ri.category_id = ric.id
             INNER JOIN ration_units ru ON ri.unit_id = ru.id
             LEFT JOIN user_credentials uc ON (
-                (uc.role = 'super_admin' AND uc.super_admin_id = ri.created_by) OR
-                (uc.role = 'pg_admin' AND uc.pg_admin_id = ri.created_by AND uc.institution_id = ri.institution_id)
+                (uc.role = 'pg_admin' AND uc.pg_admin_id = ri.created_by AND uc.institution_id = ri.institution_id) OR
+                (uc.role = 'super_admin' AND uc.super_admin_id = ri.created_by AND NOT EXISTS (
+                    SELECT 1 FROM user_credentials uc2 
+                    WHERE uc2.role = 'pg_admin' 
+                      AND uc2.pg_admin_id = ri.created_by 
+                      AND uc2.institution_id = ri.institution_id
+                ))
             )
             LEFT JOIN super_admins sa ON (uc.role = 'super_admin' AND uc.super_admin_id = sa.id)
             LEFT JOIN pg_admin pa ON (uc.role = 'pg_admin' AND uc.pg_admin_id = pa.id)
@@ -304,8 +309,13 @@ const RationItemModel = {
             INNER JOIN ration_item_categories ric ON ri.category_id = ric.id
             INNER JOIN ration_units ru ON ri.unit_id = ru.id
             LEFT JOIN user_credentials uc ON (
-                (uc.role = 'super_admin' AND uc.super_admin_id = ri.created_by) OR
-                (uc.role = 'pg_admin' AND uc.pg_admin_id = ri.created_by AND uc.institution_id = ri.institution_id)
+                (uc.role = 'pg_admin' AND uc.pg_admin_id = ri.created_by AND uc.institution_id = ri.institution_id) OR
+                (uc.role = 'super_admin' AND uc.super_admin_id = ri.created_by AND NOT EXISTS (
+                    SELECT 1 FROM user_credentials uc2 
+                    WHERE uc2.role = 'pg_admin' 
+                      AND uc2.pg_admin_id = ri.created_by 
+                      AND uc2.institution_id = ri.institution_id
+                ))
             )
             LEFT JOIN super_admins sa ON (uc.role = 'super_admin' AND uc.super_admin_id = sa.id)
             LEFT JOIN pg_admin pa ON (uc.role = 'pg_admin' AND uc.pg_admin_id = pa.id)
@@ -530,8 +540,13 @@ const RationItemModel = {
             INNER JOIN ration_item_categories ric ON ri.category_id = ric.id
             INNER JOIN ration_units ru ON ri.unit_id = ru.id
             LEFT JOIN user_credentials uc ON (
-                (uc.role = 'super_admin' AND uc.super_admin_id = ri.created_by) OR
-                (uc.role = 'pg_admin' AND uc.pg_admin_id = ri.created_by AND uc.institution_id = ri.institution_id)
+                (uc.role = 'pg_admin' AND uc.pg_admin_id = ri.created_by AND uc.institution_id = ri.institution_id) OR
+                (uc.role = 'super_admin' AND uc.super_admin_id = ri.created_by AND NOT EXISTS (
+                    SELECT 1 FROM user_credentials uc2 
+                    WHERE uc2.role = 'pg_admin' 
+                      AND uc2.pg_admin_id = ri.created_by 
+                      AND uc2.institution_id = ri.institution_id
+                ))
             )
             LEFT JOIN super_admins sa ON (uc.role = 'super_admin' AND uc.super_admin_id = sa.id)
             LEFT JOIN pg_admin pa ON (uc.role = 'pg_admin' AND uc.pg_admin_id = pa.id)
