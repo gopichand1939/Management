@@ -32,8 +32,8 @@ const EditDailyExpense = () => {
     amount: "",
     expense_date: "",
     expense_time: "",
-    bill_file: null,
-    bill_file_file: null,
+    existing_bills: [],
+    bill_files: [],
     notes: "",
   });
 
@@ -91,6 +91,13 @@ const EditDailyExpense = () => {
 
         const dailyExpense = dailyExpenseData.dailyExpense;
 
+        let existingBills = [];
+        if (dailyExpense.bill_file) {
+          existingBills = Array.isArray(dailyExpense.bill_file)
+            ? dailyExpense.bill_file
+            : [dailyExpense.bill_file];
+        }
+
         setFormData({
           institution_id: String(dailyExpense.institution_id || authUser?.institution_id || ""),
           expense_title: dailyExpense.expense_title || "",
@@ -98,8 +105,8 @@ const EditDailyExpense = () => {
           amount: String(dailyExpense.amount ?? ""),
           expense_date: dailyExpense.expense_date || "",
           expense_time: dailyExpense.expense_time || "",
-          bill_file: dailyExpense.bill_file || null,
-          bill_file_file: null,
+          existing_bills: existingBills,
+          bill_files: [],
           notes: dailyExpense.notes || "",
         });
       } catch (apiError) {
@@ -170,9 +177,24 @@ const EditDailyExpense = () => {
   };
 
   const handleFileChange = (event) => {
+    const selectedFiles = Array.from(event.target.files || []);
     setFormData((currentData) => ({
       ...currentData,
-      bill_file_file: event.target.files?.[0] || null,
+      bill_files: [...(currentData.bill_files || []), ...selectedFiles],
+    }));
+  };
+
+  const handleRemoveNewBill = (indexToRemove) => {
+    setFormData((currentData) => ({
+      ...currentData,
+      bill_files: (currentData.bill_files || []).filter((_, idx) => idx !== indexToRemove),
+    }));
+  };
+
+  const handleRemoveExistingBill = (indexToRemove) => {
+    setFormData((currentData) => ({
+      ...currentData,
+      existing_bills: (currentData.existing_bills || []).filter((_, idx) => idx !== indexToRemove),
     }));
   };
 
@@ -182,16 +204,20 @@ const EditDailyExpense = () => {
     payload.append("id", id);
 
     Object.entries(formData).forEach(([key, value]) => {
-      if (key === "bill_file_file" || key === "bill_file") {
+      if (key === "bill_files" || key === "existing_bills") {
         return;
       }
 
       payload.append(key, value || "");
     });
 
-    if (formData.bill_file_file) {
-      payload.append("bill_file", formData.bill_file_file);
-    }
+    // Send existing bills as stringified JSON so the backend knows which ones were kept
+    payload.append("existing_bills", JSON.stringify(formData.existing_bills || []));
+
+    // Append new files
+    formData.bill_files.forEach((file) => {
+      payload.append("bill_file", file);
+    });
 
     payload.set("amount", Number(formData.amount));
 
@@ -269,6 +295,8 @@ const EditDailyExpense = () => {
                   formData={formData}
                   onChange={handleChange}
                   onFileChange={handleFileChange}
+                  onRemoveNewBill={handleRemoveNewBill}
+                  onRemoveExistingBill={handleRemoveExistingBill}
                   onSubmit={handleSubmit}
                   buttonText={loading ? "Saving..." : "Update Expense"}
                   institutions={institutions}

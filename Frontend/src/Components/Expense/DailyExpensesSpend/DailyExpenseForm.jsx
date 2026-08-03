@@ -1,5 +1,5 @@
-import { useRef } from "react";
-import { Building2, Calendar, Clock3, FileText, IndianRupee, Tag, Text, Upload } from "lucide-react";
+import { useRef, useState, useEffect } from "react";
+import { Building2, Calendar, Clock3, FileText, IndianRupee, Tag, Text, Upload, Trash2, X } from "lucide-react";
 
 import Button from "../../Common/Button";
 import InputField from "../../Common/InputField";
@@ -93,6 +93,80 @@ const buildChangeEvent = (name, value) => {
   };
 };
 
+const FilePreviewItem = ({ file, index, isNew, onRemove }) => {
+  const [previewUrl, setPreviewUrl] = useState(null);
+  
+  const isPdf = isNew 
+    ? (file.type === "application/pdf" || file.name?.endsWith(".pdf"))
+    : (file.mime_type === "application/pdf" || file.file_name?.endsWith(".pdf") || file.original_name?.endsWith(".pdf"));
+
+  const fileName = isNew ? file.name : (file.original_name || file.file_name);
+  const fileUrl = isNew ? null : file.file_url;
+
+  useEffect(() => {
+    if (isPdf || !isNew) return;
+    const url = URL.createObjectURL(file);
+    setPreviewUrl(url);
+    return () => {
+      URL.revokeObjectURL(url);
+    };
+  }, [file, isPdf, isNew]);
+
+  return (
+    <div className={`group relative aspect-square w-full overflow-hidden rounded-xl border ${isNew ? 'border-dashed border-slate-300 bg-orange-50/5' : 'border-slate-205 bg-slate-50'} shadow-sm transition-all duration-200 hover:shadow-md hover:border-slate-300`}>
+      {isPdf ? (
+        <div className="flex h-full flex-col items-center justify-center p-4">
+          <span className="grid h-12 w-12 place-items-center rounded-xl bg-red-50 text-red-500 shadow-sm transition-transform duration-200 group-hover:scale-105">
+            <FileText size={24} />
+          </span>
+          <p className="mt-2 text-center text-xs font-bold text-slate-700 truncate w-full px-1" title={fileName}>
+            {fileName}
+          </p>
+          <span className="mt-1 rounded bg-red-100 px-1.5 py-0.5 text-[9px] font-black text-red-600 uppercase tracking-wider">
+            PDF
+          </span>
+        </div>
+      ) : (
+        (isNew ? previewUrl : fileUrl) && (
+          <img
+            src={isNew ? previewUrl : fileUrl}
+            alt="Bill Preview"
+            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+          />
+        )
+      )}
+
+      {/* Action Overlay */}
+      <div className="absolute inset-0 bg-slate-900/40 opacity-0 transition-opacity duration-200 group-hover:opacity-100 flex items-center justify-center gap-2">
+        {isNew ? (
+          <span className="rounded bg-orange-500/90 px-2 py-0.5 text-[9px] font-black text-white uppercase tracking-wider shadow">
+            Pending
+          </span>
+        ) : (
+          <a
+            href={fileUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="rounded-lg bg-white/95 px-2.5 py-1 text-[10px] font-bold text-slate-700 hover:bg-white hover:text-slate-900 shadow uppercase tracking-wider"
+          >
+            View
+          </a>
+        )}
+      </div>
+
+      {/* Remove Button */}
+      <button
+        type="button"
+        onClick={() => onRemove(index)}
+        className="absolute right-2 top-2 z-10 grid h-6 w-6 place-items-center rounded-full bg-white/90 text-slate-500 hover:bg-red-500 hover:text-white shadow transition-all duration-200 hover:scale-110"
+        title="Remove file"
+      >
+        <X size={12} />
+      </button>
+    </div>
+  );
+};
+
 const DailyExpenseForm = ({
   formData,
   onChange,
@@ -103,13 +177,21 @@ const DailyExpenseForm = ({
   loadingInstitutions = false,
   disabled = false,
   onFileChange,
+  onRemoveNewBill,
+  onRemoveExistingBill,
 }) => {
   const dateInputRef = useRef(null);
   const billInputRef = useRef(null);
   const timeParts = getTimeParts(formData.expense_time);
-  const billFile = formData.bill_file_file;
-  const existingBill = formData.bill_file;
-  const billName = billFile?.name || existingBill?.original_name || existingBill?.file_name || "";
+
+  const newBills = formData.bill_files || [];
+  const existingBills = formData.existing_bills 
+    ? (Array.isArray(formData.existing_bills) ? formData.existing_bills : [formData.existing_bills])
+    : (formData.bill_file 
+        ? (Array.isArray(formData.bill_file) ? formData.bill_file : [formData.bill_file]) 
+        : []);
+
+  const totalFilesCount = newBills.length + existingBills.length;
 
   const setDefaultDate = () => {
     if (formData.expense_date) {
@@ -148,17 +230,31 @@ const DailyExpenseForm = ({
     event.preventDefault();
     event.stopPropagation();
 
-    const file = event.dataTransfer.files?.[0];
+    const files = Array.from(event.dataTransfer.files || []);
 
-    if (!file || !onFileChange) {
+    if (files.length === 0 || !onFileChange) {
       return;
     }
 
     onFileChange({
       target: {
-        files: [file],
+        files: files,
       },
     });
+  };
+
+  const handleFileInputChange = (event) => {
+    const files = Array.from(event.target.files || []);
+    if (files.length === 0 || !onFileChange) {
+      return;
+    }
+
+    onFileChange({
+      target: {
+        files: files,
+      },
+    });
+    event.target.value = "";
   };
 
   return (
@@ -329,7 +425,7 @@ const DailyExpenseForm = ({
             htmlFor="bill_file"
             className="text-xs font-bold text-slate-500 uppercase tracking-wider"
           >
-            Bill / Receipt
+            Bills / Receipts
           </label>
 
           <div
@@ -346,10 +442,12 @@ const DailyExpenseForm = ({
 
                 <div>
                   <p className="text-sm font-bold text-slate-700">
-                    {billName || "Drop bill here or upload"}
+                    {totalFilesCount > 0 
+                      ? `${totalFilesCount} bill file(s) selected` 
+                      : "Drop bills here or upload"}
                   </p>
                   <p className="mt-0.5 text-xs font-semibold text-slate-400">
-                    PDF, JPG, PNG or WEBP up to 5 MB
+                    PDF, JPG, PNG or WEBP up to 5 MB (Supports multiple files)
                   </p>
                 </div>
               </div>
@@ -361,32 +459,46 @@ const DailyExpenseForm = ({
                 className="inline-flex h-10 w-fit cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 transition-all hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Upload size={16} />
-                <span>{billName ? "Change Bill" : "Upload Bill"}</span>
+                <span>Upload Bills</span>
               </button>
             </div>
-
-            {existingBill?.file_url && !billFile && (
-              <a
-                href={existingBill.file_url}
-                target="_blank"
-                rel="noreferrer"
-                className="w-fit text-xs font-bold text-orange-600 hover:text-orange-700"
-              >
-                View uploaded bill
-              </a>
-            )}
 
             <input
               ref={billInputRef}
               id="bill_file"
               name="bill_file"
               type="file"
+              multiple
               accept="image/*,.pdf,application/pdf"
               className="hidden"
-              onChange={onFileChange}
+              onChange={handleFileInputChange}
               disabled={disabled}
             />
           </div>
+
+          {/* Render files list in modern grid format */}
+          {totalFilesCount > 0 && (
+            <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 max-h-[350px] overflow-y-auto pr-1">
+              {existingBills.map((bill, index) => (
+                <FilePreviewItem
+                  key={`existing-${index}`}
+                  file={bill}
+                  index={index}
+                  isNew={false}
+                  onRemove={onRemoveExistingBill}
+                />
+              ))}
+              {newBills.map((file, index) => (
+                <FilePreviewItem
+                  key={`new-${index}`}
+                  file={file}
+                  index={index}
+                  isNew={true}
+                  onRemove={onRemoveNewBill}
+                />
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="md:col-span-2 flex flex-col-reverse gap-3 sm:flex-row">

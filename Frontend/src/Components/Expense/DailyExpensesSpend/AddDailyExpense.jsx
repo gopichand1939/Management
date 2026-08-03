@@ -20,7 +20,7 @@ const defaultFormData = {
   amount: "",
   expense_date: "",
   expense_time: "",
-  bill_file_file: null,
+  bill_files: [],
   notes: "",
 };
 
@@ -145,9 +145,17 @@ const AddDailyExpense = () => {
   };
 
   const handleFileChange = (event) => {
+    const selectedFiles = Array.from(event.target.files || []);
     setFormData((currentData) => ({
       ...currentData,
-      bill_file_file: event.target.files?.[0] || null,
+      bill_files: [...(currentData.bill_files || []), ...selectedFiles],
+    }));
+  };
+
+  const handleRemoveNewBill = (indexToRemove) => {
+    setFormData((currentData) => ({
+      ...currentData,
+      bill_files: (currentData.bill_files || []).filter((_, idx) => idx !== indexToRemove),
     }));
   };
 
@@ -155,16 +163,16 @@ const AddDailyExpense = () => {
     const payload = new FormData();
 
     Object.entries(formData).forEach(([key, value]) => {
-      if (key === "bill_file_file") {
+      if (key === "bill_files") {
         return;
       }
 
       payload.append(key, value || "");
     });
 
-    if (formData.bill_file_file) {
-      payload.append("bill_file", formData.bill_file_file);
-    }
+    formData.bill_files.forEach((file) => {
+      payload.append("bill_file", file);
+    });
 
     payload.set("amount", Number(formData.amount));
 
@@ -237,6 +245,7 @@ const AddDailyExpense = () => {
                 formData={formData}
                 onChange={handleChange}
                 onFileChange={handleFileChange}
+                onRemoveNewBill={handleRemoveNewBill}
                 onSubmit={handleSubmit}
                 buttonText={loading ? "Saving..." : "Save Expense"}
                 institutions={institutions}

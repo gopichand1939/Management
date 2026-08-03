@@ -76,18 +76,42 @@ const formatTime = (value) => {
 };
 
 const renderBillFile = (billFile, onPreview) => {
-  if (!billFile?.file_url) {
+  if (!billFile) {
     return "-";
   }
 
+  const bills = Array.isArray(billFile) ? billFile : [billFile];
+  const validBills = bills.filter((b) => b && b.file_url);
+
+  if (validBills.length === 0) {
+    return "-";
+  }
+
+  if (validBills.length === 1) {
+    return (
+      <button
+        type="button"
+        onClick={() => onPreview(validBills[0])}
+        className="text-xs font-bold text-orange-600 hover:text-orange-700"
+      >
+        View Bill
+      </button>
+    );
+  }
+
   return (
-    <button
-      type="button"
-      onClick={() => onPreview(billFile)}
-      className="text-xs font-bold text-orange-600 hover:text-orange-700"
-    >
-      View Bill
-    </button>
+    <div className="flex flex-col gap-1 items-start">
+      {validBills.map((bill, index) => (
+        <button
+          key={index}
+          type="button"
+          onClick={() => onPreview(bill)}
+          className="text-[10px] font-bold text-orange-600 hover:text-orange-700 leading-tight py-0.5"
+        >
+          View Bill {index + 1}
+        </button>
+      ))}
+    </div>
   );
 };
 

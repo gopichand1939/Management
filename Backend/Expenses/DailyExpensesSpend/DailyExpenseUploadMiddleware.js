@@ -66,11 +66,11 @@ const upload = multer({
     fileFilter,
     limits: {
         fileSize: 5 * 1024 * 1024,
-        files: 1,
+        files: 10,
     },
 });
 
-const dailyExpenseUpload = upload.single("bill_file");
+const dailyExpenseUpload = upload.array("bill_file", 10);
 
 const handleDailyExpenseUpload = (req, res, next) => {
     dailyExpenseUpload(req, res, async (error) => {
@@ -82,12 +82,14 @@ const handleDailyExpenseUpload = (req, res, next) => {
             });
         }
 
-        if (req.file) {
+        if (req.files && req.files.length > 0) {
             try {
-                req.file.cloudinaryUrl = await uploadToCloudinary(
-                    req.file.path,
-                    "daily-expenses/bills"
-                );
+                for (const file of req.files) {
+                    file.cloudinaryUrl = await uploadToCloudinary(
+                        file.path,
+                        "daily-expenses/bills"
+                    );
+                }
             } catch (uploadError) {
                 console.error("Cloudinary upload error in daily expense middleware:", uploadError);
 

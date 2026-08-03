@@ -63,19 +63,19 @@ const normalizeTime = (value) => {
     return normalizedValue;
 };
 
-const buildUploadedFileObject = (file) => {
-    if (!file) {
-        return null;
+const buildUploadedFileObjects = (files) => {
+    if (!files || !Array.isArray(files)) {
+        return [];
     }
 
-    return {
+    return files.map((file) => ({
         file_name: file.filename,
         original_name: file.originalname,
         file_url: file.cloudinaryUrl || `/uploads/daily-expenses/${file.filename}`,
         mime_type: file.mimetype,
         uploaded_at: new Date().toISOString(),
         size: file.size,
-    };
+    }));
 };
 
 const isPgAdminRequest = (req) => {
@@ -117,6 +117,23 @@ const logDailyExpenseError = (label, error, extra = {}) => {
 const normalizeDailyExpensePayload = (req, userId, institutionId, existingBillFile = null) => {
     const { body } = req;
 
+    let existingBills = [];
+    if (body.existing_bills) {
+        try {
+            existingBills = JSON.parse(body.existing_bills);
+            if (!Array.isArray(existingBills)) {
+                existingBills = existingBills ? [existingBills] : [];
+            }
+        } catch (e) {
+            existingBills = [];
+        }
+    } else if (existingBillFile) {
+        existingBills = Array.isArray(existingBillFile) ? existingBillFile : [existingBillFile];
+    }
+
+    const newBills = buildUploadedFileObjects(req.files);
+    const finalBills = [...existingBills, ...newBills];
+
     return {
         institution_id: institutionId,
         expense_title: normalizeText(body.expense_title),
@@ -124,7 +141,7 @@ const normalizeDailyExpensePayload = (req, userId, institutionId, existingBillFi
         amount: normalizeAmount(body.amount),
         expense_date: normalizeDate(body.expense_date || body.date),
         expense_time: normalizeTime(body.expense_time || body.time),
-        bill_file: buildUploadedFileObject(req.file) || existingBillFile,
+        bill_file: finalBills.length > 0 ? finalBills : null,
         notes: normalizeText(body.notes || body.note),
         created_by: userId,
         updated_by: userId,
