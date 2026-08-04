@@ -161,9 +161,9 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen w-full flex flex-col lg:flex-row bg-white overflow-hidden select-none">
-      {/* Left side visual panel - 65% width on desktop, collapses top on mobile */}
-      <div className="w-full lg:w-[65%] h-[35vh] lg:h-screen relative overflow-hidden bg-[#0B1F3A] shrink-0">
+    <div className="min-h-screen w-full flex flex-col lg:flex-row bg-white lg:overflow-hidden select-none">
+      {/* Left side visual panel - 65% width on desktop, hidden on mobile */}
+      <div className="hidden lg:block lg:w-[65%] lg:h-screen relative overflow-hidden bg-[#0B1F3A] shrink-0">
         <motion.img
           src={loginBg}
           alt="BLR Stay Premium Residence"
@@ -175,7 +175,7 @@ const Login = () => {
       </div>
 
       {/* Right side form panel - 35% width on desktop, centered contents */}
-      <div className="w-full lg:w-[35%] h-[65vh] lg:h-screen flex flex-col justify-between p-6 sm:p-8 md:p-10 xl:p-12 bg-white shrink-0 relative overflow-hidden">
+      <div className="w-full lg:w-[35%] min-h-screen lg:h-screen flex flex-col justify-between p-6 sm:p-8 md:p-10 xl:p-12 bg-white shrink-0 relative overflow-y-auto">
         {/* Support & Feedback Button in Top Right */}
         <div className="absolute top-6 right-6 lg:top-8 lg:right-8 z-20">
           <Link

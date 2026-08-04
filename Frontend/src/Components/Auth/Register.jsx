@@ -9,7 +9,6 @@ import InputField from "../Common/InputField";
 import useRegister from "../../Hooks/useRegister";
 import { USER_REGISTER } from "../../Utils/Constants";
 import {
-  setAuthUser,
   setUserError,
   setUserLoading,
 } from "../../Redux/User/UserSlice";
@@ -47,8 +46,7 @@ const Register = () => {
         return;
       }
 
-      dispatch(setAuthUser(data));
-      navigate("/dashboard");
+      navigate("/");
     } catch (errorData) {
       dispatch(setUserError(errorData.message));
     } finally {
