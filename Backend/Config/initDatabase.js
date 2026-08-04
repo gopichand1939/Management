@@ -982,15 +982,15 @@ const statements = [
     `,
     `
         DELETE FROM urmg_profile_menus_actions
-        WHERE menu_id IN (5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 100, 101, 102, 103, 104, 105, 200, 201, 202, 203)
+        WHERE menu_id IN (5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 100, 101, 102, 103, 104, 105, 200, 201, 202, 203, 300)
     `,
     `
         DELETE FROM urmg_menu_actions
-        WHERE menu_id IN (5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 100, 101, 102, 103, 104, 105, 200, 201, 202, 203)
+        WHERE menu_id IN (5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 100, 101, 102, 103, 104, 105, 200, 201, 202, 203, 300)
     `,
     `
         DELETE FROM urmg_menus
-        WHERE menu_id IN (5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 100, 101, 102, 103, 104, 105, 200, 201, 202, 203)
+        WHERE menu_id IN (5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 100, 101, 102, 103, 104, 105, 200, 201, 202, 203, 300)
     `,
     `
         INSERT INTO urmg_actions (
@@ -1048,7 +1048,8 @@ const statements = [
             (200, NULL, 1, 'Ration Inventory', 7, 1, 1),
             (201, 200, 1, 'Category Master', 1, 1, 1),
             (202, 200, 1, 'Item Master', 2, 1, 1),
-            (203, 200, 1, 'Unit Master', 3, 1, 1)
+            (203, 200, 1, 'Unit Master', 3, 1, 1),
+            (300, NULL, 1, 'Support Tickets', 8, 1, 1)
         ON CONFLICT (menu_id) DO UPDATE SET
             parent_menu_id = EXCLUDED.parent_menu_id,
             module_id = EXCLUDED.module_id,
@@ -1136,7 +1137,12 @@ const statements = [
             (203, 2, 2, 1, 1),
             (203, 3, 3, 1, 1),
             (203, 4, 4, 1, 1),
-            (203, 5, 5, 1, 1)
+            (203, 5, 5, 1, 1),
+            (300, 1, 1, 1, 1),
+            (300, 2, 2, 1, 1),
+            (300, 3, 3, 1, 1),
+            (300, 4, 4, 1, 1),
+            (300, 5, 5, 1, 1)
         ON CONFLICT (menu_id, action_id) DO UPDATE SET
             priority = EXCLUDED.priority,
             status = EXCLUDED.status,
@@ -1287,7 +1293,17 @@ const statements = [
             (2, 203, 2, 2, 1, 1),
             (2, 203, 3, 2, 1, 1),
             (2, 203, 4, 2, 1, 1),
-            (2, 203, 5, 2, 1, 1)
+            (2, 203, 5, 2, 1, 1),
+            (1, 300, 1, 2, 1, 1),
+            (1, 300, 2, 2, 1, 1),
+            (1, 300, 3, 2, 1, 1),
+            (1, 300, 4, 2, 1, 1),
+            (1, 300, 5, 2, 1, 1),
+            (2, 300, 1, 2, 1, 1),
+            (2, 300, 2, 2, 1, 1),
+            (2, 300, 3, 2, 1, 1),
+            (2, 300, 4, 2, 1, 1),
+            (2, 300, 5, 2, 1, 1)
         ON CONFLICT (profile_id, menu_id, action_id) DO UPDATE SET
             is_configuration_only = EXCLUDED.is_configuration_only,
             status = EXCLUDED.status,
@@ -1312,6 +1328,36 @@ const statements = [
     `
         ALTER TABLE user_activity_logs
         ADD COLUMN IF NOT EXISTS logout_time TIMESTAMP
+    `,
+    `
+        CREATE TABLE IF NOT EXISTS support_tickets (
+            id SERIAL PRIMARY KEY,
+            institution_id INTEGER REFERENCES institutions(id) ON DELETE CASCADE,
+            user_id INTEGER REFERENCES tenants(id) ON DELETE SET NULL,
+            name VARCHAR(150) NOT NULL,
+            email VARCHAR(150) NOT NULL,
+            phone VARCHAR(20) NOT NULL,
+            subject VARCHAR(255) NOT NULL,
+            category VARCHAR(100) NOT NULL,
+            priority VARCHAR(50) NOT NULL DEFAULT 'Medium',
+            status VARCHAR(50) NOT NULL DEFAULT 'Open',
+            assigned_admin_id INTEGER REFERENCES user_credentials(id) ON DELETE SET NULL,
+            internal_notes TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    `,
+    `
+        CREATE TABLE IF NOT EXISTS support_messages (
+            id SERIAL PRIMARY KEY,
+            ticket_id INTEGER NOT NULL REFERENCES support_tickets(id) ON DELETE CASCADE,
+            sender_type VARCHAR(50) NOT NULL,
+            sender_id INTEGER,
+            message TEXT NOT NULL,
+            attachment TEXT,
+            is_read BOOLEAN DEFAULT FALSE,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
     `,
 ];
 

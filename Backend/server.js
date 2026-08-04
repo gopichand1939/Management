@@ -32,6 +32,7 @@ const rationStockAuditRoutes = require("./RationInventory/StockAudit/RationStock
 const rationInventoryDashboardRoutes = require("./RationInventory/InventoryDashboard/RationInventoryDashboardRoutes");
 const restrictionRoutes = require("./Restriction/RestrictionRoutes");
 const userActivityRoutes = require("./UserActivity/UserActivityRoutes");
+const supportRoutes = require("./Support/SupportRoutes");
 
 
 
@@ -165,6 +166,7 @@ app.use("/api/ration-stock-audit", rationStockAuditRoutes);
 app.use("/api/ration-inventory-dashboard", rationInventoryDashboardRoutes);
 app.use("/api/restriction", restrictionRoutes);
 app.use("/api/user-activity", userActivityRoutes);
+app.use("/api/support", supportRoutes);
 
 app.post("/", (req, res) => {
     res.send("Backend is running");
@@ -188,6 +190,54 @@ const startServer = async () => {
         console.log(`Database connected: ${getMaskedDatabaseUrl()}`);
         console.log(`Server running on port ${port}`);
     });
+
+    // Initialize Socket.io
+    const { Server } = require("socket.io");
+    const io = new Server(server, {
+        cors: {
+            origin: "*",
+            methods: ["GET", "POST", "PUT", "DELETE"]
+        }
+    });
+
+    const onlineUsers = new Map();
+
+    io.on("connection", (socket) => {
+        console.log(`Socket connected: ${socket.id}`);
+
+        socket.on("join_ticket", ({ ticketId, userId, role }) => {
+            socket.join(`ticket_${ticketId}`);
+            console.log(`${role || 'user'} joined room ticket_${ticketId}`);
+
+            const key = userId ? `${role}_${userId}` : `guest_${socket.id}`;
+            onlineUsers.set(key, { socketId: socket.id, ticketId });
+            io.to(`ticket_${ticketId}`).emit("user_status", { userId, role, online: true });
+        });
+
+        socket.on("typing", ({ ticketId, name, isTyping }) => {
+            socket.to(`ticket_${ticketId}`).emit("typing_status", { name, isTyping });
+        });
+
+        socket.on("read_receipt", ({ ticketId, role }) => {
+            socket.to(`ticket_${ticketId}`).emit("messages_read", { ticketId, readBy: role });
+        });
+
+        socket.on("disconnect", () => {
+            console.log(`Socket disconnected: ${socket.id}`);
+            for (const [key, value] of onlineUsers.entries()) {
+                if (value.socketId === socket.id) {
+                    const parts = key.split("_");
+                    const role = parts[0];
+                    const userId = parts[1];
+                    onlineUsers.delete(key);
+                    io.to(`ticket_${value.ticketId}`).emit("user_status", { userId, role, online: false });
+                    break;
+                }
+            }
+        });
+    });
+
+    app.set("socketio", io);
 
     server.on("error", (error) => {
         logRuntimeEvent("HTTP Server Error", error);

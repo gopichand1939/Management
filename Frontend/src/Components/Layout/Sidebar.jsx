@@ -32,6 +32,7 @@ import {
   PieChart,
   QrCode,
   Activity,
+  MessageSquare,
 } from "lucide-react";
 import { useState, useMemo, useCallback, useEffect, useRef, useLayoutEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -80,6 +81,7 @@ const menuIcons = {
   inventory_dashboard: PieChart,
   qr_labels: QrCode,
   user_activity: Activity,
+  support: MessageSquare,
 };
 
 const MENU_ICON_SIZE = 18;

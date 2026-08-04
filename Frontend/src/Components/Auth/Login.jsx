@@ -175,9 +175,19 @@ const Login = () => {
       </div>
 
       {/* Right side form panel - 35% width on desktop, centered contents */}
-      <div className="w-full lg:w-[35%] min-h-[65vh] lg:min-h-screen flex flex-col justify-between p-8 sm:p-12 md:p-12 xl:p-16 bg-white shrink-0">
-        {/* Spacer to push form down slightly on desktop */}
-        <div className="hidden lg:block h-6" />
+      <div className="w-full lg:w-[35%] h-[65vh] lg:h-screen flex flex-col justify-between p-6 sm:p-8 md:p-10 xl:p-12 bg-white shrink-0 relative overflow-hidden">
+        {/* Support & Feedback Button in Top Right */}
+        <div className="absolute top-6 right-6 lg:top-8 lg:right-8 z-20">
+          <Link
+            to="/support/new"
+            className="group relative inline-flex items-center justify-center p-0.5 overflow-hidden text-xs font-bold text-[#0B1F3A] rounded-full bg-gradient-to-br from-amber-500 via-orange-500 to-red-500 hover:text-white focus:ring-4 focus:outline-none focus:ring-orange-200 transition-all duration-300 shadow-sm shadow-orange-500/10 hover:shadow-md hover:shadow-orange-500/20"
+          >
+            <span className="relative px-3.5 py-1.5 transition-all ease-in duration-75 bg-white rounded-full group-hover:bg-opacity-0 hover:text-white text-[11px] flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+              Get Support & Feedback
+            </span>
+          </Link>
+        </div>
 
         {/* Form Container with animated fade-in */}
         <motion.div
@@ -187,9 +197,9 @@ const Login = () => {
           className="w-full max-w-md mx-auto flex flex-col justify-center text-left"
         >
           {/* Logo Section */}
-          <div className="flex items-center gap-4 mb-12 justify-start">
+          <div className="flex items-center gap-4 mb-6 justify-start">
             <svg
-              className="w-14 h-14 shrink-0"
+              className="w-12 h-12 shrink-0"
               viewBox="0 0 100 100"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
@@ -216,18 +226,17 @@ const Login = () => {
               </g>
             </svg>
             <div className="flex flex-col text-left justify-center">
-              <span className="text-3xl xl:text-4xl font-black tracking-tight text-[#0B1F3A] leading-none flex items-center">
+              <span className="text-2xl xl:text-3xl font-black tracking-tight text-[#0B1F3A] leading-none flex items-center">
                 BLR<span className="text-[#F59E0B] ml-1">STAY</span>
               </span>
-
             </div>
           </div>
 
           {/* Heading */}
-          <h1 className="text-3xl xl:text-4xl font-black tracking-tight text-[#0B1F3A] mb-2">
+          <h1 className="text-2xl xl:text-3xl font-black tracking-tight text-[#0B1F3A] mb-1">
             Welcome Back
           </h1>
-          <p className="text-xs font-semibold text-slate-400 mb-8">
+          <p className="text-[11px] font-semibold text-slate-400 mb-6">
             Sign in to continue to your dashboard
           </p>
 
@@ -380,7 +389,7 @@ const Login = () => {
         </motion.div>
 
         {/* Footer info & Signup Link */}
-        <div className="mt-8 flex flex-col items-center gap-4">
+        <div className="mt-4 flex flex-col items-center gap-3">
           <Link
             to="/register"
             className="text-xs font-black text-blue-500 hover:text-blue-600 hover:underline transition-all"

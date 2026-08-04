@@ -5,6 +5,8 @@ import {
   applicationRoutes,
   loginRoute,
   registerRoute,
+  publicSupportCreateRoute,
+  publicSupportChatRoute,
 } from "./index";
 
 const appRouter = createBrowserRouter([
@@ -19,6 +21,14 @@ const appRouter = createBrowserRouter([
   {
     path: "/register",
     element: registerRoute,
+  },
+  {
+    path: "/support/new",
+    element: publicSupportCreateRoute,
+  },
+  {
+    path: "/support/chat/:ticketId",
+    element: publicSupportChatRoute,
   },
   {
     element: <ProtectedRoutes />,

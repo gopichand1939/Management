@@ -43,6 +43,7 @@ const MENU_CONFIG_BY_ID = {
   211: { route_path: "/ration-inventory/inventory-dashboard", icon_key: "inventory_dashboard" },
   212: { route_path: "/ration-inventory/qr-labels", icon_key: "qr_labels" },
   213: { route_path: "/user-activity", icon_key: "user_activity" },
+  300: { route_path: "/admin/support", icon_key: "support" },
 };
 
 const MENU_CONFIG_BY_NAME = {
@@ -87,6 +88,7 @@ const MENU_CONFIG_BY_NAME = {
   "inventory dashboard": { route_path: "/ration-inventory/inventory-dashboard", icon_key: "inventory_dashboard" },
   "qr labels": { route_path: "/ration-inventory/qr-labels", icon_key: "qr_labels" },
   "user activity": { route_path: "/user-activity", icon_key: "user_activity" },
+  "support tickets": { route_path: "/admin/support", icon_key: "support" },
 };
 
 const normalizeMenuName = (menuName) => {
@@ -133,6 +135,7 @@ const MENU_LABEL_KEYS_BY_NAME = {
   "inventory dashboard": "menu.inventoryDashboard",
   "qr labels": "menu.qrLabels",
   "user activity": "menu.userActivity",
+  "support tickets": "menu.supportTickets",
 };
 
 export const getMenuMeta = (menu) => {

@@ -125,6 +125,10 @@ const ViewRationCategory = lazy(() => {
   return import("../Components/RationInventory/CategoryMaster/ViewRationCategory");
 });
 
+export const PublicSupportCreate = lazy(() => import("../Components/Support/PublicSupportCreate"));
+export const PublicSupportChat = lazy(() => import("../Components/Support/PublicSupportChat"));
+export const AdminSupportPanel = lazy(() => import("../Components/Support/AdminSupportPanel"));
+
 const RationUnitMaster = lazy(() => {
   return import("../Components/RationInventory/UnitMaster/RationUnitMaster");
 });
@@ -260,6 +264,10 @@ const withSuspense = (component) => {
 export const loginRoute = withSuspense(<LoginPage />);
 
 export const registerRoute = withSuspense(<RegisterPage />);
+
+export const publicSupportCreateRoute = withSuspense(<PublicSupportCreate />);
+export const publicSupportChatRoute = withSuspense(<PublicSupportChat />);
+
 
 export const superAdminRoutes = [
   {
@@ -605,6 +613,10 @@ export const applicationRoutes = [
   {
     path: "/ration-management",
     element: withSuspense(<RationManagement />),
+  },
+  {
+    path: "/admin/support",
+    element: withSuspense(<AdminSupportPanel />),
   },
   ...rationInventoryRoutes,
 ];

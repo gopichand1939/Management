@@ -170,3 +170,18 @@ export const GET_RESTRICTION_RULES = BASE_URL + "/restriction/rules";
 export const USER_ACTIVITY_LIST = BASE_URL + "/user-activity/list";
 export const USER_ACTIVITY_LOGOUT = BASE_URL + "/user-activity/logout";
 export const USER_ACTIVITY_TERMINATE = BASE_URL + "/user-activity/terminate";
+
+export const SUPPORT_PUBLIC_INSTITUTIONS = BASE_URL + "/support/public/institutions";
+export const SUPPORT_TICKET_CREATE = BASE_URL + "/support/create";
+export const SUPPORT_PUBLIC_TICKET_VIEW = BASE_URL + "/support/public/view";
+export const SUPPORT_PUBLIC_REPLY = BASE_URL + "/support/public/reply";
+
+export const SUPPORT_TICKET_LIST = BASE_URL + "/support/list";
+export const SUPPORT_TICKET_MESSAGES = BASE_URL + "/support/messages";
+export const SUPPORT_TICKET_REPLY = BASE_URL + "/support/reply";
+export const SUPPORT_TICKET_STATUS = BASE_URL + "/support/status";
+export const SUPPORT_TICKET_PRIORITY = BASE_URL + "/support/priority";
+export const SUPPORT_TICKET_ASSIGN = BASE_URL + "/support/assign";
+export const SUPPORT_TICKET_INTERNAL_NOTE = BASE_URL + "/support/internal-note";
+export const SUPPORT_TICKET_ADMINS = BASE_URL + "/support/admins";
+
