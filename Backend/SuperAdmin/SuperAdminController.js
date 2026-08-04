@@ -97,9 +97,11 @@ const registerSuperAdmin = async (req, res) => {
             },
         });
     } catch (error) {
+        console.error("Registration failed error:", error);
         return res.status(500).json({
             success: false,
             message: "Registration failed",
+            error: error.message,
         });
     }
 };
@@ -156,9 +158,11 @@ const loginSuperAdmin = async (req, res) => {
             user: userData,
         });
     } catch (error) {
+        console.error("Login failed error:", error);
         return res.status(500).json({
             success: false,
             message: "Login failed",
+            error: error.message,
         });
     }
 };
@@ -183,9 +187,11 @@ const getSuperAdminProfile = async (req, res) => {
             },
         });
     } catch (error) {
+        console.error("Profile fetch failed error:", error);
         return res.status(500).json({
             success: false,
             message: "Profile failed",
+            error: error.message,
         });
     }
 };
@@ -200,9 +206,11 @@ const getSuperAdminList = async (req, res) => {
             users,
         });
     } catch (error) {
+        console.error("Super admin list fetch failed error:", error);
         return res.status(500).json({
             success: false,
             message: "Super admin list failed",
+            error: error.message,
         });
     }
 };

@@ -3,6 +3,16 @@ const { Pool, types } = require("pg");
 types.setTypeParser(1114, (val) => val ? new Date(val + "Z") : null);
 
 require("dotenv").config({ quiet: true });
+
+// Sanitize DATABASE_URL to handle wrapping quotes or whitespace from environment configs
+if (process.env.DATABASE_URL) {
+    let dbUrl = process.env.DATABASE_URL.trim();
+    if ((dbUrl.startsWith('"') && dbUrl.endsWith('"')) || (dbUrl.startsWith("'") && dbUrl.endsWith("'"))) {
+        dbUrl = dbUrl.slice(1, -1).trim();
+    }
+    process.env.DATABASE_URL = dbUrl;
+}
+
 const dns = require("dns");
 const { AsyncLocalStorage } = require("async_hooks");
 
