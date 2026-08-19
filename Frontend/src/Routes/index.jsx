@@ -3,6 +3,8 @@ import { lazy, Suspense } from "react";
 import PageLoader from "../Components/Common/PageLoader";
 
 const Dashboard = lazy(() => import("../Pages/Dashboard/Dashboard"));
+const AdminMealTracker = lazy(() => import("../Components/DailyMealTracker/AdminMealTracker"));
+const TenantMealTracker = lazy(() => import("../Components/DailyMealTracker/TenantMealTracker"));
 const MenuRestrictions = lazy(() => import("../Components/Restriction/MenuRestrictions"));
 const LoginPage = lazy(() => import("../Pages/Login/LoginPage"));
 const RegisterPage = lazy(() => import("../Pages/Register/RegisterPage"));
@@ -124,6 +126,19 @@ const EditRationCategory = lazy(() => {
 const ViewRationCategory = lazy(() => {
   return import("../Components/RationInventory/CategoryMaster/ViewRationCategory");
 });
+
+// Catalog Management Lazy Imports
+const CatalogCategoryMaster = lazy(() => import("../Components/CatalogManagement/CategoryMaster/CatalogCategoryMaster"));
+const AddCatalogCategory = lazy(() => import("../Components/CatalogManagement/CategoryMaster/AddCatalogCategory"));
+const EditCatalogCategory = lazy(() => import("../Components/CatalogManagement/CategoryMaster/EditCatalogCategory"));
+const ViewCatalogCategory = lazy(() => import("../Components/CatalogManagement/CategoryMaster/ViewCatalogCategory"));
+
+const CatalogItemMaster = lazy(() => import("../Components/CatalogManagement/ItemMaster/CatalogItemMaster"));
+const AddCatalogItem = lazy(() => import("../Components/CatalogManagement/ItemMaster/AddCatalogItem"));
+const EditCatalogItem = lazy(() => import("../Components/CatalogManagement/ItemMaster/EditCatalogItem"));
+const ViewCatalogItem = lazy(() => import("../Components/CatalogManagement/ItemMaster/ViewCatalogItem"));
+
+const BarcodePrinting = lazy(() => import("../Components/CatalogManagement/Barcode/BarcodePrinting"));
 
 export const PublicSupportCreate = lazy(() => import("../Components/Support/PublicSupportCreate"));
 export const PublicSupportChat = lazy(() => import("../Components/Support/PublicSupportChat"));
@@ -267,6 +282,7 @@ export const registerRoute = withSuspense(<RegisterPage />);
 
 export const publicSupportCreateRoute = withSuspense(<PublicSupportCreate />);
 export const publicSupportChatRoute = withSuspense(<PublicSupportChat />);
+export const tenantMealTrackerRoute = withSuspense(<TenantMealTracker />);
 
 
 export const superAdminRoutes = [
@@ -594,6 +610,61 @@ export const rationInventoryRoutes = [
   },
 ];
 
+export const catalogManagementRoutes = [
+  {
+    path: "/catalog-management/category-master",
+    element: withSuspense(<CatalogCategoryMaster />),
+  },
+  {
+    path: "/catalog-management/category-master/add",
+    element: withSuspense(<AddCatalogCategory />),
+  },
+  {
+    path: "/catalog-management/category-master/edit/:id",
+    element: withSuspense(<EditCatalogCategory />),
+  },
+  {
+    path: "/catalog-management/category-master/view/:id",
+    element: withSuspense(<ViewCatalogCategory />),
+  },
+  {
+    path: "/catalog-management/item-master",
+    element: withSuspense(<CatalogItemMaster />),
+  },
+  {
+    path: "/catalog-management/item-master/add",
+    element: withSuspense(<AddCatalogItem />),
+  },
+  {
+    path: "/catalog-management/item-master/edit/:id",
+    element: withSuspense(<EditCatalogItem />),
+  },
+  {
+    path: "/catalog-management/item-master/view/:id",
+    element: withSuspense(<ViewCatalogItem />),
+  },
+  {
+    path: "/catalog-management/unit-master",
+    element: withSuspense(<RationUnitMaster />),
+  },
+  {
+    path: "/catalog-management/unit-master/add",
+    element: withSuspense(<AddRationUnit />),
+  },
+  {
+    path: "/catalog-management/unit-master/edit/:id",
+    element: withSuspense(<EditRationUnit />),
+  },
+  {
+    path: "/catalog-management/unit-master/view/:id",
+    element: withSuspense(<ViewRationUnit />),
+  },
+  {
+    path: "/catalog-management/barcode-printing",
+    element: withSuspense(<BarcodePrinting />),
+  },
+];
+
 export const applicationRoutes = [
   {
     path: "/dashboard",
@@ -618,5 +689,10 @@ export const applicationRoutes = [
     path: "/admin/support",
     element: withSuspense(<AdminSupportPanel />),
   },
+  {
+    path: "/admin/daily-meal-tracker",
+    element: withSuspense(<AdminMealTracker />),
+  },
   ...rationInventoryRoutes,
+  ...catalogManagementRoutes,
 ];

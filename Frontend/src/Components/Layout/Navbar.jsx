@@ -1,13 +1,56 @@
 import { useState, useEffect } from "react";
-import { Bell, ChevronDown, Menu, Search, Sun, Maximize, Minimize } from "lucide-react";
+import { Bell, ChevronDown, Menu, Search, Sun, Maximize, Minimize, MessageSquare } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
+import { Link } from "react-router-dom";
+import { io } from "socket.io-client";
 import { toggleSidebar } from "../../Redux/User/UserSlice";
+import { TOKEN_KEY, SUPPORT_ADMIN_UNREAD_COUNT } from "../../Utils/Constants";
 
 const Navbar = () => {
   const dispatch = useDispatch();
   const { authUser } = useSelector((state) => state.user);
 
   const [isFullscreen, setIsFullscreen] = useState(!!document.fullscreenElement);
+  const [unreadQueriesCount, setUnreadQueriesCount] = useState(0);
+
+  useEffect(() => {
+    const fetchUnreadCount = async () => {
+      try {
+        const token = localStorage.getItem(TOKEN_KEY);
+        if (!token) return;
+        
+        const res = await fetch(SUPPORT_ADMIN_UNREAD_COUNT, {
+          headers: {
+            "Authorization": `Bearer ${token}`
+          }
+        });
+        const data = await res.json();
+        if (data.success) {
+          setUnreadQueriesCount(data.count);
+        }
+      } catch (err) {
+        console.error("Navbar unread count fetch error:", err);
+      }
+    };
+
+    fetchUnreadCount();
+    const interval = setInterval(fetchUnreadCount, 10000);
+
+    const socketUrl = import.meta.env.VITE_SOCKET_URL || (import.meta.env.VITE_API_URL
+      ? import.meta.env.VITE_API_URL.replace(/\/api\/?$/, "")
+      : "http://localhost:5000");
+    const socket = io(socketUrl);
+    
+    socket.on("ticket_list_changed", fetchUnreadCount);
+    socket.on("new_ticket", fetchUnreadCount);
+    socket.on("ticket_updated", fetchUnreadCount);
+    socket.on("messages_read", fetchUnreadCount);
+
+    return () => {
+      clearInterval(interval);
+      socket.disconnect();
+    };
+  }, []);
 
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -111,6 +154,21 @@ const Navbar = () => {
             {isFullscreen ? <Minimize size={19} /> : <Maximize size={19} />}
           </button>
 
+          {/* Support Queries Animated Notification Icon */}
+          <Link
+            to="/admin/support"
+            className="relative text-slate-500 hover:text-slate-900 transition-colors cursor-pointer group flex items-center"
+            title="Support Queries"
+          >
+            <div className={`p-1.5 rounded-full transition-all duration-300 relative ${unreadQueriesCount > 0 ? "bg-orange-50 text-orange-600 animate-pulse ring-4 ring-orange-50" : "text-slate-500 hover:bg-slate-50"}`}>
+              <MessageSquare size={19} className={unreadQueriesCount > 0 ? "animate-bounce" : ""} style={{ animationDuration: '2s' }} />
+              {unreadQueriesCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-orange-600 text-white font-extrabold text-[9px] w-4.5 h-4.5 rounded-full flex items-center justify-center border border-white">
+                  {unreadQueriesCount}
+                </span>
+              )}
+            </div>
+          </Link>
 
           <button
             className="relative text-slate-500 transition-colors hover:text-slate-900"

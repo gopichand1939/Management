@@ -58,11 +58,9 @@ const login = async (req, res) => {
 
         let user;
         const role = credential.role;
-        const adminId = credential.pg_admin_id;
-        const isPg = role === "pg_admin";
         const menus = await getMenusByRole(
             role,
-            isPg ? adminId : null
+            credential.id
         );
 
         if (credential.role === "pg_admin") {

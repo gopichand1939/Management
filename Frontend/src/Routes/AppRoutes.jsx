@@ -7,6 +7,7 @@ import {
   registerRoute,
   publicSupportCreateRoute,
   publicSupportChatRoute,
+  tenantMealTrackerRoute,
 } from "./index";
 
 const appRouter = createBrowserRouter([
@@ -27,8 +28,12 @@ const appRouter = createBrowserRouter([
     element: publicSupportCreateRoute,
   },
   {
-    path: "/support/chat/:ticketId",
+    path: "/support/chat/:userId",
     element: publicSupportChatRoute,
+  },
+  {
+    path: "/meals",
+    element: tenantMealTrackerRoute,
   },
   {
     element: <ProtectedRoutes />,

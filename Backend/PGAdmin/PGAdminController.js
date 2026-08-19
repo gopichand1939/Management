@@ -1,6 +1,8 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
+const pool = require("../Config/Database");
+
 const {
     createPgAdmin,
     deletePgAdminById,
@@ -17,6 +19,7 @@ const {
     deleteUserCredentialByPgAdminId,
     findUserCredentialByEmail,
     updateUserCredentialByPgAdminId,
+    reuseOrphanedCredential,
 } = require("../Auth/AuthModel");
 
 const isPgAdminRequest = (req) => {
@@ -81,7 +84,30 @@ const addPgAdmin = async (req, res) => {
             normalizedEmail
         );
 
+        let isOrphaned = false;
         if (existingCredential) {
+            if (existingCredential.role === "super_admin") {
+                if (existingCredential.super_admin_id) {
+                    const checkSa = await pool.query("SELECT id FROM super_admins WHERE id = $1", [existingCredential.super_admin_id]);
+                    if (checkSa.rows.length === 0) {
+                        isOrphaned = true;
+                    }
+                } else {
+                    isOrphaned = true;
+                }
+            } else if (existingCredential.role === "pg_admin") {
+                if (existingCredential.pg_admin_id) {
+                    const checkPg = await pool.query("SELECT id FROM pg_admin WHERE id = $1", [existingCredential.pg_admin_id]);
+                    if (checkPg.rows.length === 0) {
+                        isOrphaned = true;
+                    }
+                } else {
+                    isOrphaned = true;
+                }
+            }
+        }
+
+        if (existingCredential && !isOrphaned) {
             return res.status(400).json({
                 success: false,
                 message: "Email already exists",
@@ -111,13 +137,24 @@ const addPgAdmin = async (req, res) => {
 
         const pgAdmin = await createPgAdmin(data);
 
-        await createUserCredential({
-            email: normalizedEmail,
-            password: hashedPassword,
-            role: "pg_admin",
-            institution_id: normalizedInstitutionId,
-            pg_admin_id: pgAdmin.id,
-        });
+        if (isOrphaned) {
+            await reuseOrphanedCredential(
+                normalizedEmail,
+                hashedPassword,
+                "pg_admin",
+                normalizedInstitutionId,
+                null,
+                pgAdmin.id
+            );
+        } else {
+            await createUserCredential({
+                email: normalizedEmail,
+                password: hashedPassword,
+                role: "pg_admin",
+                institution_id: normalizedInstitutionId,
+                pg_admin_id: pgAdmin.id,
+            });
+        }
 
         return res.status(201).json({
             success: true,

@@ -19,14 +19,15 @@ import {
   Clock, 
   ArrowUpRight,
   TrendingUp,
-  Percent
+  Percent,
+  MessageSquare
 } from "lucide-react";
 import Header from "../../Components/Layout/Header";
 import Navbar from "../../Components/Layout/Navbar";
 import Sidebar from "../../Components/Layout/Sidebar";
 import AuthSuperAdmin from "../../Components/SuperAdmin/AuthSuperAdmin";
 import useFetchUserData from "../../Hooks/useFetchUserData";
-import { BASE_URL, TOKEN_KEY, DASHBOARD_OVERVIEW } from "../../Utils/Constants";
+import { BASE_URL, TOKEN_KEY, DASHBOARD_OVERVIEW, SUPPORT_ADMIN_UNREAD_COUNT } from "../../Utils/Constants";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -36,8 +37,30 @@ const Dashboard = () => {
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [unreadQueries, setUnreadQueries] = useState(0);
+
+  const fetchUnreadQueries = async () => {
+    try {
+      const token = localStorage.getItem(TOKEN_KEY);
+      if (!token) return;
+      const response = await fetch(SUPPORT_ADMIN_UNREAD_COUNT, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      const data = await response.json();
+      if (data.success) {
+        setUnreadQueries(data.count);
+      }
+    } catch (err) {
+      console.error("Dashboard unread count fetch error:", err);
+    }
+  };
 
   const fetchDashboardData = async () => {
+    fetchUnreadQueries();
     setLoading(true);
     setError(null);
     try {
@@ -86,6 +109,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     fetchDashboardData();
+    fetchUnreadQueries();
   }, []);
 
   const formatRevenue = (value) => {
@@ -282,7 +306,7 @@ const Dashboard = () => {
               {/* Header Container */}
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <Header
-                  title="PG Operations Dashboard"
+                  title="Operations"
                   subtitle="Unified status console tracking rooms, collections, checkouts, and beds layout."
                 />
                 

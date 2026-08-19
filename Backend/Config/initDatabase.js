@@ -971,7 +971,7 @@ const statements = [
     `
         CREATE TABLE IF NOT EXISTS urmg_user_menu_restrictions (
             restriction_id SERIAL PRIMARY KEY,
-            user_id INTEGER NOT NULL REFERENCES pg_admin(id) ON DELETE CASCADE,
+            user_id INTEGER NOT NULL REFERENCES user_credentials(id) ON DELETE CASCADE,
             menu_id INTEGER NOT NULL REFERENCES urmg_menus(menu_id) ON DELETE CASCADE,
             action_id INTEGER REFERENCES urmg_actions(action_id) ON DELETE CASCADE,
             is_allowed BOOLEAN NOT NULL DEFAULT FALSE,
@@ -1357,6 +1357,46 @@ const statements = [
             attachment TEXT,
             is_read BOOLEAN DEFAULT FALSE,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    `,
+    `
+        CREATE TABLE IF NOT EXISTS support_users (
+            id SERIAL PRIMARY KEY,
+            institution_id INTEGER REFERENCES institutions(id) ON DELETE SET NULL,
+            name VARCHAR(150) NOT NULL,
+            email VARCHAR(150) NOT NULL,
+            phone VARCHAR(20) NOT NULL UNIQUE,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    `,
+    `
+        CREATE TABLE IF NOT EXISTS support_user_chats (
+            id SERIAL PRIMARY KEY,
+            support_user_id INTEGER NOT NULL REFERENCES support_users(id) ON DELETE CASCADE,
+            sender_type VARCHAR(50) NOT NULL,
+            sender_id INTEGER,
+            message TEXT NOT NULL,
+            attachment TEXT,
+            is_read BOOLEAN DEFAULT FALSE,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    `,
+    `
+        CREATE TABLE IF NOT EXISTS daily_meal_actual_stats (
+            id SERIAL PRIMARY KEY,
+            institution_id INTEGER NOT NULL REFERENCES institutions(id) ON DELETE CASCADE,
+            meal_date DATE NOT NULL,
+            breakfast_cooked VARCHAR(100) DEFAULT '0',
+            breakfast_left VARCHAR(100) DEFAULT '0',
+            lunch_cooked VARCHAR(100) DEFAULT '0',
+            lunch_left VARCHAR(100) DEFAULT '0',
+            dinner_cooked VARCHAR(100) DEFAULT '0',
+            dinner_left VARCHAR(100) DEFAULT '0',
+            actual_daily_expense NUMERIC(10,2),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            CONSTRAINT daily_meal_actual_stats_inst_date_unique UNIQUE (institution_id, meal_date)
         )
     `,
 ];

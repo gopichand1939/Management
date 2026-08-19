@@ -44,6 +44,13 @@ const MENU_CONFIG_BY_ID = {
   212: { route_path: "/ration-inventory/qr-labels", icon_key: "qr_labels" },
   213: { route_path: "/user-activity", icon_key: "user_activity" },
   300: { route_path: "/admin/support", icon_key: "support" },
+  400: { route_path: null, icon_key: "catalog_management" },
+  401: { route_path: "/catalog-management/category-master", icon_key: "category_master" },
+  402: { route_path: "/catalog-management/item-master", icon_key: "item_master" },
+  403: { route_path: "/catalog-management/unit-master", icon_key: "unit_master" },
+  404: { route_path: "/catalog-management/barcode-printing", icon_key: "qr_labels" },
+  150: { route_path: "/admin/daily-meal-tracker", icon_key: "daily_meal_tracker" },
+  998: { route_path: "/restriction/menu-permissions", icon_key: "super_admin" },
 };
 
 const MENU_CONFIG_BY_NAME = {
@@ -89,6 +96,8 @@ const MENU_CONFIG_BY_NAME = {
   "qr labels": { route_path: "/ration-inventory/qr-labels", icon_key: "qr_labels" },
   "user activity": { route_path: "/user-activity", icon_key: "user_activity" },
   "support tickets": { route_path: "/admin/support", icon_key: "support" },
+  "catalog management": { route_path: null, icon_key: "catalog_management" },
+  "barcode printing": { route_path: "/catalog-management/barcode-printing", icon_key: "qr_labels" },
 };
 
 const normalizeMenuName = (menuName) => {
@@ -136,6 +145,10 @@ const MENU_LABEL_KEYS_BY_NAME = {
   "qr labels": "menu.qrLabels",
   "user activity": "menu.userActivity",
   "support tickets": "menu.supportTickets",
+  "catalog management": "menu.catalogManagement",
+  "barcode printing": "menu.barcodePrinting",
+  "daily meal tracker": "menu.dailyMealTracker",
+  restrictions: "menu.restrictions",
 };
 
 export const getMenuMeta = (menu) => {
@@ -180,15 +193,6 @@ export const getDefaultRoute = (user) => {
 
 export const getSidebarMenuTree = (user) => {
   const menus = getUserMenus(user);
-  if (user?.role === "super_admin") {
-    menus.push({
-      menu_id: "menu-restrictions",
-      menu_name: "Restrictions",
-      route_path: "/restriction/menu-permissions",
-      icon_key: "super_admin",
-      priority: 998
-    });
-  }
   
   // Inject QR Labels sub-menu dynamically if Ration Inventory parent is present and QR Labels is allowed
   const hasRation = menus.some(m => m.menu_id === 200);
@@ -300,7 +304,7 @@ export const getRequiredActionForPath = (pathname) => {
 };
 
 export const isPathAllowedForUser = (user, pathname) => {
-  if (pathname === "/ration-management" || pathname === "/restriction/menu-permissions") return true;
+  if (pathname === "/ration-management") return true;
   const menu = getMenuByRoute(user, pathname);
 
   if (!menu) {

@@ -33,6 +33,9 @@ const rationInventoryDashboardRoutes = require("./RationInventory/InventoryDashb
 const restrictionRoutes = require("./Restriction/RestrictionRoutes");
 const userActivityRoutes = require("./UserActivity/UserActivityRoutes");
 const supportRoutes = require("./Support/SupportRoutes");
+const dailyMealTrackerRoutes = require("./DailyMealTracker/DailyMealTrackerRoutes");
+const catalogCategoryRoutes = require("./CatalogManagementModul/CatalogCategoryRoutes");
+const catalogItemRoutes = require("./CatalogManagementModul/CatalogItemRoutes");
 
 
 
@@ -167,6 +170,9 @@ app.use("/api/ration-inventory-dashboard", rationInventoryDashboardRoutes);
 app.use("/api/restriction", restrictionRoutes);
 app.use("/api/user-activity", userActivityRoutes);
 app.use("/api/support", supportRoutes);
+app.use("/api/daily-meal-tracker", dailyMealTrackerRoutes);
+app.use("/api/catalog-category", catalogCategoryRoutes);
+app.use("/api/catalog-item", catalogItemRoutes);
 
 app.post("/", (req, res) => {
     res.send("Backend is running");

@@ -57,8 +57,24 @@ const saveRules = async (req, res) => {
     }
 };
 
+const getMenuTree = async (req, res) => {
+    try {
+        const tree = await model.getMenuTree();
+        return res.status(200).json({
+            success: true,
+            data: tree
+        });
+    } catch (err) {
+        return res.status(500).json({
+            success: false,
+            message: err.message
+        });
+    }
+};
+
 module.exports = {
     getAdmins,
     getRules,
-    saveRules
+    saveRules,
+    getMenuTree
 };

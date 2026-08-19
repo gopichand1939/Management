@@ -102,9 +102,54 @@ const deleteUserCredentialByPgAdminId = async (pgAdminId) => {
     return result.rows[0];
 };
 
+const deleteUserCredentialBySuperAdminId = async (superAdminId) => {
+    const query = `
+        DELETE FROM user_credentials
+        WHERE super_admin_id = $1
+        RETURNING
+            id,
+            email,
+            role,
+            institution_id,
+            super_admin_id,
+            pg_admin_id,
+            created_at
+    `;
+
+    const result = await pool.query(query, [superAdminId]);
+
+    return result.rows[0];
+};
+
+const reuseOrphanedCredential = async (email, password, role, institutionId, superAdminId, pgAdminId) => {
+    const query = `
+        UPDATE user_credentials
+        SET
+            password = $1,
+            role = $2,
+            institution_id = $3,
+            super_admin_id = $4,
+            pg_admin_id = $5
+        WHERE email = $6
+        RETURNING *
+    `;
+    const values = [
+        password,
+        role,
+        institutionId || null,
+        superAdminId || null,
+        pgAdminId || null,
+        email
+    ];
+    const result = await pool.query(query, values);
+    return result.rows[0];
+};
+
 module.exports = {
     createUserCredential,
     deleteUserCredentialByPgAdminId,
+    deleteUserCredentialBySuperAdminId,
     findUserCredentialByEmail,
     updateUserCredentialByPgAdminId,
+    reuseOrphanedCredential,
 };

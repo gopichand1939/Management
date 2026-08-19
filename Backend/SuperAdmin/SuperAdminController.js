@@ -1,15 +1,19 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const pool = require("../Config/Database");
 
 const {
     createSuperAdmin,
     findSuperAdminByEmail,
     findSuperAdminById,
     getRegisteredSuperAdminList,
+    deleteSuperAdminById,
 } = require("./SuperAdminModel");
 const {
     createUserCredential,
     findUserCredentialByEmail,
+    deleteUserCredentialBySuperAdminId,
+    reuseOrphanedCredential,
 } = require("../Auth/AuthModel");
 
 const createToken = (superAdmin) => {
@@ -49,7 +53,30 @@ const registerSuperAdmin = async (req, res) => {
             normalizedEmail
         );
 
+        let isOrphaned = false;
         if (existingCredential) {
+            if (existingCredential.role === "super_admin") {
+                if (existingCredential.super_admin_id) {
+                    const checkSa = await pool.query("SELECT id FROM super_admins WHERE id = $1", [existingCredential.super_admin_id]);
+                    if (checkSa.rows.length === 0) {
+                        isOrphaned = true;
+                    }
+                } else {
+                    isOrphaned = true;
+                }
+            } else if (existingCredential.role === "pg_admin") {
+                if (existingCredential.pg_admin_id) {
+                    const checkPg = await pool.query("SELECT id FROM pg_admin WHERE id = $1", [existingCredential.pg_admin_id]);
+                    if (checkPg.rows.length === 0) {
+                        isOrphaned = true;
+                    }
+                } else {
+                    isOrphaned = true;
+                }
+            }
+        }
+
+        if (existingCredential && !isOrphaned) {
             return res.status(400).json({
                 success: false,
                 message: "Email already exists",
@@ -77,13 +104,24 @@ const registerSuperAdmin = async (req, res) => {
             pg_admin_id
         );
 
-        await createUserCredential({
-            email: normalizedEmail,
-            password: hashedPassword,
-            role: "super_admin",
-            institution_id,
-            super_admin_id: superAdmin.id,
-        });
+        if (isOrphaned) {
+            await reuseOrphanedCredential(
+                normalizedEmail,
+                hashedPassword,
+                "super_admin",
+                institution_id,
+                superAdmin.id,
+                null
+            );
+        } else {
+            await createUserCredential({
+                email: normalizedEmail,
+                password: hashedPassword,
+                role: "super_admin",
+                institution_id,
+                super_admin_id: superAdmin.id,
+            });
+        }
 
         const token = createToken(superAdmin);
 
@@ -215,9 +253,57 @@ const getSuperAdminList = async (req, res) => {
     }
 };
 
+const deleteSuperAdmin = async (req, res) => {
+    try {
+        const { id } = req.body;
+
+        if (!id) {
+            return res.status(400).json({
+                success: false,
+                message: "Super admin id is required",
+            });
+        }
+
+        const existingSuperAdmin = await findSuperAdminById(id);
+
+        if (!existingSuperAdmin) {
+            return res.status(404).json({
+                success: false,
+                message: "Super admin not found",
+            });
+        }
+
+        // Prevent self-deletion
+        if (Number(existingSuperAdmin.id) === Number(req.user.id)) {
+            return res.status(400).json({
+                success: false,
+                message: "You cannot delete your own account",
+            });
+        }
+
+        const superAdmin = await deleteSuperAdminById(id);
+
+        await deleteUserCredentialBySuperAdminId(id);
+
+        return res.status(200).json({
+            success: true,
+            message: "Super admin deleted successfully",
+            superAdmin,
+        });
+    } catch (error) {
+        console.error("Super admin delete failed error:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Super admin delete failed",
+            error: error.message,
+        });
+    }
+};
+
 module.exports = {
     registerSuperAdmin,
     loginSuperAdmin,
     getSuperAdminProfile,
     getSuperAdminList,
+    deleteSuperAdmin,
 };

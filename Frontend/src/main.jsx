@@ -12,7 +12,8 @@ const { fetch: originalFetch } = window;
 window.fetch = async (...args) => {
   try {
     const response = await originalFetch(...args);
-    if (response.status === 401) {
+    // Only redirect to "/" on 401 if we are not already on the login page ("/")
+    if (response.status === 401 && window.location.pathname !== "/") {
       localStorage.removeItem("admin_token");
       localStorage.removeItem("admin_auth_user");
       window.location.href = "/";

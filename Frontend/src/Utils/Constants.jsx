@@ -6,6 +6,7 @@ export const DASHBOARD_OVERVIEW = BASE_URL + "/dashboard/overview";
 
 export const USER_REGISTER = BASE_URL + "/super-admin/register";
 export const REGISTERED_USER_LIST = BASE_URL + "/super-admin/list";
+export const SUPER_ADMIN_DELETE = BASE_URL + "/super-admin/delete";
 
 export const USER_LOGIN = BASE_URL + "/auth/login";
 export const USER_PROFILE = BASE_URL + "/super-admin/profile";
@@ -166,6 +167,7 @@ export const RATION_INVENTORY_DASHBOARD_LOW_STOCK = BASE_URL + "/ration-inventor
 export const RATION_INVENTORY_DASHBOARD_EXPIRY_ALERTS = BASE_URL + "/ration-inventory-dashboard/expiry-alerts";
 export const GET_RESTRICTION_ADMINS = BASE_URL + "/restriction/pg-admins";
 export const GET_RESTRICTION_RULES = BASE_URL + "/restriction/rules";
+export const GET_RESTRICTION_MENUS = BASE_URL + "/restriction/menus";
 
 export const USER_ACTIVITY_LIST = BASE_URL + "/user-activity/list";
 export const USER_ACTIVITY_LOGOUT = BASE_URL + "/user-activity/logout";
@@ -185,3 +187,44 @@ export const SUPPORT_TICKET_ASSIGN = BASE_URL + "/support/assign";
 export const SUPPORT_TICKET_INTERNAL_NOTE = BASE_URL + "/support/internal-note";
 export const SUPPORT_TICKET_ADMINS = BASE_URL + "/support/admins";
 
+// Continuous Chat Support API constants
+export const SUPPORT_PUBLIC_CHAT_USER = BASE_URL + "/support/public/chat-user";
+export const SUPPORT_PUBLIC_CHAT_USER_REGISTER = BASE_URL + "/support/public/chat-user/register";
+export const SUPPORT_PUBLIC_CHAT_USER_REPLY = BASE_URL + "/support/public/chat-user/reply";
+
+export const SUPPORT_ADMIN_CHAT_USERS = BASE_URL + "/support/admin/chat-users";
+export const SUPPORT_ADMIN_CHAT_USER_MESSAGES = BASE_URL + "/support/admin/chat-user";
+export const SUPPORT_ADMIN_CHAT_USER_REPLY = BASE_URL + "/support/admin/chat-user/reply";
+export const SUPPORT_ADMIN_UNREAD_COUNT = BASE_URL + "/support/admin/unread-count";
+
+// Daily Meal Tracker API constants
+export const MEAL_TRACKER_SUMMARY = BASE_URL + "/daily-meal-tracker/admin/summary";
+export const MEAL_TRACKER_LIST = BASE_URL + "/daily-meal-tracker/admin/meals";
+export const MEAL_TRACKER_SAVE = BASE_URL + "/daily-meal-tracker/admin/meals/update";
+export const MEAL_TRACKER_BULK_SAVE = BASE_URL + "/daily-meal-tracker/admin/meals/bulk-update";
+export const MEAL_TRACKER_MONTHLY_REPORT = BASE_URL + "/daily-meal-tracker/admin/report/monthly";
+export const MEAL_TRACKER_DAYWISE_REPORT = BASE_URL + "/daily-meal-tracker/admin/report/day-wise";
+export const MEAL_TRACKER_ACTUAL_STATS_SAVE = BASE_URL + "/daily-meal-tracker/admin/actual-stats";
+export const MEAL_TRACKER_TENANT_VERIFY = BASE_URL + "/daily-meal-tracker/tenant/verify";
+export const MEAL_TRACKER_TENANT_GET = BASE_URL + "/daily-meal-tracker/tenant/meals";
+export const MEAL_TRACKER_TENANT_SAVE = BASE_URL + "/daily-meal-tracker/tenant/meals/save";
+export const MEAL_TRACKER_SETTINGS_GET = BASE_URL + "/daily-meal-tracker/admin/settings";
+export const MEAL_TRACKER_SETTINGS_SAVE = BASE_URL + "/daily-meal-tracker/admin/settings/save";
+
+// Catalog Management API constants
+export const CATALOG_CATEGORY_CREATE = BASE_URL + "/catalog-category/create";
+export const CATALOG_CATEGORY_LIST = BASE_URL + "/catalog-category/list";
+export const CATALOG_CATEGORY_VIEW = BASE_URL + "/catalog-category/view";
+export const CATALOG_CATEGORY_EDIT = BASE_URL + "/catalog-category/edit";
+export const CATALOG_CATEGORY_DELETE = BASE_URL + "/catalog-category/delete";
+export const CATALOG_CATEGORY_DROPDOWN = BASE_URL + "/catalog-category/dropdown";
+
+export const CATALOG_ITEM_CREATE = BASE_URL + "/catalog-item/create";
+export const CATALOG_ITEM_LIST = BASE_URL + "/catalog-item/list";
+export const CATALOG_ITEM_VIEW = BASE_URL + "/catalog-item/view";
+export const CATALOG_ITEM_EDIT = BASE_URL + "/catalog-item/edit";
+export const CATALOG_ITEM_DELETE = BASE_URL + "/catalog-item/delete";
+export const CATALOG_ITEM_GENERATE_SKU = BASE_URL + "/catalog-item/generate-sku";
+export const CATALOG_ITEM_IMPORT = BASE_URL + "/catalog-item/import";
+export const CATALOG_ITEM_EXPORT = BASE_URL + "/catalog-item/export";
+export const CATALOG_ITEM_TEMPLATE = BASE_URL + "/catalog-item/template";

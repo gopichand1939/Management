@@ -124,8 +124,24 @@ const getRegisteredSuperAdminList = async () => {
     }
 };
 
+const deleteSuperAdminById = async (id) => {
+    try {
+        const query = `
+            DELETE FROM super_admins
+            WHERE id = $1
+            RETURNING *
+        `;
+        const values = [id];
+        const result = await pool.query(query, values);
+        return result.rows[0];
+    } catch (error) {
+        throw error;
+    }
+};
+
 module.exports = {
     createSuperAdmin,
+    deleteSuperAdminById,
     findSuperAdminByEmail,
     findSuperAdminById,
     getRegisteredSuperAdminList,

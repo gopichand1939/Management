@@ -90,7 +90,7 @@ const getMenusByRole = async (role, userId = null) => {
         }
     }
 
-    if (userId && role === "pg_admin") {
+    if (userId && (role === "pg_admin" || role === "super_admin")) {
         const sql = `
             SELECT 
                 menu_id,

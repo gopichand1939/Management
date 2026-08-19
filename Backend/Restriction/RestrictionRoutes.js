@@ -3,6 +3,11 @@ const router = express.Router();
 const ctrl = require("./RestrictionController");
 
 router.get(
+    "/menus",
+    ctrl.getMenuTree
+);
+
+router.get(
     "/pg-admins",
     ctrl.getAdmins
 );

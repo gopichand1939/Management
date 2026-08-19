@@ -3,9 +3,18 @@ const { query, transaction } = require("../Config/Database");
 // 1. List active institutions for public dropdown selection
 const listPublicInstitutions = async (req, res) => {
     try {
-        const result = await query(
-            "SELECT id, institution_name, institution_code FROM institutions WHERE status = 'active' ORDER BY institution_name ASC"
-        );
+        const result = await query(`
+            SELECT 
+                i.id, 
+                i.institution_name, 
+                i.institution_code,
+                COALESCE(s.live_support_enabled, TRUE) AS live_support_enabled,
+                COALESCE(s.meal_tracker_enabled, TRUE) AS meal_tracker_enabled
+            FROM institutions i
+            LEFT JOIN portal_settings s ON i.id = s.institution_id
+            WHERE i.status = 'active' 
+            ORDER BY i.institution_name ASC
+        `);
         res.json({ success: true, data: result.rows });
     } catch (error) {
         console.error("Error in listPublicInstitutions:", error);
@@ -431,6 +440,514 @@ const listPGAdmins = async (req, res) => {
     }
 };
 
+// ==========================================
+// Continuous Support Chat System (No Tickets)
+// ==========================================
+
+const getPublicChatUser = async (req, res) => {
+    try {
+        const { phone } = req.query;
+        if (!phone) {
+            return res.status(400).json({ success: false, message: "Phone number is required" });
+        }
+
+        const cleanPhone = phone.trim();
+
+        // Check if support_user already exists
+        const userRes = await query(
+            `SELECT u.*, inst.institution_name 
+             FROM support_users u
+             LEFT JOIN institutions inst ON u.institution_id = inst.id
+             WHERE u.phone = $1`,
+            [cleanPhone]
+        );
+
+        if (userRes.rows.length > 0) {
+            const user = userRes.rows[0];
+            // Fetch message history
+            const messagesRes = await query(
+                "SELECT * FROM support_user_chats WHERE support_user_id = $1 ORDER BY created_at ASC",
+                [user.id]
+            );
+            return res.json({
+                success: true,
+                exists: true,
+                user,
+                messages: messagesRes.rows
+            });
+        }
+
+        // If not exists, check if they are a tenant to auto-fill details
+        const tenantMatch = await query(
+            "SELECT id, full_name, email, institution_id FROM tenants WHERE phone = $1 AND deleted_at IS NULL LIMIT 1",
+            [cleanPhone]
+        );
+
+        if (tenantMatch.rows.length > 0) {
+            return res.json({
+                success: true,
+                exists: false,
+                suggestedInfo: {
+                    name: tenantMatch.rows[0].full_name,
+                    email: tenantMatch.rows[0].email,
+                    institution_id: tenantMatch.rows[0].institution_id
+                }
+            });
+        }
+
+        return res.json({
+            success: true,
+            exists: false
+        });
+    } catch (error) {
+        console.error("Error in getPublicChatUser:", error);
+        res.status(500).json({ success: false, message: "Failed to load support user details" });
+    }
+};
+
+const getKeywordAutoReply = (userMessage) => {
+    const text = userMessage.toLowerCase().trim();
+    
+    // Check for issues/problems
+    if (
+        text.includes("issue") || 
+        text.includes("problem") || 
+        text.includes("complaint") || 
+        text.includes("broken") || 
+        text.includes("not working") || 
+        text.includes("repair") || 
+        text.includes("fault") || 
+        text.includes("leak") || 
+        text.includes("damage") ||
+        text.includes("wifi") ||
+        text.includes("water") ||
+        text.includes("food") ||
+        text.includes("clean") ||
+        text.includes("electricity") ||
+        text.includes("power") ||
+        text.includes("help")
+    ) {
+        return "We understand you are facing an issue. Our management will connect with you shortly to resolve it as soon as possible.";
+    }
+
+    // Check for feedback/suggestions/improvements
+    if (
+        text.includes("feedback") || 
+        text.includes("suggest") || 
+        text.includes("improve") || 
+        text.includes("recommend") || 
+        text.includes("opinion") ||
+        text.includes("experience") ||
+        text.includes("service")
+    ) {
+        if (text.includes("manager") || text.includes("stay") || text.includes("blr")) {
+            return "Hope you are getting good service from the BLR stays manager. If you want to give valuable feedback or suggestions to improve our services, we are happy to hear it here!";
+        }
+        return "What kind of suggestions do you want to tell us to improve our services? We are executives, please let us know what services we need to improve from our side.";
+    }
+
+    // Check for greetings or generic hello
+    if (
+        text.includes("hello") || 
+        text.includes("hi ") || 
+        text === "hi" || 
+        text.includes("hey") || 
+        text.includes("greetings") || 
+        text.includes("support")
+    ) {
+        return "Hello! Thank you for reaching out to BLR Stay Live Support. Our management team will connect with you shortly.";
+    }
+
+    // Default fallback
+    return "Thank you for your message. Our management team has received it and will connect with you shortly.";
+};
+
+const registerPublicChatUser = async (req, res) => {
+    try {
+        const { name, email, phone, institution_id, message } = req.body;
+
+        if (!phone || !name || !email) {
+            return res.status(400).json({ success: false, message: "Missing required fields" });
+        }
+
+        const cleanPhone = phone.trim();
+        const cleanName = name.trim();
+        const cleanEmail = email.trim();
+        const solvedMessage = (message && message.trim()) || "Hello! I started a chat.";
+        
+        let solvedInstitutionId = parseInt(institution_id, 10) || null;
+        if (!solvedInstitutionId) {
+            const firstInst = await query("SELECT id FROM institutions ORDER BY id ASC LIMIT 1");
+            solvedInstitutionId = firstInst.rows[0]?.id || 1;
+        }
+
+        const attachmentUrl = req.file?.cloudinaryUrl || null;
+
+        const result = await transaction(async (client) => {
+            // Insert or update support_users
+            const userRes = await client.query(
+                `INSERT INTO support_users (
+                    institution_id, name, email, phone
+                ) VALUES ($1, $2, $3, $4) 
+                ON CONFLICT (phone) DO UPDATE SET 
+                    name = EXCLUDED.name, 
+                    email = EXCLUDED.email, 
+                    institution_id = EXCLUDED.institution_id,
+                    updated_at = CURRENT_TIMESTAMP
+                RETURNING *`,
+                [solvedInstitutionId, cleanName, cleanEmail, cleanPhone]
+            );
+            const user = userRes.rows[0];
+
+            // Insert message
+            const chatRes = await client.query(
+                `INSERT INTO support_user_chats (
+                    support_user_id, sender_type, sender_id, message, attachment, is_read
+                ) VALUES ($1, 'user', NULL, $2, $3, false) RETURNING *`,
+                [user.id, solvedMessage, attachmentUrl]
+            );
+
+            // Auto reply from Admin based on keywords
+            const autoReplyText = getKeywordAutoReply(solvedMessage);
+            await client.query(
+                `INSERT INTO support_user_chats (
+                    support_user_id, sender_type, sender_id, message, attachment, is_read
+                ) VALUES ($1, 'admin', NULL, $2, NULL, false)`,
+                [user.id, autoReplyText]
+            );
+
+            return { user, message: chatRes.rows[0] };
+        });
+
+        // Broadcast new socket events
+        if (req.app.get("socketio")) {
+            const io = req.app.get("socketio");
+            io.emit("ticket_list_changed");
+            io.emit("new_ticket", { ticketId: result.user.id, name: cleanName, subject: solvedMessage });
+        }
+
+        res.json({
+            success: true,
+            message: "Registered and chat started successfully",
+            user: result.user,
+            chatMessage: result.message
+        });
+    } catch (error) {
+        console.error("Error in registerPublicChatUser:", error);
+        res.status(500).json({ success: false, message: "Failed to start support session" });
+    }
+};
+
+const getPublicChatUserMessages = async (req, res) => {
+    try {
+        const { userId } = req.params;
+
+        const userRes = await query(
+            `SELECT u.*, inst.institution_name 
+             FROM support_users u
+             LEFT JOIN institutions inst ON u.institution_id = inst.id
+             WHERE u.id = $1`,
+            [userId]
+        );
+
+        if (userRes.rows.length === 0) {
+            return res.status(404).json({ success: false, message: "User not found" });
+        }
+
+        const messages = await query(
+            "SELECT * FROM support_user_chats WHERE support_user_id = $1 ORDER BY created_at ASC",
+            [userId]
+        );
+
+        res.json({ 
+            success: true, 
+            user: userRes.rows[0],
+            messages: messages.rows 
+        });
+    } catch (error) {
+        console.error("Error in getPublicChatUserMessages:", error);
+        res.status(500).json({ success: false, message: "Failed to load messages" });
+    }
+};
+
+const replyPublicChatUser = async (req, res) => {
+    try {
+        const { support_user_id, message } = req.body;
+
+        if (!support_user_id || !message) {
+            return res.status(400).json({ success: false, message: "Missing required fields" });
+        }
+
+        const attachmentUrl = req.file?.cloudinaryUrl || null;
+
+        // Insert message
+        const insertRes = await query(
+            `INSERT INTO support_user_chats (
+                support_user_id, sender_type, sender_id, message, attachment, is_read
+            ) VALUES ($1, 'user', NULL, $2, $3, false) RETURNING *`,
+            [support_user_id, message.trim(), attachmentUrl]
+        );
+
+        const newMessage = insertRes.rows[0];
+
+        // Update support user updated_at time
+        await query("UPDATE support_users SET updated_at = CURRENT_TIMESTAMP WHERE id = $1", [support_user_id]);
+
+        // Broadcast to Socket.io room
+        if (req.app.get("socketio")) {
+            const io = req.app.get("socketio");
+            const roomName = `ticket_${support_user_id}`;
+            const clients = io.sockets.adapter.rooms.get(roomName);
+            console.log(`[replyPublicChatUser] Broadcasting to room: ${roomName}. Active clients:`, clients ? Array.from(clients) : []);
+            
+            io.to(roomName).emit("receive_message", newMessage);
+            io.emit("ticket_updated", { ticketId: support_user_id, lastMessage: newMessage });
+            io.emit("ticket_list_changed");
+        }
+
+        res.json({ success: true, data: newMessage });
+    } catch (error) {
+        console.error("Error in replyPublicChatUser:", error);
+        res.status(500).json({ success: false, message: "Failed to send message" });
+    }
+};
+
+const listAdminChatUsers = async (req, res) => {
+    try {
+        const { search } = req.body;
+        const loggedInUser = req.user;
+
+        let filterSql = "WHERE 1=1";
+        const queryParams = [];
+
+        if (loggedInUser.role === "pg_admin") {
+            queryParams.push(loggedInUser.institution_id);
+            filterSql += ` AND u.institution_id = $${queryParams.length}`;
+        }
+
+        if (search) {
+            queryParams.push(`%${search.trim()}%`);
+            filterSql += ` AND (u.name ILIKE $${queryParams.length} OR u.phone ILIKE $${queryParams.length} OR u.email ILIKE $${queryParams.length})`;
+        }
+
+        const sql = `
+            SELECT 
+                u.*,
+                COALESCE(un.unread_count, 0)::int AS unread_count,
+                lm.message AS last_message,
+                lm.created_at AS last_message_time,
+                inst.institution_name
+            FROM support_users u
+            LEFT JOIN institutions inst ON u.institution_id = inst.id
+            LEFT JOIN (
+                SELECT support_user_id, COUNT(*)::int AS unread_count 
+                FROM support_user_chats 
+                WHERE sender_type = 'user' AND is_read = false 
+                GROUP BY support_user_id
+            ) un ON u.id = un.support_user_id
+            LEFT JOIN (
+                SELECT DISTINCT ON (support_user_id) support_user_id, message, created_at
+                FROM support_user_chats
+                ORDER BY support_user_id, created_at DESC
+            ) lm ON u.id = lm.support_user_id
+            ${filterSql}
+            ORDER BY COALESCE(lm.created_at, u.updated_at) DESC
+        `;
+
+        const result = await query(sql, queryParams);
+        res.json({ success: true, data: result.rows });
+    } catch (error) {
+        console.error("Error in listAdminChatUsers:", error);
+        res.status(500).json({ success: false, message: "Failed to fetch chat users" });
+    }
+};
+
+const getAdminChatUserMessages = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const loggedInUser = req.user;
+
+        // Access check for pg_admin
+        if (loggedInUser.role === "pg_admin") {
+            const accessCheck = await query(
+                "SELECT institution_id FROM support_users WHERE id = $1",
+                [userId]
+            );
+            if (accessCheck.rows.length === 0) {
+                return res.status(404).json({ success: false, message: "Chat user not found" });
+            }
+            if (accessCheck.rows[0].institution_id !== loggedInUser.institution_id) {
+                return res.status(403).json({ success: false, message: "Access denied" });
+            }
+        }
+
+        // Mark messages as read
+        await query(
+            "UPDATE support_user_chats SET is_read = true WHERE support_user_id = $1 AND sender_type = 'user'",
+            [userId]
+        );
+
+        // Fetch messages
+        const messages = await query(
+            "SELECT * FROM support_user_chats WHERE support_user_id = $1 ORDER BY created_at ASC",
+            [userId]
+        );
+
+        // Broadcast read receipt
+        if (req.app.get("socketio")) {
+            const io = req.app.get("socketio");
+            io.to(`ticket_${userId}`).emit("messages_read", { ticketId: userId, readBy: "admin" });
+            io.emit("ticket_list_changed");
+        }
+
+        res.json({ success: true, data: messages.rows });
+    } catch (error) {
+        console.error("Error in getAdminChatUserMessages:", error);
+        res.status(500).json({ success: false, message: "Failed to load chat messages" });
+    }
+};
+
+const replyAdminChatUser = async (req, res) => {
+    try {
+        const { support_user_id, message } = req.body;
+        const loggedInUser = req.user;
+
+        if (!support_user_id || !message) {
+            return res.status(400).json({ success: false, message: "Missing required fields" });
+        }
+
+        const attachmentUrl = req.file?.cloudinaryUrl || null;
+        const adminId = loggedInUser.id; // user_credentials ID
+
+        // Insert message
+        const insertRes = await query(
+            `INSERT INTO support_user_chats (
+                support_user_id, sender_type, sender_id, message, attachment, is_read
+            ) VALUES ($1, 'admin', $2, $3, $4, false) RETURNING *`,
+            [support_user_id, adminId, message.trim(), attachmentUrl]
+        );
+
+        const newMessage = insertRes.rows[0];
+
+        // Update support user updated_at time
+        await query("UPDATE support_users SET updated_at = CURRENT_TIMESTAMP WHERE id = $1", [support_user_id]);
+
+        // Broadcast to Socket.io room
+        if (req.app.get("socketio")) {
+            const io = req.app.get("socketio");
+            const roomName = `ticket_${support_user_id}`;
+            const clients = io.sockets.adapter.rooms.get(roomName);
+            console.log(`[replyAdminChatUser] Broadcasting to room: ${roomName}. Active clients:`, clients ? Array.from(clients) : []);
+            
+            io.to(roomName).emit("receive_message", newMessage);
+            io.emit("ticket_updated", { ticketId: support_user_id, lastMessage: newMessage });
+            io.emit("ticket_list_changed");
+        }
+
+        res.json({ success: true, data: newMessage });
+    } catch (error) {
+        console.error("Error in replyAdminChatUser:", error);
+        res.status(500).json({ success: false, message: "Failed to send admin message" });
+    }
+};
+
+const getAdminUnreadCount = async (req, res) => {
+    try {
+        const loggedInUser = req.user;
+        let filterSql = "";
+        const queryParams = [];
+
+        if (loggedInUser.role === "pg_admin") {
+            queryParams.push(loggedInUser.institution_id);
+            filterSql = " AND u.institution_id = $1";
+        }
+
+        const result = await query(
+            `SELECT COUNT(DISTINCT u.id)::int AS unread_chats_count
+             FROM support_users u
+             INNER JOIN support_user_chats c ON u.id = c.support_user_id
+             WHERE c.sender_type = 'user' AND c.is_read = false${filterSql}`,
+            queryParams
+        );
+
+        res.json({ success: true, count: result.rows[0]?.unread_chats_count || 0 });
+    } catch (error) {
+        console.error("Error in getAdminUnreadCount:", error);
+        res.status(500).json({ success: false, count: 0 });
+    }
+};
+
+const markAdminChatUserUnread = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        
+        // Find the last message sent by user
+        const lastUserMsg = await query(
+            "SELECT id FROM support_user_chats WHERE support_user_id = $1 AND sender_type = 'user' ORDER BY created_at DESC LIMIT 1",
+            [userId]
+        );
+        
+        if (lastUserMsg.rows.length > 0) {
+            await query(
+                "UPDATE support_user_chats SET is_read = false WHERE id = $1",
+                [lastUserMsg.rows[0].id]
+            );
+        }
+        
+        if (req.app.get("socketio")) {
+            const io = req.app.get("socketio");
+            io.emit("ticket_list_changed");
+        }
+        
+        res.json({ success: true, message: "Marked as unread successfully" });
+    } catch (error) {
+        console.error("Error in markAdminChatUserUnread:", error);
+        res.status(500).json({ success: false, message: "Failed to mark as unread" });
+    }
+};
+
+const deleteAdminChatUser = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        
+        // Delete all chats for the user
+        await query("DELETE FROM support_user_chats WHERE support_user_id = $1", [userId]);
+        // Delete the support user
+        await query("DELETE FROM support_users WHERE id = $1", [userId]);
+        
+        if (req.app.get("socketio")) {
+            const io = req.app.get("socketio");
+            io.emit("ticket_list_changed");
+        }
+        
+        res.json({ success: true, message: "Conversation deleted successfully" });
+    } catch (error) {
+        console.error("Error in deleteAdminChatUser:", error);
+        res.status(500).json({ success: false, message: "Failed to delete conversation" });
+    }
+};
+
+const markAdminChatUserRead = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        
+        await query(
+            "UPDATE support_user_chats SET is_read = true WHERE support_user_id = $1 AND sender_type = 'user'",
+            [userId]
+        );
+        
+        if (req.app.get("socketio")) {
+            const io = req.app.get("socketio");
+            io.emit("ticket_list_changed");
+        }
+        
+        res.json({ success: true, message: "Marked as read successfully" });
+    } catch (error) {
+        console.error("Error in markAdminChatUserRead:", error);
+        res.status(500).json({ success: false, message: "Failed to mark as read" });
+    }
+};
+
 module.exports = {
     listPublicInstitutions,
     createPublicTicket,
@@ -442,5 +959,17 @@ module.exports = {
     updateTicketPriority,
     assignTicket,
     saveInternalNote,
-    listPGAdmins
+    listPGAdmins,
+    // Support Chats API exports
+    getPublicChatUser,
+    registerPublicChatUser,
+    getPublicChatUserMessages,
+    replyPublicChatUser,
+    listAdminChatUsers,
+    getAdminChatUserMessages,
+    replyAdminChatUser,
+    getAdminUnreadCount,
+    markAdminChatUserUnread,
+    deleteAdminChatUser,
+    markAdminChatUserRead
 };

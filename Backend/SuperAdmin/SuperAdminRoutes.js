@@ -4,6 +4,7 @@ const {
   loginSuperAdmin,
   getSuperAdminProfile,
   getSuperAdminList,
+  deleteSuperAdmin,
 } = require("./SuperAdminController");
 const {
   protectSuperAdmin,
@@ -15,5 +16,6 @@ router.post("/register", registerSuperAdmin);
 router.post("/login", loginSuperAdmin);
 router.post("/profile", protectSuperAdmin, getSuperAdminProfile);
 router.post("/list", protectSuperAdmin, getSuperAdminList);
+router.post("/delete", protectSuperAdmin, deleteSuperAdmin);
 
 module.exports = router;

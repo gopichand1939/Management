@@ -37,10 +37,11 @@ import {
 import { useState, useMemo, useCallback, useEffect, useRef, useLayoutEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import { io } from "socket.io-client";
 
 import { logoutUser, setSidebarOpen } from "../../Redux/User/UserSlice";
 import { useTranslation } from "../../Services/I18n/I18nService";
-import { TOKEN_KEY, USER_ACTIVITY_LOGOUT } from "../../Utils/Constants";
+import { TOKEN_KEY, USER_ACTIVITY_LOGOUT, SUPPORT_ADMIN_UNREAD_COUNT } from "../../Utils/Constants";
 import {
   getMenuLabelKey,
   getMenuMeta,
@@ -82,6 +83,8 @@ const menuIcons = {
   qr_labels: QrCode,
   user_activity: Activity,
   support: MessageSquare,
+  daily_meal_tracker: UtensilsCrossed,
+  catalog_management: Boxes,
 };
 
 const MENU_ICON_SIZE = 18;
@@ -112,6 +115,49 @@ const Sidebar = () => {
   // Ref for the scroll container and selection
   const sidebarScrollRef = useRef(null);
   const selectedMenuRef = useRef(null);
+
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    const fetchUnreadCount = async () => {
+      try {
+        const token = localStorage.getItem(TOKEN_KEY);
+        if (!token) return;
+        
+        const res = await fetch(SUPPORT_ADMIN_UNREAD_COUNT, {
+          headers: {
+            "Authorization": `Bearer ${token}`
+          }
+        });
+        const data = await res.json();
+        if (data.success) {
+          setUnreadCount(data.count);
+        }
+      } catch (err) {
+        console.error("Failed to fetch unread count:", err);
+      }
+    };
+
+    fetchUnreadCount();
+
+    // Fetch every 10 seconds to stay updated
+    const interval = setInterval(fetchUnreadCount, 10000);
+
+    // Socket real-time updates
+    const socketUrl = import.meta.env.VITE_SOCKET_URL || (import.meta.env.VITE_API_URL
+      ? import.meta.env.VITE_API_URL.replace(/\/api\/?$/, "")
+      : "http://localhost:5000");
+    const socket = io(socketUrl);
+    
+    socket.on("ticket_list_changed", fetchUnreadCount);
+    socket.on("new_ticket", fetchUnreadCount);
+    socket.on("ticket_updated", fetchUnreadCount);
+
+    return () => {
+      clearInterval(interval);
+      socket.disconnect();
+    };
+  }, []);
 
   // Memoize the menu tree building and sorting
   const menuTree = useMemo(() => {
@@ -384,6 +430,11 @@ const Sidebar = () => {
           />
         </span>
         <span className="truncate">{translatedLabel}</span>
+        {icon_key === "support" && unreadCount > 0 && (
+          <span className="ml-auto bg-orange-600 text-white font-black text-[10px] px-2 py-0.5 rounded-full flex items-center justify-center min-w-5 shrink-0 animate-pulse">
+            {unreadCount}
+          </span>
+        )}
       </NavLink>
     );
   };
